@@ -12,7 +12,10 @@ name = "ShexLean"
 [[lean_lib]]
 name = "Examples"
 srcDir = "examples"
-globs = ["Example", "IssueTracker", "Introduction", "Registry"]
+globs = [
+  "Example", "IssueTracker", "Introduction", "NegationRecursion",
+  "StratificationExample", "Registry",
+]
 
 [[lean_exe]]
 name = "shex_lean"

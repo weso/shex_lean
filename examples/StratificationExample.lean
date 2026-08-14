@@ -1,0 +1,154 @@
+import ShexLean.Semantics
+import ShexLean.Stratification
+import Example
+
+/-!
+Example 5 from Boneva, Labra Gayo, Prud'hommeaux (2017), illustrating
+Definition 3 ("schema with stratified negation",
+`ShexLean.Stratification.Schema.StratifiedNegation`) on a schema that mixes
+`NOT` and recursion, but *is* stratified (unlike `S₂` from Example 4,
+`Examples.NegationRecursion`).
+
+```
+<L1> → NOT(ex:a @<L2> ; ex:b @<Str>)      <L3> → ex:c @<L2>
+<L2> → ex:c @<L3>                         <Str> → xsd:string
+```
+
+> The dependency graph contains the edges `dep⁻(<L1>,<L2>)`,
+> `dep⁻(<L1>,<Str>)`, `dep⁺(<L2>,<L3>)`, `dep⁺(<L3>,<L2>)`. The unique loop
+> is around `<L2>` and `<L3>` and it goes through positive dependencies
+> only, so the schema is stratified. [...] One possible stratification is
+> `<L1>` on stratum 2 and the other three shape labels on stratum 1.
+
+Example 5 introduces no RDF graph of its own (it is purely about Definition
+3); a graph exercising `S₃` appears later, in Example 6 (§4.2 of the paper),
+which is out of scope here.
+-/
+
+namespace Examples.StratificationExample
+
+open ShexLean
+
+@[reducible] private def L1  : ShapeLabel := "L1"
+@[reducible] private def L2  : ShapeLabel := "L2"
+@[reducible] private def L3  : ShapeLabel := "L3"
+@[reducible] private def Str : ShapeLabel := "Str"
+
+@[reducible] private def a : IRI := "ex:a"
+@[reducible] private def b : IRI := "ex:b"
+@[reducible] private def c : IRI := "ex:c"
+
+/-- `<L1> → NOT(ex:a @<L2> ; ex:b @<Str>)`. -/
+@[reducible] private def L1Def : ShapeExpr :=
+  .not (.neigDescr (.eachOf (.tPattern {a} L2) (.tPattern {b} Str)))
+
+/-- `<L2> → ex:c @<L3>`. -/
+@[reducible] private def L2Def : ShapeExpr := .neigDescr (.tPattern {c} L3)
+
+/-- `<L3> → ex:c @<L2>`. -/
+@[reducible] private def L3Def : ShapeExpr := .neigDescr (.tPattern {c} L2)
+
+/-- `<Str> → xsd:string`, stood in (as elsewhere, e.g. `ShexLean.Examples`)
+by a placeholder literal, since Example 5 has no accompanying graph to
+size the set against. -/
+@[reducible] private def StrDef : ShapeExpr := .valueDescr {.lit (.str "placeholder")}
+
+/-- The schema `S₃` from Example 5. Written with an explicit `if`-chain
+(rather than the `|`-pattern style used elsewhere) so that `S₃.shapeDef`'s
+case split is directly available to `simp` in the proofs below. -/
+@[reducible] def S₃ : Schema where
+  labels := {L1, L2, L3, Str}
+  shapeDef := fun L =>
+    if L = L1 then L1Def
+    else if L = L2 then L2Def
+    else if L = L3 then L3Def
+    else StrDef
+
+private theorem shapeDef_L1 : S₃.shapeDef L1 = L1Def := by simp
+
+private theorem shapeDef_L2 : S₃.shapeDef L2 = L2Def := by simp [L1, L2]
+
+private theorem shapeDef_L3 : S₃.shapeDef L3 = L3Def := by simp [L1, L2, L3]
+
+private theorem shapeDef_other (L : ShapeLabel) (h1 : L ≠ L1) (h2 : L ≠ L2) (h3 : L ≠ L3) :
+    S₃.shapeDef L = StrDef := by simp [h1, h2, h3]
+
+/-- `dep⁻(<L1>, <L2>)`. -/
+theorem depNeg_L1_L2 : DepNeg S₃ L1 L2 := by rw [DepNeg, shapeDef_L1]; decide
+
+/-- `dep⁻(<L1>, <Str>)`. -/
+theorem depNeg_L1_Str : DepNeg S₃ L1 Str := by rw [DepNeg, shapeDef_L1]; decide
+
+/-- `dep⁺(<L2>, <L3>)`. -/
+theorem depPos_L2_L3 : DepPos S₃ L2 L3 := by rw [DepPos, shapeDef_L2]; decide
+
+/-- `dep⁺(<L3>, <L2>)`. -/
+theorem depPos_L3_L2 : DepPos S₃ L3 L2 := by rw [DepPos, shapeDef_L3]; decide
+
+/-- The stratification from the paper: `<L1>` on stratum 2, the other three
+labels on stratum 1. -/
+private def strat1 : ShapeLabel → ℕ := fun L => if L = L1 then 2 else 1
+
+/-- `S₃` is with stratified negation (Definition 3), witnessed by `strat1`. -/
+theorem S₃_stratified : S₃.StratifiedNegation := by
+  refine ⟨2, strat1, ?_, ?_, ?_⟩
+  · intro L hL
+    simp only [Finset.mem_insert, Finset.mem_singleton] at hL
+    rcases hL with hL | hL | hL | hL <;> subst hL <;> simp [strat1, L1, L2, L3, Str]
+  · intro L1' L2' hdep
+    by_cases h1 : L1' = L1
+    · subst h1
+      rw [DepNeg, shapeDef_L1] at hdep
+      simp [ShapeExpr.negDeps, TripleExpr.depsAux] at hdep
+      rcases hdep with hdep | hdep <;> subst hdep <;> simp [strat1, L1, L2, Str]
+    · by_cases h2 : L1' = L2
+      · subst h2
+        rw [DepNeg, shapeDef_L2] at hdep
+        simp [ShapeExpr.negDeps, ShapeExpr.depsAux, TripleExpr.depsAux] at hdep
+      · by_cases h3 : L1' = L3
+        · subst h3
+          rw [DepNeg, shapeDef_L3] at hdep
+          simp [ShapeExpr.negDeps, ShapeExpr.depsAux, TripleExpr.depsAux] at hdep
+        · rw [DepNeg, shapeDef_other L1' h1 h2 h3] at hdep
+          simp [ShapeExpr.negDeps] at hdep
+  · intro L1' L2' hdep
+    by_cases h1 : L1' = L1
+    · subst h1
+      rw [DepPos, shapeDef_L1] at hdep
+      simp [ShapeExpr.posDeps, TripleExpr.depsAux] at hdep
+    · by_cases h2 : L1' = L2
+      · subst h2
+        rw [DepPos, shapeDef_L2] at hdep
+        simp [ShapeExpr.posDeps, ShapeExpr.depsAux, TripleExpr.depsAux] at hdep
+        subst hdep; simp [strat1, L1, L2, L3]
+      · by_cases h3 : L1' = L3
+        · subst h3
+          rw [DepPos, shapeDef_L3] at hdep
+          simp [ShapeExpr.posDeps, ShapeExpr.depsAux, TripleExpr.depsAux] at hdep
+          subst hdep; simp [strat1, L1, L2, L3]
+        · rw [DepPos, shapeDef_other L1' h1 h2 h3] at hdep
+          simp [ShapeExpr.posDeps] at hdep
+
+end Examples.StratificationExample
+
+namespace Examples
+
+/-- Example 5: `S₃` mixes `NOT` and recursion but is with stratified
+negation. -/
+def stratificationExample : Example where
+  name := "stratification"
+  summary := "Example 5: a schema mixing NOT and recursion that is with stratified negation."
+  schemaText :=
+    "<L1> → NOT(ex:a @<L2> ; ex:b @<Str>)\n" ++
+    "<L2> → ex:c @<L3>\n" ++
+    "<L3> → ex:c @<L2>\n" ++
+    "<Str> → xsd:string"
+  graphText :=
+    "(none — Example 5 illustrates Definition 3 on the schema alone;\n" ++
+    " a graph for S₃ appears later, in Example 6.)"
+  typingText :=
+    "Dependency edges: dep⁻(<L1>,<L2>), dep⁻(<L1>,<Str>), dep⁺(<L2>,<L3>), dep⁺(<L3>,<L2>).\n" ++
+    "S₃ is with stratified negation: one stratification puts <L1> on stratum 2\n" ++
+    "and <L2>, <L3>, <Str> on stratum 1."
+
+end Examples

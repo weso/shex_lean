@@ -4,4 +4,6 @@ import ShexLean.RDF
 import ShexLean.Typing
 import ShexLean.Syntax
 import ShexLean.Semantics
+import ShexLean.Stratification
+import ShexLean.MaximalTyping
 import ShexLean.Examples
