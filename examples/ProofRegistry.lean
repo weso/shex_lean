@@ -24,7 +24,12 @@ def proofs : List ProofItem :=
         "Lemma 2 (§3.3): Typing(G,S,strat) does not depend on the stratification " ++
         "chosen. Proved in full via a canonical batch-revealing process and an " ++
         "independence-of-schedule argument (the paper itself only sketches this proof)."
-      path := "ShexLean/Lemma2.lean" } ]
+      path := "ShexLean/Lemma2.lean" },
+    { name := "algorithm1"
+      summary :=
+        "Algorithm 1 (§4.1): the per-stratum iterative-refinement procedure `refine` " ++
+        "computes exactly Typing(G,S,strat) (Definition 4)."
+      path := "ShexLean/Algorithm1.lean" } ]
 
 /-- Look up a registered proof by name. -/
 def findProof? (name : String) : Option ProofItem :=
