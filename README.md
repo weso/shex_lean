@@ -20,6 +20,13 @@ a certified type checker — rather than a production ShEx validator.
   expressions (Fig. 1).
 - `ShexLean/Semantics.lean` — the `⊢` ("node satisfies a shape expression")
   and `⊨` ("triples match a triple expression") relations (Fig. 2).
+- `ShexLean/Stratification.lean` — the dependency graph (`dep⁻`/`dep⁺`) and
+  Definition 3 ("schema with stratified negation"), §3.2.
+- `ShexLean/MaximalTyping.lean` — §3.3 up to Lemma 1: negation-free shape
+  expressions, Definition 2 named as `Schema.CorrectTyping`, monotonicity of
+  `⊢`/`⊨` in `typing` for negation-free schemas, and Lemma 1 itself (a
+  negation-free schema has a correct typing containing every correct
+  typing, computed as the union of all correct typings).
 - `ShexLean/Examples.lean` — Example 2/3 from the paper (a recursive
   `<IssueSh>` schema over two issues that report on each other), a worked
   example used as a regression check that the pieces fit together.
@@ -28,6 +35,12 @@ a certified type checker — rather than a production ShEx validator.
   regression check exercising `AND`/`someOf`/`eachOf`/repetition together,
   with its typing proved correct (Definition 2) for all 18 node/shape
   associations it induces.
+- `examples/NegationRecursion.lean` — Example 4: `NOT` mixed with mutual
+  recursion gives two contradicting correct typings, and the schema is not
+  with stratified negation.
+- `examples/StratificationExample.lean` — Example 5: a schema mixing `NOT`
+  and recursion that *is* with stratified negation, with a witness
+  stratification.
 - `examples/Example.lean`, `examples/IssueTracker.lean`,
   `examples/Registry.lean` — a small `Example` record (name, summary,
   schema/graph/typing as text) wrapping each worked example above for
