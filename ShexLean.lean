@@ -6,4 +6,6 @@ import ShexLean.Syntax
 import ShexLean.Semantics
 import ShexLean.Stratification
 import ShexLean.MaximalTyping
+import ShexLean.Proposition1
+import ShexLean.Lemma2
 import ShexLean.Examples

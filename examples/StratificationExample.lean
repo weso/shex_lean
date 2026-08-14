@@ -95,7 +95,7 @@ theorem S₃_stratified : S₃.StratifiedNegation := by
   · intro L hL
     simp only [Finset.mem_insert, Finset.mem_singleton] at hL
     rcases hL with hL | hL | hL | hL <;> subst hL <;> simp [strat1, L1, L2, L3, Str]
-  · intro L1' L2' hdep
+  · intro L1' _ L2' hdep
     by_cases h1 : L1' = L1
     · subst h1
       rw [DepNeg, shapeDef_L1] at hdep
@@ -111,7 +111,7 @@ theorem S₃_stratified : S₃.StratifiedNegation := by
           simp [ShapeExpr.negDeps, ShapeExpr.depsAux, TripleExpr.depsAux] at hdep
         · rw [DepNeg, shapeDef_other L1' h1 h2 h3] at hdep
           simp [ShapeExpr.negDeps] at hdep
-  · intro L1' L2' hdep
+  · intro L1' _ L2' hdep
     by_cases h1 : L1' = L1
     · subst h1
       rw [DepPos, shapeDef_L1] at hdep
