@@ -14,7 +14,7 @@ name = "Examples"
 srcDir = "examples"
 globs = [
   "Example", "IssueTracker", "Introduction", "NegationRecursion",
-  "StratificationExample", "Registry",
+  "StratificationExample", "Registry", "Proof", "ProofRegistry",
 ]
 
 [[lean_exe]]

@@ -98,8 +98,8 @@ theorem S₂_not_stratified : ¬ S₂.StratifiedNegation := by
   rintro ⟨strat⟩
   have hdepL1L2 : DepNeg S₂ L1 L2 := by decide
   have hdepL2L1 : DepNeg S₂ L2 L1 := by decide
-  have h1 := strat.neg_strict L1 L2 hdepL1L2
-  have h2 := strat.neg_strict L2 L1 hdepL2L1
+  have h1 := strat.neg_strict L1 (by decide) L2 hdepL1L2
+  have h2 := strat.neg_strict L2 (by decide) L1 hdepL2L1
   omega
 
 end Examples.NegationRecursion
