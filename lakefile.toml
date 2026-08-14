@@ -9,6 +9,11 @@ git = "https://github.com/leanprover-community/mathlib4.git"
 [[lean_lib]]
 name = "ShexLean"
 
+[[lean_lib]]
+name = "Examples"
+srcDir = "examples"
+globs = ["Example", "IssueTracker", "Introduction", "Registry"]
+
 [[lean_exe]]
 name = "shex_lean"
 root = "Main"
