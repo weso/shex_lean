@@ -61,7 +61,17 @@ def proofs : List ProofItem :=
         "strengthenings of the paper's Table 3/Definition 5 (an implicit " ++
         "monotonicity invariant, and negation-dependency tracking under nested " ++
         "`not`)."
-      path := "ShexLean/Inheritance/Proposition1.lean" } ]
+      path := "ShexLean/Inheritance/Proposition1.lean" },
+    { name := "inheritance-lemma2"
+      summary :=
+        "Shape Expressions with Inheritance (2025), Lemma 2 (§4.3): τ_max(S,σ,G) " ++
+        "does not depend on which stratification σ of S is chosen. Ports the 2017 " ++
+        "formalization's own from-scratch proof (Fusion/Swap/a schedule-agnostic " ++
+        "batch-revealing process/Independence — the paper itself only sketches " ++
+        "this), needing a further schema-invariance argument the 2017 proof never " ++
+        "did: restricting the schema to an arbitrary D_S-closed label set, not " ++
+        "just a stratum, since Satisfies here depends on the schema."
+      path := "ShexLean/Inheritance/Lemma2.lean" } ]
 
 /-- Look up a registered proof by name. -/
 def findProof? (name : String) : Option ProofItem :=

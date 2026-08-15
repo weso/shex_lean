@@ -252,6 +252,18 @@ directly: `ShexLean/RDF.lean` and `ShexLean/Typing.lean`
   blocked a direct 2017-style port of `stratTypingSeq_correct`'s inductive
   step.
 
+- `ShexLean/Inheritance/Lemma2.lean` — Lemma 2 (§4.3): `τ_max(S,σ,G)` does
+  not depend on the stratification chosen, proved in full, no `sorry`. Ports
+  2017's own `ShexLean/Lemma2.lean` (Fusion/Swap/a schedule-agnostic
+  `remainingMin`-batch-revealing process `cont1`/Independence — the paper
+  only sketches this proof), which transfers almost unchanged in *shape*.
+  What doesn't transfer for free: 2017's `Satisfies` never consults the
+  schema, so "restrict to a self-contained label set" was free; here it
+  first generalizes `Proposition1.lean`'s stratum-specific schema-invariance
+  argument (`Satisfies_stratRestrict_agree`) to an arbitrary `D_S`-closed
+  label set (`Schema.restrictLabels`, `Satisfies_restrictLabels_agree`),
+  since `cont1`'s schedule-agnostic batches aren't shaped like strata.
+
 `ShexLean.lean` re-exports the first group of files above as the `ShexLean`
 library. `examples/` holds worked examples and proof entries (plus
 plain-text/registry data used by the executable) as a separate `Examples`
@@ -293,6 +305,7 @@ Proofs:
   algorithm2 — Algorithm 2/Proposition 2 (§4.2): the recursive, cycle-detecting `prove` algorithm decides Typing(G,S,strat)-membership correctly, without building the whole typing.
   inheritance-lemma1 — Shape Expressions with Inheritance (2025), Lemma 1 (§4.2): evaluation of n,τ⊨def(z) always terminates.
   inheritance-proposition1 — Shape Expressions with Inheritance (2025), Proposition 1 (§4.3): the maximal typing τ_max(S,σ,G) is a correct typing of G by S.
+  inheritance-lemma2 — Shape Expressions with Inheritance (2025), Lemma 2 (§4.3): τ_max(S,σ,G) does not depend on which stratification σ of S is chosen.
 ```
 
 Print one example's schema, graph, and typing:
