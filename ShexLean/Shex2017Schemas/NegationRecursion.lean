@@ -109,10 +109,8 @@ namespace Examples
 /-- Example 4: negation mixed with recursion, showing correct typings are
 not enough for a sound semantics, and `S₂` is not with stratified negation. -/
 def negationRecursion : Example where
-  name := "negation-recursion"
-  summary :=
-    "Example 4: NOT and mutual recursion give two contradicting correct " ++
-    "typings; the schema is not stratified."
+  name := "schemas2017-negation-recursion"
+  summary := "NOT + mutual recursion: two contradicting typings, not stratified."
   schemaText :=
     "<L1> → NOT(ex:p @<L2>)\n" ++
     "<L2> → NOT(ex:p @<L1>)"

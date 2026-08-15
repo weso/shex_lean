@@ -83,6 +83,19 @@ noncomputable def Mnotin (τ : Typing) (M : Finset Triple) (e : TripleExpr) : Fi
 /-- `props(M)` (Table 3): the properties of the triples in `M`. -/
 def props (M : Finset Triple) : Finset IRI := M.image Triple.pred
 
+/-- Membership characterization of `Me`, avoiding the recurring
+`Classical.decPred`/`Finset.filter` instance-mismatch trap (see
+`ShexLean/Shex2025Inheritance/Proposition1.lean`'s memory notes) by fixing
+the filter's instance once here rather than at every call site. -/
+theorem mem_Me {τ : Typing} {M : Finset Triple} {e : TripleExpr} {t : Triple} :
+    t ∈ Me τ M e ↔ t ∈ M ∧ ∃ z, (t.pred, z) ∈ e.tcs ∧ τ.has t.obj z := by
+  unfold Me; simp only [Finset.mem_filter]
+
+/-- Membership characterization of `Mnotin`, same reasoning as `mem_Me`. -/
+theorem mem_Mnotin {τ : Typing} {M : Finset Triple} {e : TripleExpr} {t : Triple} :
+    t ∈ Mnotin τ M e ↔ (t ∈ M ∧ t.pred ∈ e.props) ∧ t ∉ Me τ M e := by
+  unfold Mnotin; simp only [Finset.mem_sdiff, Finset.mem_filter]
+
 /-- `M = M' ⊎ (⊎_{x ∈ Idx} Mx)`: `M'` and the finitely many `Mx x` (for
 `x ∈ Idx`) are pairwise disjoint and their union is `M` — Table 3's rule
 18 partition of a neighbourhood set into the portion satisfying `h` and
@@ -128,13 +141,16 @@ def SatisfiesMFuel : (Fuel : ℕ) → Schema → Graph → Typing → Finset Tri
   | fuel+1, S, G, τ, M, .and s1 s2 =>
       SatisfiesMFuel fuel S G τ M s1 ∧ SatisfiesMFuel fuel S G τ M s2
   | fuel+1, S, G, τ, M, .not s => ¬ SatisfiesMFuel fuel S G τ M s
-  -- Rule 18 (`extends X h`): `M` splits into `M'` (satisfying `h`) and one
-  -- `Mx x` per `x ∈ anc(X)` (satisfying `ext-te(x)`, and — if `restr(x)`
-  -- is present — the union of `Mx z` over `z ∈ anc(x)` satisfies
-  -- `restr(x)`).
+  -- Rule 18 (`extends X h`): `M` splits into `M'` (satisfying `h` *as a
+  -- shape* — Table 3 rule 17, respecting `h`'s own `closed`/`extra`, per
+  -- the paper's own `M', τ ⊨ h`, not a bare Table 1 check on `h`'s triple
+  -- expression — see `ShexLean/Shex2025Inheritance/Termination.lean`'s
+  -- module docstring for the history of this fix) and one `Mx x` per
+  -- `x ∈ anc(X)` (satisfying `ext-te(x)`, and — if `restr(x)` is present —
+  -- the union of `Mx z` over `z ∈ anc(x)` satisfies `restr(x)`).
   | fuel+1, S, G, τ, M, .extends xs h =>
       ∃ M' Mx, DisjointUnionOn M M' (S.ancSet xs) Mx ∧
-        SatisfiesEFuel fuel S G τ M' h.triples ∧
+        SatisfiesMFuel fuel S G τ M' (.ofShape h) ∧
         (∀ x ∈ S.ancSet xs, SatisfiesEFuel fuel S G τ (Mx x) (S.shapeDef x).extTe) ∧
         (∀ x ∈ S.ancSet xs, ∀ u, (S.shapeDef x).restrOf = some u →
           SatisfiesMFuel fuel S G τ ((S.anc x).biUnion Mx) u)

@@ -472,8 +472,8 @@ namespace Examples
 
 /-- The Introduction's `S₀`/`G₀` example. -/
 def introduction : Example where
-  name := "introduction"
-  summary := "The paper's §1 Introductory Example: users, programmers, clients and issues."
+  name := "schemas2017-introduction"
+  summary := "§1 Introductory Example: users, programmers, clients, issues."
   schemaText :=
     "<UserShape>      → foaf:name @<StringValue> ; foaf:mbox @<IRIValue> [0;1]\n" ++
     "<ProgShape>      → ex:expertise @<IRIValue> [0;*] ; ex:experience @<ExpValueSet>\n" ++

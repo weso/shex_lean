@@ -183,7 +183,7 @@ def Schema.WellFormedX (S : Schema) : Prop :=
 
 /-- Definition 3's edge relation of `H_S`: an edge from `x` to `x'` iff
 `x'` is named right after `extends` at the top of `def(x)`. -/
-def Schema.extEdge (S : Schema) (x x' : ShapeLabel) : Prop :=
+@[reducible] def Schema.extEdge (S : Schema) (x x' : ShapeLabel) : Prop :=
   x' ∈ (S.shapeDef x).extendsTargets
 
 /-- Definition 3 (extension hierarchy). `x' ∈ S.anc x` iff there is a

@@ -287,7 +287,12 @@ the 2017 side's own triple-expression semantics.
   `Schema.anc`/`Schema.ancSet`, via `Relation.ReflTransGen`); and a first
   slice of §2's motivating example (the `Attribute` shape and node `a1`,
   Fig. 1/2) — the fuller multiple-inheritance `ColouredCircle` chain of
-  that example is left for later.
+  that example is left for later. `ExampleTripleMatch.lean`/
+  `ExampleExtends.lean`/`ExampleAttribute.lean` are lightweight display-only
+  wrappers around these three (schema/graph/typing text for the CLI, in
+  the same style as `Shex2017Schemas/IssueTracker.lean`), registered as
+  `inheritance2025-triple-match`/`inheritance2025-extends`/
+  `inheritance2025-attribute`.
 - `ShexLean/Shex2025Inheritance/Proposition1.lean` — Definition 7
   (`Stratification`, edge-based, plus the path form the paper states it
   with), Definition 8 (`stratTypingSeq`/`Typing8`, the maximal typing
@@ -356,27 +361,35 @@ no arguments):
 $ lake exe shex_lean list
 ...
 Examples:
-  issue-tracker — Example 2/3: a recursive <IssueSh> schema over two issues that report on each other.
-  introduction — The paper's §1 Introductory Example: users, programmers, clients and issues.
-  ...
+  2017 — Semantics and Validation of Shapes Schemas for RDF:
+    schemas2017-issue-tracker — Recursive <IssueSh> schema, two issues reporting on each other.
+    schemas2017-introduction — §1 Introductory Example: users, programmers, clients, issues.
+    ...
+  2025 — Shape Expressions with Inheritance:
+    inheritance2025-triple-match — Triple expression p@T_even;(p@T_<5*|p@T_str) matched against three sets.
+    inheritance2025-extends — extends chain x0..x6; M24,τ ⊨ def(x1) via x1's rule-18 partition.
+    inheritance2025-attribute — §2's Attribute shape (Fig. 1/2), satisfied by node a1.
 
 Proofs:
-  lemma1 — Lemma 1 (§3.3): a negation-free schema has a maximal correct typing (the union of all correct typings).
-  proposition1 — Proposition 1 (§3.3): Typing(G,S,strat) (Definition 4) is a correct typing of G by S, for any stratified schema.
-  lemma2 — Lemma 2 (§3.3): Typing(G,S,strat) does not depend on the stratification chosen.
-  shapes-sem — Definitions 5-6 (§3.3): the maximal correct typing Typing(G,S) is well-defined and correct, and SHAPES_SEM itself.
-  algorithm1 — Algorithm 1 (§4.1): the per-stratum iterative-refinement procedure `refine` computes exactly Typing(G,S,strat) (Definition 4).
-  algorithm2 — Algorithm 2/Proposition 2 (§4.2): the recursive, cycle-detecting `prove` algorithm decides Typing(G,S,strat)-membership correctly, without building the whole typing.
-  inheritance-lemma1 — Shape Expressions with Inheritance (2025), Lemma 1 (§4.2): evaluation of n,τ⊨def(z) always terminates.
-  inheritance-proposition1 — Shape Expressions with Inheritance (2025), Proposition 1 (§4.3): the maximal typing τ_max(S,σ,G) is a correct typing of G by S.
-  inheritance-lemma2 — Shape Expressions with Inheritance (2025), Lemma 2 (§4.3): τ_max(S,σ,G) does not depend on which stratification σ of S is chosen.
+  2017 — Semantics and Validation of Shapes Schemas for RDF:
+    schemas2017-lemma1 — A negation-free schema has a maximal correct typing (§3.3).
+    schemas2017-proposition1 — Typing(G,S,strat) is a correct typing of G by S (§3.3).
+    ...
+  2025 — Shape Expressions with Inheritance:
+    inheritance2025-lemma1 — Evaluation of n,τ⊨def(z) always terminates (§4.2).
+    inheritance2025-proposition1 — τ_max(S,σ,G) is a correct typing of G by S (§4.3).
+    inheritance2025-lemma2 — τ_max(S,σ,G) doesn't depend on the stratification chosen (§4.3).
 ```
+
+Names are prefixed `schemas2017-`/`inheritance2025-` so it's clear which
+paper each item belongs to, and the listing groups them under a per-paper
+sub-header; every summary is kept to one line.
 
 Print one example's schema, graph, and typing:
 
 ```
-lake exe shex_lean run introduction
-lake exe shex_lean run issue-tracker
+lake exe shex_lean run schemas2017-introduction
+lake exe shex_lean run schemas2017-issue-tracker
 ```
 
 This only prints the example's text — the actual proof that its typing is
@@ -389,7 +402,7 @@ examples, this reads the `.lean` file directly, so run it from the project
 root:
 
 ```
-lake exe shex_lean run lemma1
+lake exe shex_lean run schemas2017-lemma1
 ```
 
 Open the project in an editor with Lean support (e.g. VS Code with the Lean
