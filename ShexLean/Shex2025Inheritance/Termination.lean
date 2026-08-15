@@ -1,4 +1,4 @@
-import ShexLean.Inheritance.Stratification
+import ShexLean.Shex2025Inheritance.Stratification
 import Mathlib.Data.Finset.Card
 import Mathlib.Data.Finset.Lattice.Fold
 
@@ -9,7 +9,7 @@ Lemma 1 (§4.2) of the 2025 "Shape Expressions with Inheritance" paper:
 > every schema `S = (Y, X, def, A)`, graph `G`, node `n` of `G`, typing `τ`
 > of `G` by `S`, and label `z ∈ Y ∪ X`.
 
-`ShexLean/Inheritance/Semantics.lean` sidesteps termination by threading an
+`ShexLean/Shex2025Inheritance/Semantics.lean` sidesteps termination by threading an
 explicit `Fuel : ℕ` through `SatisfiesFuel`/`SatisfiesMFuel`/
 `SatisfiesEFuel`, decremented on *every* recursive call, returning `False`
 on exhaustion — a total Lean function by construction, but not yet the
@@ -20,7 +20,7 @@ depending on `Fuel` at all — i.e. that the fuel-bounded under-approximation
 
 ## Why this is genuinely harder than anything the 2017 formalization needed
 
-In `ShexLean/Semantics.lean`, a shape reference is resolved purely by
+In `ShexLean/Shex2017Schemas/Semantics.lean`, a shape reference is resolved purely by
 consulting `typing` (no recursive call into `def(L)`), so termination is
 free structural recursion on the AST. Here, Table 3's `extends` rule
 recurses into *other labels' own definitions*
@@ -51,7 +51,7 @@ silently assume away) how the paper intends this edge case to be handled,
 this file adds an explicit, documented extra hypothesis ruling it out —
 `ShapeExpr.NoExtends`/`Schema.WellFormedExtends` below — exactly the same
 kind of Lean-forced strengthening as `Schema.Closed` was for the 2017
-formalization's Proposition 1 (`ShexLean/Proposition1.lean`): a genuine
+formalization's Proposition 1 (`ShexLean/Shex2017Schemas/Proposition1.lean`): a genuine
 technical judgment call, not a shortcut, and worth flagging explicitly if
 this file is ever checked against the paper's intent more closely.
 -/
@@ -62,7 +62,7 @@ namespace ShexLean.Inheritance
 
 /-- `S.anc` strictly shrinks along every `H_S` edge, for an acyclic `S`
 (`Schema.ExtAcyclic`, the termination-relevant half of Definition 6's
-well-definedness condition, `ShexLean/Inheritance/Stratification.lean`):
+well-definedness condition, `ShexLean/Shex2025Inheritance/Stratification.lean`):
 if `x` (directly) extends `y`, then everything `y` (transitively) extends
 is also something `x` (transitively) extends, but `x` itself witnesses the
 converse failing (`x ∈ S.anc x` always; `x ∈ S.anc y` would — combined
@@ -159,7 +159,7 @@ def Schema.WellFormedExtends (S : Schema) : Prop :=
 
 /-! ### The stabilization argument
 
-Given `Schema.WellFormedX` (`ShexLean/Inheritance/Syntax.lean`) and
+Given `Schema.WellFormedX` (`ShexLean/Shex2025Inheritance/Syntax.lean`) and
 `Schema.WellFormedExtends`, every `.extends` node the evaluator ever
 actually unfolds is, by construction, in one of the two shallow forms
 Definition 2 allows a label's *own* definition to take — `ext-te(x)`
@@ -180,7 +180,7 @@ module docstring. `extRank` is kept as a correct, reusable fact for a future
 attempt at the fully general Lemma 1 that drops `WellFormedExtends`.
 
 The proof follows the same one-way dependency chain as the definitions
-themselves (`ShexLean/Inheritance/Semantics.lean`'s own docstring):
+themselves (`ShexLean/Shex2025Inheritance/Semantics.lean`'s own docstring):
 `SatisfiesEFuel` stabilizes on its own (no schema lookups at all); then
 `SatisfiesMFuel` stabilizes using that fact (plus a `NoExtends`-only
 version of itself, proved first, for `restr(x)`); then `SatisfiesFuel`

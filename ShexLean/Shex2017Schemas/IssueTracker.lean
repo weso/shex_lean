@@ -4,7 +4,7 @@ import Example
 Display data for `ShexLean.Examples`'s Example 2/3 (Boneva, Labra Gayo,
 Prud'hommeaux 2017): the recursive `<IssueSh>`/`<Str>` schema, proved
 correct there as `typing1_correct`. This file only carries the text shown by
-the executable; the proof itself lives in `ShexLean/Examples.lean`.
+the executable; the proof itself lives in `ShexLean/Shex2017Schemas/Examples.lean`.
 -/
 
 namespace Examples

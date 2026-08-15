@@ -1,4 +1,4 @@
-import ShexLean.Syntax
+import ShexLean.Shex2017Schemas.Syntax
 import Mathlib.Data.Finset.Basic
 
 /-!
@@ -114,7 +114,7 @@ def Schema.StratifiedNegation (S : Schema) : Prop := Nonempty (Stratification S)
 Two facts connecting `depsAux true` (used internally, right under a `NOT`)
 back to `posDeps`/`negDeps` (`depsAux false`, the top-level view): entering
 a `NOT` merges what would have been positive and negative dependencies into
-one negative bucket. These are needed (in `ShexLean/Proposition1.lean`) to
+one negative bucket. These are needed (in `ShexLean/Shex2017Schemas/Proposition1.lean`) to
 recurse under arbitrarily nested `NOT`s without re-deriving this each time.
 -/
 

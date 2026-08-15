@@ -1,6 +1,7 @@
-import ShexLean.RDF
-import ShexLean.Typing
-import ShexLean.Syntax
+import ShexLean.Common.RDF
+import ShexLean.Common.Typing
+import ShexLean.Common.DisjointUnion
+import ShexLean.Shex2017Schemas.Syntax
 import Mathlib.Data.Finset.Basic
 
 /-!
@@ -51,16 +52,6 @@ value description `V`, i.e. `n` is an IRI or a literal explicitly listed in
   match n with
   | .bnode _ => ValueItem.anyBlank ∈ V
   | _ => False
-
-/-- `N = N1 ⊎ N2`: `N1` and `N2` are disjoint and their union is `N`, the
-binary disjoint union used in Rule te-each-of. -/
-def DisjointUnion (N N1 N2 : Finset Triple) : Prop :=
-  Disjoint N1 N2 ∧ N = N1 ∪ N2
-
-/-- `N = N1 ⊎ ⋯ ⊎ Nk`: the sets listed in `Ns` are pairwise disjoint and their
-union is `N`, the `k`-ary disjoint union used in Rule te-repet. -/
-def DisjointUnionList (N : Finset Triple) (Ns : List (Finset Triple)) : Prop :=
-  Ns.Pairwise Disjoint ∧ N = Ns.foldr (· ∪ ·) ∅
 
 mutual
 

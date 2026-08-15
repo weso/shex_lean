@@ -13,8 +13,7 @@ name = "ShexLean"
 name = "Examples"
 srcDir = "examples"
 globs = [
-  "Example", "IssueTracker", "Introduction", "NegationRecursion",
-  "StratificationExample", "Registry", "Proof", "ProofRegistry",
+  "Example", "Registry", "Proof", "ProofRegistry",
 ]
 
 [[lean_exe]]

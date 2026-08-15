@@ -1,17 +1,17 @@
-import ShexLean.Inheritance.Semantics
+import ShexLean.Shex2025Inheritance.Semantics
 
 /-!
 Worked examples from the 2025 "Shape Expressions with Inheritance" paper
 (§2 and §4.1-4.2), formalized as regression checks that
-`ShexLean/Inheritance/Syntax.lean`/`Semantics.lean` actually behave as the
+`ShexLean/Shex2025Inheritance/Syntax.lean`/`Semantics.lean` actually behave as the
 paper's own examples say they should — the same role
-`ShexLean/Examples.lean`/`examples/Introduction.lean` play for the 2017
+`ShexLean/Shex2017Schemas/Examples.lean`/`examples/Introduction.lean` play for the 2017
 formalism.
 
 Two representational simplifications, both purely about the *data* used,
 not the semantics:
 
-- The RDF model's `Literal` (`ShexLean/RDF.lean`) has only `str`/`int`
+- The RDF model's `Literal` (`ShexLean/Common/RDF.lean`) has only `str`/`int`
   constructors, no float. Fig. 1/2's `T_float` and the coordinate/radius
   values (`10.1`, `7.2`, `0.2`, `-2.3`) are approximated with `Literal.int`
   values instead — the *structure* of the example (which properties are

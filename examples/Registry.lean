@@ -1,7 +1,7 @@
-import IssueTracker
-import Introduction
-import NegationRecursion
-import StratificationExample
+import ShexLean.Shex2017Schemas.IssueTracker
+import ShexLean.Shex2017Schemas.Introduction
+import ShexLean.Shex2017Schemas.NegationRecursion
+import ShexLean.Shex2017Schemas.StratificationExample
 
 /-!
 The list of examples the `shex_lean` executable can `list`/`run`.

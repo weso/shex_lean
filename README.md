@@ -1,55 +1,125 @@
-# shex_lean
+# Formalizing Shape Expressions in Lean 4
 
 A Lean 4 formalization of [ShEx (Shape Expressions)](https://shex.io/), the
-schema language for validating RDF graphs. This is an incremental port of
-the semantics from:
+schema language for validating RDF graphs. This repository formalizes
+**two** papers:
 
 > Iovka Boneva, Jose Emilio Labra Gayo, Eric Prud'hommeaux,
 > *"Semantics and Validation of Shapes Schemas for RDF"*, ISWC 2017.
 
-The goal is to build up a machine-checked model of the paper — RDF graphs,
-shape expression syntax, the satisfaction relations `⊢`/`⊨`, and eventually
-a certified type checker — rather than a production ShEx validator.
+> Iovka Boneva, Jose Emilio Labra Gayo, Eric Prud'hommeaux, Katherine
+> Thornton, Andra Waagmeester, *"Shape Expressions with Inheritance"*,
+> arXiv:2503.24299, 2025.
 
-## What's implemented
+The 2025 paper is a genuine *second* formalism built on top of ShEx 2.1 (an
+`extends`/`abstract` inheritance mechanism), not a strict extension of the
+2017 one — node constraints become an arbitrary predicate rather than a
+concrete `ValueDescr`, `closed`/`extra` become first-class shape modifiers,
+and shapes can extend one another along a new *extension hierarchy*. The
+two formalisms live side by side, each in its own directory and Lean
+namespace, sharing only the paper-independent RDF/typing vocabulary both
+papers actually agree on.
 
-- `ShexLean/RDF.lean` — RDF terms, triples, and graphs (§1 of the paper).
-- `ShexLean/Typing.lean` — node-type associations and typings (Definition 1,
-  §3.1).
-- `ShexLean/Syntax.lean` — the grammar of shape expressions and triple
-  expressions (Fig. 1).
-- `ShexLean/Semantics.lean` — the `⊢` ("node satisfies a shape expression")
-  and `⊨` ("triples match a triple expression") relations (Fig. 2).
-- `ShexLean/Stratification.lean` — the dependency graph (`dep⁻`/`dep⁺`) and
-  Definition 3 ("schema with stratified negation"), §3.2.
-- `ShexLean/MaximalTyping.lean` — §3.3 up to Lemma 1: negation-free shape
-  expressions, Definition 2 named as `Schema.CorrectTyping`, monotonicity of
-  `⊢`/`⊨` in `typing` for negation-free schemas, and Lemma 1 itself (a
-  negation-free schema has a correct typing containing every correct
-  typing, computed as the union of all correct typings).
-- `ShexLean/Proposition1.lean` — the rest of §3.3: a fully general
-  "agreement" lemma (`⊢`/`⊨` depend on `typing` only through its restriction
-  to the labels actually referenced, for *any* use of `NOT`) and a
-  "stratified monotonicity" lemma built on it; Definition 4
+The goal for both is a machine-checked model of each paper — RDF graphs,
+shape expression syntax, the satisfaction relations, and (for the 2017
+paper) a full soundness/completeness story for two validation algorithms
+— rather than a production ShEx validator.
+
+## Repository structure
+
+```
+ShexLean/
+  Common/              -- shared between both papers, paper-independent
+  Shex2017Schemas/      -- the 2017 paper: syntax, semantics, propositions,
+                          lemmas, algorithms, and worked examples
+  Shex2025Inheritance/   -- the 2025 paper: syntax, semantics, propositions,
+                          lemmas, and worked examples
+examples/               -- the shex_lean executable's CLI infrastructure
+                          (example/proof registries), plus the 2017-side
+                          worked examples aren't here anymore — see below
+```
+
+- **`ShexLean/Common/`** holds the vocabulary both papers use *unchanged*:
+  `RDF.lean` (IRIs, RDF nodes, triples, graphs — §1 of the 2017 paper),
+  `Typing.lean` (shape labels, node-type associations, typings —
+  Definition 1, §3.1), and `DisjointUnion.lean` (the disjoint-union helpers
+  both papers' triple-expression semantics need for `;`/`*`, originally
+  written once for 2017's Rules te-each-of/te-repet and reused as-is by
+  2025's analogous Table 1 rules). Neither paper's `Schema`/`ShapeExpr`
+  type is here — those genuinely differ between the two formalisms (2025's
+  `Schema = (Y, X, def, A)` vs. 2017's `Schema = (L, def)`, in particular)
+  and live in each paper's own directory/namespace instead
+  (`ShexLean.Inheritance` for the 2025 side — the Lean *namespace* kept its
+  original name even though the *directory* is now `Shex2025Inheritance/`;
+  see that section below).
+- **`ShexLean/Shex2017Schemas/`** is the 2017 paper's content: syntax,
+  semantics, stratification, the maximal-typing propositions/lemmas, both
+  validation algorithms, and the paper's own worked examples (moved here
+  from the top-level `examples/` folder, since they're 2017-specific
+  content, not paper-agnostic CLI plumbing) — see "What's implemented (2017
+  paper)" below.
+- **`ShexLean/Shex2025Inheritance/`** is the 2025 paper's content, the same
+  shape as the 2017 side — see "What's implemented (2025 paper)" below.
+- **`examples/`** now holds only paper-*agnostic* infrastructure for the
+  `shex_lean` CLI: `Example.lean`/`Proof.lean` (the plain-data record types
+  for a displayable worked example / a displayable proof), and
+  `Registry.lean`/`ProofRegistry.lean` (the lists the CLI's `list`/`run`
+  commands read from, referencing content in both `Shex2017Schemas/` and
+  `Shex2025Inheritance/`).
+
+`ShexLean.lean` re-exports `Common/`, `Shex2017Schemas/`, and
+`Shex2025Inheritance/` together as the single `ShexLean` library (built by
+a bare `lake build`); `Algorithm1.lean`/`Algorithm2.lean` (2017) and
+`Proposition1.lean`/`Lemma2.lean` (2025) are complete but deliberately
+*not* wired into that import chain — matching the precedent already set by
+`Algorithm1`/`Algorithm2` — so build them explicitly if you want to check
+them without the rest (`lake build ShexLean.Shex2017Schemas.Algorithm2`,
+etc.); `examples/` is a separate `Examples` library, and `Main.lean` builds
+the executable that lists/prints everything — see "Running" below.
+
+## What's implemented (2017 paper)
+
+- `ShexLean/Common/RDF.lean` — RDF terms, triples, and graphs (§1 of the
+  paper).
+- `ShexLean/Common/Typing.lean` — node-type associations and typings
+  (Definition 1, §3.1).
+- `ShexLean/Shex2017Schemas/Syntax.lean` — the grammar of shape expressions
+  and triple expressions (Fig. 1).
+- `ShexLean/Shex2017Schemas/Semantics.lean` — the `⊢` ("node satisfies a
+  shape expression") and `⊨` ("triples match a triple expression")
+  relations (Fig. 2).
+- `ShexLean/Shex2017Schemas/Stratification.lean` — the dependency graph
+  (`dep⁻`/`dep⁺`) and Definition 3 ("schema with stratified negation"),
+  §3.2.
+- `ShexLean/Shex2017Schemas/MaximalTyping.lean` — §3.3 up to Lemma 1:
+  negation-free shape expressions, Definition 2 named as
+  `Schema.CorrectTyping`, monotonicity of `⊢`/`⊨` in `typing` for
+  negation-free schemas, and Lemma 1 itself (a negation-free schema has a
+  correct typing containing every correct typing, computed as the union of
+  all correct typings).
+- `ShexLean/Shex2017Schemas/Proposition1.lean` — the rest of §3.3: a fully
+  general "agreement" lemma (`⊢`/`⊨` depend on `typing` only through its
+  restriction to the labels actually referenced, for *any* use of `NOT`)
+  and a "stratified monotonicity" lemma built on it; Definition 4
   (`Typing(G,S,strat)`, built stratum-by-stratum, each stratum reusing
   Lemma 1's construction with an added "agrees with the previous stratum"
   constraint); and Proposition 1 (`Typing(G,S,strat)` is a correct typing of
   `G` by `S`, for any stratified, well-formed — `Schema.Closed` — schema).
-- `ShexLean/Lemma2.lean` — Lemma 2 (stratification-independence of
-  `Typing(G,S,strat)`), proved in full (no `sorry`; `#print axioms` shows
-  only `propext`/`Classical.choice`/`Quot.sound`) — the paper itself only
-  gives a proof sketch for this one. Built on: a Fusion lemma (revealing a
-  schema's labels in one batch vs. two nested batches gives the same
-  `maxTypingAgreeing` result, via a "whole object is itself a candidate"
-  argument rather than per-candidate reasoning); a Swap lemma (two batches
-  that each individually depend only on a common base, not on each other,
-  can be revealed in either order); a canonical process `cont1` that
-  repeatedly reveals the least-valued remaining batch under some fixed
-  stratification until every label is settled; an Independence lemma
-  (`cont1`'s final answer doesn't change if the first step instead reveals
-  *any* other valid batch, via Swap and strong induction on the number of
-  remaining labels — the mathematical heart of the proof); and a chaining
-  argument showing `cont1` agrees with `Typing4` along *any* valid
+- `ShexLean/Shex2017Schemas/Lemma2.lean` — Lemma 2 (stratification-
+  independence of `Typing(G,S,strat)`), proved in full (no `sorry`;
+  `#print axioms` shows only `propext`/`Classical.choice`/`Quot.sound`) —
+  the paper itself only gives a proof sketch for this one. Built on: a
+  Fusion lemma (revealing a schema's labels in one batch vs. two nested
+  batches gives the same `maxTypingAgreeing` result, via a "whole object is
+  itself a candidate" argument rather than per-candidate reasoning); a Swap
+  lemma (two batches that each individually depend only on a common base,
+  not on each other, can be revealed in either order); a canonical process
+  `cont1` that repeatedly reveals the least-valued remaining batch under
+  some fixed stratification until every label is settled; an Independence
+  lemma (`cont1`'s final answer doesn't change if the first step instead
+  reveals *any* other valid batch, via Swap and strong induction on the
+  number of remaining labels — the mathematical heart of the proof); and a
+  chaining argument showing `cont1` agrees with `Typing4` along *any* valid
   stratification's own checkpoints, hence `Typing4 strat1 = Typing4 strat2`
   for arbitrary `strat1`, `strat2`. (An earlier `combineStrat`/checkpoint-
   alignment approach, also complete and kept in the file as
@@ -57,34 +127,35 @@ a certified type checker — rather than a production ShEx validator.
   case — no fixed linearization can align with an *arbitrary* second
   stratification's ordering of mutually-independent labels — which is what
   motivated the `cont1`/Independence route that closes it instead.)
-- `ShexLean/ShapesSem.lean` — Definitions 5 and 6, closing out §3.3:
-  `Schema.maximalCorrectTyping` (`Typing(G,S)`, Definition 5 — pick any
-  stratification witnessing `S.StratifiedNegation` and take
+- `ShexLean/Shex2017Schemas/ShapesSem.lean` — Definitions 5 and 6, closing
+  out §3.3: `Schema.maximalCorrectTyping` (`Typing(G,S)`, Definition 5 —
+  pick any stratification witnessing `S.StratifiedNegation` and take
   `Typing(G,S,strat)`), shown well-defined regardless of the choice
   (`maximalCorrectTyping_eq_Typing4`, immediate from Lemma 2) and correct
   (`maximalCorrectTyping_correct`, immediate from Proposition 1); and
   `Schema.ShapesSem` (Definition 6, `SHAPES_SEM` itself — node `n` has shape
   `L` from `S` iff `(n,L) ∈ Typing(G,S)`), with `shapesSem_iff_typing4`
   recording that it too can be tested against any stratification.
-- `ShexLean/Algorithm1.lean` — Algorithm 1 (§4.1): the paper's actual
-  iterative-refinement procedure (`refine`) for computing `Typing(G,S,strat)`
-  — per stratum, start from every possible node-type association for the new
-  labels (keeping the previous stratum's typing frozen) and repeatedly strip
-  out any association currently failing `⊢`, until nothing more changes.
-  Proved equal to `Typing4` (no `sorry`), via: a generic order-theoretic fact
-  that iterating any decreasing self-map of a finite type stabilizes within
-  its cardinality's number of steps (`Finset.decreasing_iterate_fixed`); a
-  per-stratum core lemma (`refine1_eq_maxTypingAgreeing`) showing the
-  fixed-point refinement equals `maxTypingAgreeing` (Definition 4's own
-  per-stratum construction) via mutual inclusion, reusing `Satisfies.agree`
-  and `Satisfies.stratMono` from `Proposition1.lean`; and a chaining
-  induction (`refineAlg_eq_stratTypingSeq`) across all strata giving
+- `ShexLean/Shex2017Schemas/Algorithm1.lean` — Algorithm 1 (§4.1): the
+  paper's actual iterative-refinement procedure (`refine`) for computing
+  `Typing(G,S,strat)` — per stratum, start from every possible node-type
+  association for the new labels (keeping the previous stratum's typing
+  frozen) and repeatedly strip out any association currently failing `⊢`,
+  until nothing more changes. Proved equal to `Typing4` (no `sorry`), via:
+  a generic order-theoretic fact that iterating any decreasing self-map of
+  a finite type stabilizes within its cardinality's number of steps
+  (`Finset.decreasing_iterate_fixed`); a per-stratum core lemma
+  (`refine1_eq_maxTypingAgreeing`) showing the fixed-point refinement
+  equals `maxTypingAgreeing` (Definition 4's own per-stratum construction)
+  via mutual inclusion, reusing `Satisfies.agree` and
+  `Satisfies.stratMono` from `Proposition1.lean`; and a chaining induction
+  (`refineAlg_eq_stratTypingSeq`) across all strata giving
   `algorithm1_correct : Algorithm1 G S strat = Typing4 G S strat`. So
   Algorithm 1 really does compute the semantics Definition 4 claims for it.
-- `ShexLean/Algorithm2.lean` — Algorithm 2/Proposition 2 (§4.2): the
-  recursive, cycle-detecting `prove(n, L, Hyp)` procedure that decides
-  `(n, L) ∈ Typing(G, S, strat)` without building the whole typing, by
-  visiting only the portion of the dependency graph reachable from
+- `ShexLean/Shex2017Schemas/Algorithm2.lean` — Algorithm 2/Proposition 2
+  (§4.2): the recursive, cycle-detecting `prove(n, L, Hyp)` procedure that
+  decides `(n, L) ∈ Typing(G, S, strat)` without building the whole typing,
+  by visiting only the portion of the dependency graph reachable from
   `(n, L)` and trusting an ancestor already on the call stack (rather than
   re-deriving it) to handle positive recursive cycles. Proved fully correct
   (`prove_correct`, no `sorry`) — a materially harder result than
@@ -106,52 +177,37 @@ a certified type checker — rather than a production ShEx validator.
   descendant's dependency chain looping back to `(n, L)` itself — a genuine
   positive cycle — never needs `(n, L)`'s own correctness re-derived first,
   only its `T`-membership, which is immediate by construction).
-- `ShexLean/Examples.lean` — Example 2/3 from the paper (a recursive
-  `<IssueSh>` schema over two issues that report on each other), a worked
-  example used as a regression check that the pieces fit together.
-- `examples/Introduction.lean` — the paper's §1 Introductory Example
-  (`S₀`/`G₀`: users, programmers, clients and issues), a second, larger
-  regression check exercising `AND`/`someOf`/`eachOf`/repetition together,
-  with its typing proved correct (Definition 2) for all 18 node/shape
-  associations it induces.
-- `examples/NegationRecursion.lean` — Example 4: `NOT` mixed with mutual
-  recursion gives two contradicting correct typings, and the schema is not
-  with stratified negation.
-- `examples/StratificationExample.lean` — Example 5: a schema mixing `NOT`
-  and recursion that *is* with stratified negation, with a witness
-  stratification.
-- `examples/Example.lean`, `examples/IssueTracker.lean`,
-  `examples/Registry.lean` — a small `Example` record (name, summary,
-  schema/graph/typing as text) wrapping each worked example above for
-  display, plus a registry the executable lists and selects from.
-- `examples/Proof.lean`, `examples/ProofRegistry.lean` — a `ProofItem`
-  record (name, summary, and the `.lean` file path containing the theorem)
-  for theorems shown by their actual Lean source rather than curated text
-  — Lemma 1 (`ShexLean/MaximalTyping.lean`), Proposition 1
-  (`ShexLean/Proposition1.lean`), Lemma 2 (`ShexLean/Lemma2.lean`),
-  Definitions 5-6/`SHAPES_SEM` (`ShexLean/ShapesSem.lean`), Algorithm 1
-  (`ShexLean/Algorithm1.lean`), and Algorithm 2/Proposition 2
-  (`ShexLean/Algorithm2.lean`).
+- `ShexLean/Shex2017Schemas/Examples.lean` — Example 2/3 from the paper (a
+  recursive `<IssueSh>` schema over two issues that report on each other),
+  a worked example used as a regression check that the pieces fit
+  together.
+- `ShexLean/Shex2017Schemas/Introduction.lean` — the paper's §1
+  Introductory Example (`S₀`/`G₀`: users, programmers, clients and
+  issues), a second, larger regression check exercising
+  `AND`/`someOf`/`eachOf`/repetition together, with its typing proved
+  correct (Definition 2) for all 18 node/shape associations it induces.
+- `ShexLean/Shex2017Schemas/NegationRecursion.lean` — Example 4: `NOT`
+  mixed with mutual recursion gives two contradicting correct typings, and
+  the schema is not with stratified negation.
+- `ShexLean/Shex2017Schemas/StratificationExample.lean` — Example 5: a
+  schema mixing `NOT` and recursion that *is* with stratified negation,
+  with a witness stratification.
+- `ShexLean/Shex2017Schemas/IssueTracker.lean` — a small standalone worked
+  example (Example 2/3's `<IssueSh>` schema by itself), used by the CLI.
 
-## Shape Expressions with Inheritance (2025 extension)
+## What's implemented (2025 paper: Shape Expressions with Inheritance)
 
-`ShexLean/Inheritance/` is an incremental port of a second, later paper:
+It lives in its own `ShexLean.Inheritance` Lean namespace (the directory
+is `ShexLean/Shex2025Inheritance/` — namespace and directory names don't
+have to match in Lean, and this one is kept stable across the directory
+rename since every theorem statement in the 2017 code below refers to it)
+so its `Schema`/`ShapeExpr`/etc. don't clash with the 2017 ones, but
+reuses the paper-independent vocabulary directly: `ShexLean/Common/RDF.lean`
+and `ShexLean/Common/Typing.lean` (`ShapeLabel`/`Typing`/`Typing.has`) are
+imported unchanged, and `ShexLean/Common/DisjointUnion.lean` is shared with
+the 2017 side's own triple-expression semantics.
 
-> Iovka Boneva, Jose Emilio Labra Gayo, Eric Prud'hommeaux, Katherine
-> Thornton, Andra Waagmeester, *"Shape Expressions with Inheritance"*,
-> arXiv:2503.24299, 2025.
-
-It is a genuine second formalism (an `extends`/`abstract` mechanism on top
-of ShEx 2.1), not a strict extension of the 2017 one — node constraints
-are now an arbitrary predicate rather than a concrete `ValueDescr`,
-`closed`/`extra` are first-class shape modifiers, and shapes can extend
-one another along a new *extension hierarchy*. It lives in its own
-`ShexLean.Inheritance` namespace so its `Schema`/`ShapeExpr`/etc. don't
-clash with the 2017 ones, but reuses the paper-independent vocabulary
-directly: `ShexLean/RDF.lean` and `ShexLean/Typing.lean`
-(`ShapeLabel`/`Typing`/`Typing.has`) are imported unchanged.
-
-- `ShexLean/Inheritance/Syntax.lean` — Definitions 1-3: the
+- `ShexLean/Shex2025Inheritance/Syntax.lean` — Definitions 1-3: the
   `ShapeExpr`/`TripleExpr` grammar (`extends`, `closed`/`extra`, abstract
   node constraints), `Schema = (Y, X, def, A)`, and the extension hierarchy
   `H_S` (`Schema.anc`/`Schema.desc`, via `Relation.ReflTransGen` on the
@@ -160,7 +216,7 @@ directly: `ShexLean/RDF.lean` and `ShexLean/Typing.lean`
   alternative (it only ever occurs inside a triple constraint `p @z`), and
   Table 2's own rule for `@z` is a zero-recursion `typing` lookup, so it is
   inlined directly in `Semantics.lean` instead.
-- `ShexLean/Inheritance/Semantics.lean` — Tables 1-3: the three
+- `ShexLean/Shex2025Inheritance/Semantics.lean` — Tables 1-3: the three
   satisfiability relations (`M,τ⊨e`, `n,τ⊨s`, `M,τ⊨s`), as
   `SatisfiesEFuel`/`SatisfiesFuel`/`SatisfiesMFuel`. Unlike the 2017
   formalization, these can't be plain structural recursion on the AST:
@@ -170,9 +226,10 @@ directly: `ShexLean/RDF.lean` and `ShexLean/Typing.lean`
   acyclicity of `H_S`). So for now these are `Fuel`-bounded
   under-approximations (fuel decremented on every recursive call, `False`
   on exhaustion) — a total Lean function by construction, exactly the fuel
-  idiom already used in `ShexLean/Algorithm1.lean`/`Algorithm2.lean`.
-- `ShexLean/Inheritance/Termination.lean` — the real Lemma 1, **fully
-  proved, no `sorry`** (`#print axioms lemma1` shows only
+  idiom already used in `ShexLean/Shex2017Schemas/Algorithm1.lean`/
+  `Algorithm2.lean`.
+- `ShexLean/Shex2025Inheritance/Termination.lean` — the real Lemma 1,
+  **fully proved, no `sorry`** (`#print axioms lemma1` shows only
   `propext`/`Classical.choice`/`Quot.sound`): a large-enough `Fuel` makes
   `SatisfiesFuel`/`SatisfiesMFuel`/`SatisfiesEFuel` stop depending on
   `Fuel` at all. Built in two layers:
@@ -199,7 +256,7 @@ directly: `ShexLean/RDF.lean` and `ShexLean/Typing.lean`
     definitions themselves) is built on. Packaged as fuel-free
     `Satisfies`/`SatisfiesM`/`SatisfiesE` definitions plus the `lemma1`
     theorem itself.
-- `ShexLean/Inheritance/Stratification.lean` — Definitions 5-6: the
+- `ShexLean/Shex2025Inheritance/Stratification.lean` — Definitions 5-6: the
   dependency graph `D_S` (`Schema.dep`/`depExtends`/`depShapeNeg`/
   `depExtraNeg`, built from a single recursive walk over a label's
   definition, `ShapeExpr.depsAux`, tracking whether the current position
@@ -214,61 +271,68 @@ directly: `ShexLean/RDF.lean` and `ShexLean/Typing.lean`
   no negative-dependency cycle in `D_S`, `Schema.NegCycle`, phrased via
   `Relation.ReflTransGen` rather than an explicit path/list, mirroring
   `ExtAcyclic`'s own style).
-- `ShexLean/Inheritance/CorrectTyping.lean` — Definition 4
+- `ShexLean/Shex2025Inheritance/CorrectTyping.lean` — Definition 4
   (`Schema.CorrectTyping`, stated directly against `Satisfies` from
   `Termination.lean`, with the new abstract-label case: `(n,z) ∈ τ` for
   `z ∈ A` requires *some* non-abstract descendant of `z` to be satisfied,
   not `z`'s own definition).
-- `ShexLean/Inheritance/Examples.lean` — regression checks against the
-  files above, playing the same role as `ShexLean/Examples.lean`/
-  `examples/Introduction.lean` do for the 2017 formalism: Example 3's
-  triple expression `e = p @T_even ; (p @T_<5* | p @T_str)` proved to
-  match/not match all four of the paper's example triple sets; Example 5's
-  schema (labels `x0..x6`) with `M24,τ ⊨ def(x1)` proved by explicitly
-  constructing the `extends` rule's partition (the one proof here that
-  exercises `Schema.anc`/`Schema.ancSet`, via `Relation.ReflTransGen`); and
-  a first slice of §2's motivating example (the `Attribute` shape and node
-  `a1`, Fig. 1/2) — the fuller multiple-inheritance `ColouredCircle` chain
-  of that example is left for later.
-
-- `ShexLean/Inheritance/Proposition1.lean` — Definition 7 (`Stratification`,
-  edge-based, plus the path form the paper states it with), Definition 8
-  (`stratTypingSeq`/`Typing8`, the maximal typing `τ_max(S,σ,G)`), and
-  Proposition 1 itself, all proved, no `sorry`. Three real subtleties
-  surfaced and were fixed along the way (documented at length in the file):
-  Table 3's `Me`/`Mnotin` make `SatisfiesMFuel` non-monotone in `τ` even
-  without negation (a Lean-verified counterexample is in the file's
-  docstring), fixed via another paper-implicit invariant
+- `ShexLean/Shex2025Inheritance/Examples.lean` — regression checks against
+  the files above, playing the same role as
+  `ShexLean/Shex2017Schemas/Examples.lean`/`Introduction.lean` do for the
+  2017 formalism: Example 3's triple expression
+  `e = p @T_even ; (p @T_<5* | p @T_str)` proved to match/not match all
+  four of the paper's example triple sets; Example 5's schema (labels
+  `x0..x6`) with `M24,τ ⊨ def(x1)` proved by explicitly constructing the
+  `extends` rule's partition (the one proof here that exercises
+  `Schema.anc`/`Schema.ancSet`, via `Relation.ReflTransGen`); and a first
+  slice of §2's motivating example (the `Attribute` shape and node `a1`,
+  Fig. 1/2) — the fuller multiple-inheritance `ColouredCircle` chain of
+  that example is left for later.
+- `ShexLean/Shex2025Inheritance/Proposition1.lean` — Definition 7
+  (`Stratification`, edge-based, plus the path form the paper states it
+  with), Definition 8 (`stratTypingSeq`/`Typing8`, the maximal typing
+  `τ_max(S,σ,G)`), and Proposition 1 itself, all proved, no `sorry`. Three
+  real subtleties surfaced and were fixed along the way (documented at
+  length in the file): Table 3's `Me`/`Mnotin` make `SatisfiesMFuel`
+  non-monotone in `τ` even without negation (a Lean-verified counterexample
+  is in the file's docstring), fixed via another paper-implicit invariant
   (`Schema.WellFormedExtra`, "(*)" from the paper's own Proposition 1
   appendix proof); `not` needs *latching* negative-dependency tracking
-  rather than the paper's literal "odd parity", plus a new restriction that
-  `not` never contains `extends` (`Schema.NotIsExtendsFree`); and — unlike
-  the 2017 formalization, where `Satisfies` never consults the schema at
-  all — lifting correctness across `stratRestrict`'s strata needed a
-  genuinely new schema-invariance argument
+  rather than the paper's literal "odd parity", plus a new restriction
+  that `not` never contains `extends` (`Schema.NotIsExtendsFree`); and —
+  unlike the 2017 formalization, where `Satisfies` never consults the
+  schema at all — lifting correctness across `stratRestrict`'s strata
+  needed a genuinely new schema-invariance argument
   (`Satisfies_stratRestrict_agree`, via a `schemaAgreeM`/`schemaAgreeFuel`
   pair mirroring `Termination.lean`'s `stableE`/`stableM`/`stableFuel`
-  chain, but varying the *schema* instead of the fuel) closing the gap that
-  blocked a direct 2017-style port of `stratTypingSeq_correct`'s inductive
-  step.
+  chain, but varying the *schema* instead of the fuel) closing the gap
+  that blocked a direct 2017-style port of `stratTypingSeq_correct`'s
+  inductive step.
+- `ShexLean/Shex2025Inheritance/Lemma2.lean` — Lemma 2 (§4.3):
+  `τ_max(S,σ,G)` does not depend on the stratification chosen, proved in
+  full, no `sorry`. Ports 2017's own `Lemma2.lean` (Fusion/Swap/a
+  schedule-agnostic `remainingMin`-batch-revealing process
+  `cont1`/Independence — the paper only sketches this proof), which
+  transfers almost unchanged in *shape*. What doesn't transfer for free:
+  2017's `Satisfies` never consults the schema, so "restrict to a
+  self-contained label set" was free; here it first generalizes
+  `Proposition1.lean`'s stratum-specific schema-invariance argument
+  (`Satisfies_stratRestrict_agree`) to an arbitrary `D_S`-closed label set
+  (`Schema.restrictLabels`, `Satisfies_restrictLabels_agree`), since
+  `cont1`'s schedule-agnostic batches aren't shaped like strata.
 
-- `ShexLean/Inheritance/Lemma2.lean` — Lemma 2 (§4.3): `τ_max(S,σ,G)` does
-  not depend on the stratification chosen, proved in full, no `sorry`. Ports
-  2017's own `ShexLean/Lemma2.lean` (Fusion/Swap/a schedule-agnostic
-  `remainingMin`-batch-revealing process `cont1`/Independence — the paper
-  only sketches this proof), which transfers almost unchanged in *shape*.
-  What doesn't transfer for free: 2017's `Satisfies` never consults the
-  schema, so "restrict to a self-contained label set" was free; here it
-  first generalizes `Proposition1.lean`'s stratum-specific schema-invariance
-  argument (`Satisfies_stratRestrict_agree`) to an arbitrary `D_S`-closed
-  label set (`Schema.restrictLabels`, `Satisfies_restrictLabels_agree`),
-  since `cont1`'s schedule-agnostic batches aren't shaped like strata.
+## CLI infrastructure (`examples/`)
 
-`ShexLean.lean` re-exports the first group of files above as the `ShexLean`
-library. `examples/` holds worked examples and proof entries (plus
-plain-text/registry data used by the executable) as a separate `Examples`
-library, and `Main.lean` builds an executable that lists and prints them —
-see "Running" below.
+- `examples/Example.lean`, `examples/Registry.lean` — a small `Example`
+  record (name, summary, schema/graph/typing as text) wrapping each 2017
+  worked example for display, plus a registry the executable lists and
+  selects from.
+- `examples/Proof.lean`, `examples/ProofRegistry.lean` — a `ProofItem`
+  record (name, summary, and the `.lean` file path containing the theorem)
+  for theorems shown by their actual Lean source rather than curated text
+  — covering both papers' Lemma 1/Proposition 1/Lemma 2/algorithms
+  (2017, `Shex2017Schemas/`) and Lemma 1/Proposition 1/Lemma 2 (2025,
+  `Shex2025Inheritance/`).
 
 ## Requirements
 

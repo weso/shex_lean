@@ -1,4 +1,4 @@
-import ShexLean.Proposition1
+import ShexLean.Shex2017Schemas.Proposition1
 import Mathlib.Tactic.Ring
 import Mathlib.Data.Finset.Max
 
@@ -586,7 +586,7 @@ private theorem cont1Fuel_of_not_nonempty (S : Schema) (strat : Stratification S
     {Fixed : Finset ShapeLabel} (h : ¬ (S.labels \ Fixed).Nonempty) (T : Typing) :
     ∀ n, cont1Fuel S strat G n Fixed T = T
   | 0 => rfl
-  | (n + 1) => by simp only [cont1Fuel, if_neg h]
+  | (n + 1) => by simp only [cont1Fuel, ite_eq_right h]
 
 /-- Once fuel is enough to exhaust the remaining labels, more fuel doesn't
 change the result. -/
@@ -601,7 +601,7 @@ theorem cont1Fuel_stable (S : Schema) (strat : Stratification S) (G : Graph) :
     · have hcardpos : 0 < card := hcard ▸ Finset.card_pos.mpr hne
       obtain ⟨m, rfl⟩ : ∃ m, n = m + 1 := ⟨n - 1, by omega⟩
       obtain ⟨m', rfl⟩ : ∃ m', n' = m' + 1 := ⟨n' - 1, by omega⟩
-      simp only [cont1Fuel, if_pos hne]
+      simp only [cont1Fuel, ite_eq_left hne]
       have hcard' : (S.labels \ (Fixed ∪ remainingMin S strat.strat Fixed)).card < card :=
         hcard ▸ remainingMin_card_lt S strat.strat hne
       exact ih _ hcard' _ rfl
@@ -629,7 +629,7 @@ theorem cont1_done (S : Schema) (strat : Stratification S) (G : Graph)
   have hcardzero : (S.labels \ Fixed).card = 0 := by
     rw [Finset.card_eq_zero, ← Finset.not_nonempty_iff_eq_empty]; exact h
   rw [cont1_eq_fuel S strat G Fixed T 1 (by omega)]
-  simp only [cont1Fuel, if_neg h]
+  simp only [cont1Fuel, ite_eq_right h]
 
 theorem cont1_step (S : Schema) (strat : Stratification S) (G : Graph)
     {Fixed : Finset ShapeLabel} (h : (S.labels \ Fixed).Nonempty) (T : Typing) :
@@ -638,7 +638,7 @@ theorem cont1_step (S : Schema) (strat : Stratification S) (G : Graph)
   obtain ⟨m, hm⟩ : ∃ m, (S.labels \ Fixed).card = m + 1 :=
     ⟨(S.labels \ Fixed).card - 1, by have := Finset.card_pos.mpr h; omega⟩
   rw [cont1_eq_fuel S strat G Fixed T (m + 1) (le_of_eq hm)]
-  simp only [cont1Fuel, if_pos h]
+  simp only [cont1Fuel, ite_eq_left h]
   refine (cont1_eq_fuel S strat G _ _ m ?_).symm
   have := remainingMin_card_lt S strat.strat h
   omega

@@ -1,5 +1,5 @@
-import ShexLean.Inheritance.Syntax
-import ShexLean.Semantics
+import ShexLean.Shex2025Inheritance.Syntax
+import ShexLean.Common.DisjointUnion
 
 /-!
 Tables 1–3 (§4.1) of the 2025 "Shape Expressions with Inheritance" paper:
@@ -10,7 +10,7 @@ expression under a set of triples — new for ShEx with inheritance, needed
 for `extends`).
 
 **Why "mutually recursive" here needs a `Fuel` parameter, unlike the 2017
-formalization.** In `ShexLean/Semantics.lean`, a shape *reference* is
+formalization.** In `ShexLean/Shex2017Schemas/Semantics.lean`, a shape *reference* is
 resolved purely by consulting `typing` (Rule te-tpattern: `typing.has obj
 L`, no recursive call into `def(L)`), so `Satisfies`/`Matches` are
 well-founded by plain structural recursion on the finite AST. Here, Table
@@ -26,7 +26,7 @@ just inconvenient here, it is actually false in general (an
 extends-cycle — `H_S` not acyclic — makes the relation genuinely
 non-terminating). The honest way to get a *total* Lean function first,
 before separately proving the real (paper's) Lemma 1, is the standard
-fuel idiom already used in `ShexLean/Algorithm1.lean`/`Algorithm2.lean`
+fuel idiom already used in `ShexLean/Shex2017Schemas/Algorithm1.lean`/`Algorithm2.lean`
 for similar well-founded-but-not-structural recursions: thread an explicit
 `Fuel : ℕ` argument through all three relations, decremented on *every*
 recursive call (not just extends-hops — this makes termination trivial,

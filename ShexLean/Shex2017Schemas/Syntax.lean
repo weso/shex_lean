@@ -1,5 +1,5 @@
-import ShexLean.RDF
-import ShexLean.Typing
+import ShexLean.Common.RDF
+import ShexLean.Common.Typing
 import Mathlib.Data.Finset.Basic
 
 /-!

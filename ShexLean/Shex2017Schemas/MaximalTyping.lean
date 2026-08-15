@@ -1,4 +1,4 @@
-import ShexLean.Semantics
+import ShexLean.Shex2017Schemas.Semantics
 import Mathlib.Data.Finset.Prod
 import Mathlib.Data.Finset.Powerset
 import Mathlib.Data.Finset.Lattice.Fold

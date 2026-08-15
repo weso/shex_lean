@@ -1,5 +1,5 @@
-import ShexLean.RDF
-import ShexLean.Typing
+import ShexLean.Common.RDF
+import ShexLean.Common.Typing
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Finset.Union
 import Mathlib.Logic.Relation
@@ -43,7 +43,7 @@ labels into) has no `@z` alternative — references only ever occur nested
 inside a triple constraint `p @z` (`TripleExpr.tc`), where Table 2's own
 rule 10 (`@z: (n,z) ∈ τ`) is a *typing lookup with zero further
 recursion*, exactly like Rule te-tpattern's `typing.has obj L` in the 2017
-formalization (`ShexLean/Semantics.lean`). So it is inlined directly at
+formalization (`ShexLean/Shex2017Schemas/Semantics.lean`). So it is inlined directly at
 `TripleExpr.tc`'s satisfaction rule in `Semantics.lean` instead of being
 threaded through as a genuine recursive `ShapeExpr` case.
 
@@ -120,16 +120,16 @@ unrestricted definition) can syntactically contain a further, nested
 `extends` under `or`/`and`/`not`, and Table 3's rule 18 (`ShexLean/
 Inheritance/Semantics.lean`) fires on *any* `.extends` node it structurally
 reaches, regardless of nesting. Recursing through the whole tree here — the
-same way `ShapeExpr.depsAux` (`ShexLean/Inheritance/Stratification.lean`)
+same way `ShapeExpr.depsAux` (`ShexLean/Shex2025Inheritance/Stratification.lean`)
 already has to for ordinary references — is what makes `Schema.extEdge`/
 `H_S`/`D_S` actually track everything the evaluator can dereference; the
 top-level-only version originally here undercounted edges out of any label
 whose `extends` isn't literally at the top (in particular every `Y`-label,
 since only `X`-labels are forced into the shallow top-level form by
 `Schema.WellFormedX`), which is unsound for anything reasoning about the
-*schema's* dependency structure (`ShexLean/Inheritance/Proposition1.lean`'s
+*schema's* dependency structure (`ShexLean/Shex2025Inheritance/Proposition1.lean`'s
 agreement lemma) even though it happened not to matter for
-`ShexLean/Inheritance/Termination.lean` (whose `Fuel` bookkeeping walks the
+`ShexLean/Shex2025Inheritance/Termination.lean` (whose `Fuel` bookkeeping walks the
 whole tree independently via `ShapeExpr.reqFuel`, not through this
 function at all). -/
 def ShapeExpr.extendsTargets : ShapeExpr → Finset ShapeLabel
@@ -163,7 +163,7 @@ def ShapeExpr.restrOf : ShapeExpr → Option ShapeExpr
 definition. `shapeDef` is total on all of `ShapeLabel` (as in the 2017
 formalization) because Lean functions must be total; `Schema.WellFormedX`
 below is the extra hypothesis this forces (mirroring `Schema.Closed` in
-`ShexLean/Proposition1.lean`). -/
+`ShexLean/Shex2017Schemas/Proposition1.lean`). -/
 structure Schema where
   Y : Finset ShapeLabel
   X : Finset ShapeLabel

@@ -1,4 +1,4 @@
-import ShexLean.Lemma2
+import ShexLean.Shex2017Schemas.Lemma2
 
 set_option maxHeartbeats 1000000
 
@@ -26,7 +26,7 @@ where `dep(n, L)` is the set of node-type associations `(n', L')` such that
 `def(L)` (i.e. `L' ∈ posDeps(def(L)) ∪ negDeps(def(L))`).
 
 This file first strengthens `Satisfies.agree`/`Matches.agree`
-(`ShexLean/Proposition1.lean`) to a *neighbor-local* form: `⊢`/`⊨` at node
+(`ShexLean/Shex2017Schemas/Proposition1.lean`) to a *neighbor-local* form: `⊢`/`⊨` at node
 `n` depend on `typing` only through its restriction to `dep(n, L)`
 (actual graph-neighbors of `n`, not every node) — the fact that lets
 `prove` get away with tracking `Dep`/`Hyp` instead of a whole typing.
@@ -393,7 +393,7 @@ theorem proveAux_unfold {S : Schema} {G : Graph} {U : Finset NodeTypeAssoc} {n :
     proveAux S G U n L Hyp = true ↔
       Satisfies G (proveDep S G U n L Hyp ∪ insert (n, L) Hyp) n (S.shapeDef L) := by
   rw [proveAux.eq_1]
-  simp only [h1, h2, if_neg, not_false_eq_true, not_true_eq_false, decide_eq_true_eq, proveDep]
+  simp only [h1, h2, ite_eq_right, not_false_eq_true, not_true_eq_false, decide_eq_true_eq, proveDep]
 
 /-- The set of node-type associations `proveAux` commits to while
 computing `proveAux S G U n L Hyp` — `{(n, L)}` plus every `Dep`-confirmed
@@ -430,7 +430,7 @@ theorem proveSupport_unfold {S : Schema} {G : Graph} {U : Finset NodeTypeAssoc} 
       insert (n, L) (proveDep S G U n L Hyp ∪
         (proveDep S G U n L Hyp).biUnion (fun p => proveSupport S G U p.1 p.2 (insert (n, L) Hyp))) := by
   rw [proveSupport.eq_1]
-  simp only [h1, h2, if_neg, not_false_eq_true, not_true_eq_false]
+  simp only [h1, h2, ite_eq_right, not_false_eq_true, not_true_eq_false]
 
 theorem proveSupport_of_mem {S : Schema} {G : Graph} {U : Finset NodeTypeAssoc} {n : RDFNode}
     {L : ShapeLabel} {Hyp : Finset NodeTypeAssoc} (h : (n, L) ∈ Hyp) :
