@@ -72,6 +72,31 @@ a certified type checker — rather than a production ShEx validator.
   induction (`refineAlg_eq_stratTypingSeq`) across all strata giving
   `algorithm1_correct : Algorithm1 G S strat = Typing4 G S strat`. So
   Algorithm 1 really does compute the semantics Definition 4 claims for it.
+- `ShexLean/Algorithm2.lean` — Algorithm 2/Proposition 2 (§4.2): the
+  recursive, cycle-detecting `prove(n, L, Hyp)` procedure that decides
+  `(n, L) ∈ Typing(G, S, strat)` without building the whole typing, by
+  visiting only the portion of the dependency graph reachable from
+  `(n, L)` and trusting an ancestor already on the call stack (rather than
+  re-deriving it) to handle positive recursive cycles. Proved fully correct
+  (`prove_correct`, no `sorry`) — a materially harder result than
+  Algorithm 1's, since the paper's own proof sketch for Proposition 2
+  covers only termination, not correctness at all. Built on: a
+  neighbor-local strengthening of `Satisfies.agree`/`Satisfies.stratMono`
+  (`Satisfies.agreeLocal`/`Satisfies.stratMonoLocal` — `⊢` depends on
+  `typing` only through actual graph-neighbors of the node in question, not
+  every node in `G`, which is what lets `prove` get away with tracking a
+  local `Dep`/`Hyp` instead of a whole typing); completeness
+  (`completeness_step`, `(n,L) ∈ Typing4 → prove` confirms it — a clean
+  induction with no circularity, since extending `Hyp` with an already-known
+  member needs no further justification); and soundness
+  (`soundness_step`, `prove` confirming `(n,L) → (n,L) ∈ Typing4` — the
+  hard direction, needing a genuine witness typing `T := stratTypingSeq i
+  ∪ (support of the whole computation, restricted to same-stratum content)`,
+  shown correct via `subset_maxTypingAgreeing`, with `T` fixed once from the
+  outermost call and threaded unchanged through the recursion so that a
+  descendant's dependency chain looping back to `(n, L)` itself — a genuine
+  positive cycle — never needs `(n, L)`'s own correctness re-derived first,
+  only its `T`-membership, which is immediate by construction).
 - `ShexLean/Examples.lean` — Example 2/3 from the paper (a recursive
   `<IssueSh>` schema over two issues that report on each other), a worked
   example used as a regression check that the pieces fit together.
@@ -94,8 +119,9 @@ a certified type checker — rather than a production ShEx validator.
   record (name, summary, and the `.lean` file path containing the theorem)
   for theorems shown by their actual Lean source rather than curated text
   — Lemma 1 (`ShexLean/MaximalTyping.lean`), Proposition 1
-  (`ShexLean/Proposition1.lean`), Lemma 2 (`ShexLean/Lemma2.lean`), and
-  Algorithm 1 (`ShexLean/Algorithm1.lean`).
+  (`ShexLean/Proposition1.lean`), Lemma 2 (`ShexLean/Lemma2.lean`),
+  Algorithm 1 (`ShexLean/Algorithm1.lean`), and Algorithm 2/Proposition 2
+  (`ShexLean/Algorithm2.lean`).
 
 `ShexLean.lean` re-exports the first group of files above as the `ShexLean`
 library. `examples/` holds worked examples and proof entries (plus
@@ -134,6 +160,7 @@ Proofs:
   proposition1 — Proposition 1 (§3.3): Typing(G,S,strat) (Definition 4) is a correct typing of G by S, for any stratified schema.
   lemma2 — Lemma 2 (§3.3): Typing(G,S,strat) does not depend on the stratification chosen.
   algorithm1 — Algorithm 1 (§4.1): the per-stratum iterative-refinement procedure `refine` computes exactly Typing(G,S,strat) (Definition 4).
+  algorithm2 — Algorithm 2/Proposition 2 (§4.2): the recursive, cycle-detecting `prove` algorithm decides Typing(G,S,strat)-membership correctly, without building the whole typing.
 ```
 
 Print one example's schema, graph, and typing:
