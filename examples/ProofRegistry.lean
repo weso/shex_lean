@@ -29,7 +29,13 @@ def proofs : List ProofItem :=
       summary :=
         "Algorithm 1 (§4.1): the per-stratum iterative-refinement procedure `refine` " ++
         "computes exactly Typing(G,S,strat) (Definition 4)."
-      path := "ShexLean/Algorithm1.lean" } ]
+      path := "ShexLean/Algorithm1.lean" },
+    { name := "algorithm2"
+      summary :=
+        "Algorithm 2/Proposition 2 (§4.2): the recursive, cycle-detecting `prove` " ++
+        "algorithm decides Typing(G,S,strat)-membership correctly, without building " ++
+        "the whole typing (the paper's own proof sketch covers only termination)."
+      path := "ShexLean/Algorithm2.lean" } ]
 
 /-- Look up a registered proof by name. -/
 def findProof? (name : String) : Option ProofItem :=
