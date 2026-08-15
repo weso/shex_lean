@@ -1,4 +1,4 @@
-import ShexLean.RDF
+import ShexLean.Common.RDF
 import Mathlib.Data.Finset.Basic
 
 /-!

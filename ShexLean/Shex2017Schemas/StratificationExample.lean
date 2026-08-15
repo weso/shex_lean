@@ -1,5 +1,5 @@
-import ShexLean.Semantics
-import ShexLean.Stratification
+import ShexLean.Shex2017Schemas.Semantics
+import ShexLean.Shex2017Schemas.Stratification
 import Example
 
 /-!

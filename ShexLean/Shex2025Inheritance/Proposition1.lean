@@ -1,4 +1,4 @@
-import ShexLean.Inheritance.CorrectTyping
+import ShexLean.Shex2025Inheritance.CorrectTyping
 import Mathlib.Data.Finset.Prod
 import Mathlib.Data.Finset.Powerset
 import Mathlib.Data.Finset.Lattice.Fold
@@ -48,7 +48,7 @@ agreement/monotonicity fact about `Satisfies` has to reason about the
 *schema's* dependency structure (`Schema.dep`/`depExtends`, via `D_S`
 reachability), not just a single shape expression's own syntax tree — and
 has to go through the `Fuel`-indexed machinery `Satisfies` is built on
-(`ShexLean/Inheritance/Termination.lean`), following the same induction
+(`ShexLean/Shex2025Inheritance/Termination.lean`), following the same induction
 skeleton `stableE`/`stableM`/`stableFuel` used there, but tracking typing
 *agreement on the dependency closure* instead of fuel sufficiency.
 -/
@@ -56,7 +56,7 @@ skeleton `stableE`/`stableM`/`stableFuel` used there, but tracking typing
 namespace ShexLean.Inheritance
 
 /-- `τ_{|Z}`: the restriction of `τ` to the node-type associations whose
-label is in `Z` (2017's `Typing.restrictTo`, `ShexLean/Proposition1.lean`,
+label is in `Z` (2017's `Typing.restrictTo`, `ShexLean/Shex2017Schemas/Proposition1.lean`,
 duplicated here — trivial in content, but kept local so this `Inheritance`
 subtree doesn't need to import the entire 2017 proof chain for it; a plain
 function rather than `Typing.restrictTo` dot notation, since `Typing`
@@ -98,7 +98,7 @@ def Schema.DClosed (S : Schema) : Prop :=
 induction on path length (`Stratification.lt_of_negPath` below derives the
 path form), and the edge form is what `maxTypingAgreeing_correct`
 (further down) actually needs, exactly mirroring 2017's `Stratification`
-(`ShexLean/Stratification.lean`). -/
+(`ShexLean/Shex2017Schemas/Stratification.lean`). -/
 structure Stratification (S : Schema) where
   k : ℕ
   strat : ShapeLabel → ℕ
@@ -161,12 +161,12 @@ theorem Stratification.lt_of_negPath {S : Schema} (hDClosed : S.DClosed)
 `Z` that is *closed* under `D_S` (`Schema.DClosedOn` below) and contains
 everything the shape expression at hand can syntactically reach
 (`ShapeExpr.depsIn`) — the 2025 analogue of 2017's `Satisfies.agree`
-(`ShexLean/Proposition1.lean`), but now needing to reason about the
+(`ShexLean/Shex2017Schemas/Proposition1.lean`), but now needing to reason about the
 *schema's* dependency structure (since `.extends` dereferences other
 labels' own definitions), and going through the `Fuel`-indexed machinery
 `Satisfies` is built on, following the exact same one-way chain
 (`agreeE → agreeM_noExtends`/`agreeM → agreeFuel`) as `stableE →
-stableM_noExtends/stableM → stableFuel` in `ShexLean/Inheritance/
+stableM_noExtends/stableM → stableFuel` in `ShexLean/Shex2025Inheritance/
 Termination.lean`. -/
 
 /-- The labels a shape expression could reach: `@z'` references anywhere
@@ -1122,7 +1122,7 @@ def Schema.stratRestrict (S : Schema) (strat : ShapeLabel → ℕ) (i : ℕ) : S
 `G` by `S'` that agree with `fixed` on `Lo`. Generalizes `S'`'s own
 "maximal correct typing" (`Lo = ∅`) with the extra agreement constraint
 Definition 8 needs to glue strata together — exactly 2017's
-`maxTypingAgreeing` (`ShexLean/Proposition1.lean`), with `Schema.
+`maxTypingAgreeing` (`ShexLean/Shex2017Schemas/Proposition1.lean`), with `Schema.
 CorrectTyping`/`restrictTyping` in place of the 2017 versions. -/
 noncomputable def maxTypingAgreeing (S' : Schema) (G : Graph) (Lo : Finset ShapeLabel)
     (fixed : Typing) : Typing :=
@@ -1212,7 +1212,7 @@ theorem maxTypingAgreeing_correct {S' : Schema} (hWFX : S'.WellFormedX)
 
 The final piece Proposition 1 needs, beyond everything above: `Satisfies`
 is defined at a *schema-relative* canonical fuel (`reqFuel S s + 1`,
-`ShexLean/Inheritance/Termination.lean`), so `Satisfies (S.stratRestrict
+`ShexLean/Shex2025Inheritance/Termination.lean`), so `Satisfies (S.stratRestrict
 strat i) G τ n s` and `Satisfies (S.stratRestrict strat j) G τ n s` are
 literally different propositions (different concrete `SatisfiesFuel` fuel
 values, over different schemas whose `X` differs) — unlike 2017's own
@@ -1228,7 +1228,7 @@ identically. -/
 /-- `SatisfiesEFuel` (Table 1) doesn't depend on the schema or graph
 parameters at all — literally provable for *any* two schemas/graphs at a
 shared fuel, no side hypotheses needed (the defining equations of Table 1
-never mention `S`/`G`, see `ShexLean/Inheritance/Semantics.lean`'s module
+never mention `S`/`G`, see `ShexLean/Shex2025Inheritance/Semantics.lean`'s module
 docstring). -/
 theorem SatisfiesEFuel_schema_indep (S1 S2 : Schema) (G1 G2 : Graph) :
     ∀ (e : TripleExpr) (fuel : ℕ) (τ : Typing) (M : Finset Triple),

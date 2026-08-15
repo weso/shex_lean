@@ -1,4 +1,4 @@
-import ShexLean.Semantics
+import ShexLean.Shex2017Schemas.Semantics
 import Example
 
 /-!

@@ -1,4 +1,4 @@
-import ShexLean.Inheritance.Semantics
+import ShexLean.Shex2025Inheritance.Semantics
 import Mathlib.Logic.Relation
 
 /-!
@@ -37,7 +37,7 @@ Definition 5's four relations only ever need `@z'`-reference-collecting
 (`dep`, `dep-shape-neg`) or triple-constraint-property-collecting
 (`dep-extra-neg`) *inside a single label's own definition* — never a
 schema-wide reachability computation, unlike `H_S`'s edges. So (mirroring
-`ShexLean/Stratification.lean`'s `depsAux` for the 2017 formalism) a single
+`ShexLean/Shex2017Schemas/Stratification.lean`'s `depsAux` for the 2017 formalism) a single
 recursive walk over `s = S.shapeDef z`, tracking whether the current
 position is under an odd number of `not`, computes all three relations'
 "target set" at once (`DepInfo` below) — `[closed][extra P]⟨e⟩` matches
@@ -50,7 +50,7 @@ whether it sits inside an `extends`'s own `h`, a restriction `u`, or a
 plain shape.
 
 Note `dep-extends_S` is *not* built from this walk at all — `H_S`'s edges
-(`Schema.extEdge`, `ShexLean/Inheritance/Syntax.lean`) already capture
+(`Schema.extEdge`, `ShexLean/Shex2025Inheritance/Syntax.lean`) already capture
 exactly `extends X h`'s targets; `dep-extends_S(z,z')` is just that
 relation made symmetric.
 -/
@@ -110,9 +110,9 @@ every schema `well-defined` under the paper's literal parity reading
 remains so under this stricter one, so nothing already proved changes
 meaning, and it costs nothing for the schemas either paper actually
 exercises (their own examples never nest `not` under `not`, where the two
-readings first diverge). It's needed for `ShexLean/Inheritance/
+readings first diverge). It's needed for `ShexLean/Shex2025Inheritance/
 Proposition1.lean`'s `stratMono`: mirroring 2017's own `not_negDeps`
-(`ShexLean/Proposition1.lean`, `S.posDeps ∪ S.negDeps ⊆ (.not S).negDeps`),
+(`ShexLean/Shex2017Schemas/Proposition1.lean`, `S.posDeps ∪ S.negDeps ⊆ (.not S).negDeps`),
 `stratMono`'s `not` case needs *everything* reachable from inside a `not`
 — regardless of that content's own internal `not`-nesting — to already be
 accounted for by the outer call's `negRefs`, which is exactly what latching
@@ -170,7 +170,7 @@ theorem ShapeExpr.negRefs_subset_refs (s : ShapeExpr) (neg : Bool) :
 (`negRefs_subset_refs`) but *equal* to it, for *any* `s` — including one
 with further `not`s nested inside, since latching never un-sets `neg` for
 the rest of the recursion. This is what `stratMono`'s `.not` case
-(`ShexLean/Inheritance/Proposition1.lean`) actually needs: the outer call's
+(`ShexLean/Shex2025Inheritance/Proposition1.lean`) actually needs: the outer call's
 `negRefs` (at `neg = false`, i.e. `(.not s).depsAux false = s.depsAux
 true`) must bound *all* of `s`'s own references, not just the
 not-yet-further-negated ones. -/

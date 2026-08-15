@@ -1,13 +1,13 @@
-import ShexLean.Semantics
-import ShexLean.Stratification
-import ShexLean.MaximalTyping
+import ShexLean.Shex2017Schemas.Semantics
+import ShexLean.Shex2017Schemas.Stratification
+import ShexLean.Shex2017Schemas.MaximalTyping
 import Mathlib.Data.Finset.Prod
 import Mathlib.Data.Finset.Powerset
 import Mathlib.Data.Finset.Lattice.Fold
 
 /-!
 Building blocks for §3.3's Proposition 1 (soundness of `Typing(G,S,strat)`
-for stratified schemas), beyond what Lemma 1 (`ShexLean/MaximalTyping.lean`)
+for stratified schemas), beyond what Lemma 1 (`ShexLean/Shex2017Schemas/MaximalTyping.lean`)
 covers for the negation-free case.
 
 This first part is a fully general "agreement" lemma: `⊢`/`⊨` depend on
@@ -259,7 +259,7 @@ def Schema.stratRestrict (S : Schema) (strat : ShapeLabel → ℕ) (i : ℕ) : S
 /-- `maxTypingAgreeing S' G Lo fixed`: the union of all correct typings of
 `G` by `S'` that agree with `fixed` on `Lo` (i.e. whose restriction to `Lo`
 is `fixed.restrictTo Lo`). Generalizes `Schema.maximalTyping`
-(`ShexLean/MaximalTyping.lean`) — which is the case `Lo = ∅` — with the
+(`ShexLean/Shex2017Schemas/MaximalTyping.lean`) — which is the case `Lo = ∅` — with the
 extra agreement constraint that Definition 4 needs to glue strata
 together. Uses classical choice to decide `CorrectTyping`, as
 `Schema.maximalTyping` does. -/

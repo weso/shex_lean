@@ -1,4 +1,4 @@
-import ShexLean.Lemma2
+import ShexLean.Shex2017Schemas.Lemma2
 
 /-!
 §4.1: Algorithm 1 (`refine`), and its correctness — it computes

@@ -1,4 +1,4 @@
-import ShexLean.Lemma2
+import ShexLean.Shex2017Schemas.Lemma2
 
 /-!
 Definitions 5 and 6 (§3.3): the maximal correct typing of `G` by `S`, and
@@ -9,8 +9,8 @@ building towards since §3.1:
 
 Both are one-line definitions in the paper, sitting directly on top of
 Proposition 1 (`Typing(G, S, strat)` is always a correct typing,
-`ShexLean/Proposition1.lean`) and Lemma 2 (`Typing(G, S, strat)` does not
-depend on `strat`, `ShexLean/Lemma2.lean`):
+`ShexLean/Shex2017Schemas/Proposition1.lean`) and Lemma 2 (`Typing(G, S, strat)` does not
+depend on `strat`, `ShexLean/Shex2017Schemas/Lemma2.lean`):
 
 > Definition 5 (maximal correct typing). Let `S = (L, def)` be a schema and
 > `G` be a graph. The maximal correct typing of `G` by `S` is denoted

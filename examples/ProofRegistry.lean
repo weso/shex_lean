@@ -13,36 +13,36 @@ def proofs : List ProofItem :=
       summary :=
         "Lemma 1 (§3.3): a negation-free schema has a maximal correct typing " ++
         "(the union of all correct typings)."
-      path := "ShexLean/MaximalTyping.lean" },
+      path := "ShexLean/Shex2017Schemas/MaximalTyping.lean" },
     { name := "proposition1"
       summary :=
         "Proposition 1 (§3.3): Typing(G,S,strat) (Definition 4) is a correct typing " ++
         "of G by S, for any stratified schema."
-      path := "ShexLean/Proposition1.lean" },
+      path := "ShexLean/Shex2017Schemas/Proposition1.lean" },
     { name := "lemma2"
       summary :=
         "Lemma 2 (§3.3): Typing(G,S,strat) does not depend on the stratification " ++
         "chosen. Proved in full via a canonical batch-revealing process and an " ++
         "independence-of-schedule argument (the paper itself only sketches this proof)."
-      path := "ShexLean/Lemma2.lean" },
+      path := "ShexLean/Shex2017Schemas/Lemma2.lean" },
     { name := "shapes-sem"
       summary :=
         "Definitions 5-6 (§3.3): the maximal correct typing Typing(G,S) is " ++
         "well-defined (independent of the chosen stratification, by Lemma 2) and " ++
         "correct (by Proposition 1), and SHAPES_SEM itself: node n has shape L " ++
         "from S iff (n,L) ∈ Typing(G,S)."
-      path := "ShexLean/ShapesSem.lean" },
+      path := "ShexLean/Shex2017Schemas/ShapesSem.lean" },
     { name := "algorithm1"
       summary :=
         "Algorithm 1 (§4.1): the per-stratum iterative-refinement procedure `refine` " ++
         "computes exactly Typing(G,S,strat) (Definition 4)."
-      path := "ShexLean/Algorithm1.lean" },
+      path := "ShexLean/Shex2017Schemas/Algorithm1.lean" },
     { name := "algorithm2"
       summary :=
         "Algorithm 2/Proposition 2 (§4.2): the recursive, cycle-detecting `prove` " ++
         "algorithm decides Typing(G,S,strat)-membership correctly, without building " ++
         "the whole typing (the paper's own proof sketch covers only termination)."
-      path := "ShexLean/Algorithm2.lean" },
+      path := "ShexLean/Shex2017Schemas/Algorithm2.lean" },
     { name := "inheritance-lemma1"
       summary :=
         "Shape Expressions with Inheritance (2025), Lemma 1 (§4.2): evaluation of " ++
@@ -50,7 +50,7 @@ def proofs : List ProofItem :=
         "sketch (a finite call tree, via acyclicity of the extension hierarchy); " ++
         "this file builds real well-founded machinery for it, under an extra, " ++
         "explicitly-documented hypothesis beyond the paper's literal text."
-      path := "ShexLean/Inheritance/Termination.lean" },
+      path := "ShexLean/Shex2025Inheritance/Termination.lean" },
     { name := "inheritance-proposition1"
       summary :=
         "Shape Expressions with Inheritance (2025), Proposition 1 (§4.3): the " ++
@@ -61,7 +61,7 @@ def proofs : List ProofItem :=
         "strengthenings of the paper's Table 3/Definition 5 (an implicit " ++
         "monotonicity invariant, and negation-dependency tracking under nested " ++
         "`not`)."
-      path := "ShexLean/Inheritance/Proposition1.lean" },
+      path := "ShexLean/Shex2025Inheritance/Proposition1.lean" },
     { name := "inheritance-lemma2"
       summary :=
         "Shape Expressions with Inheritance (2025), Lemma 2 (§4.3): τ_max(S,σ,G) " ++
@@ -71,7 +71,7 @@ def proofs : List ProofItem :=
         "this), needing a further schema-invariance argument the 2017 proof never " ++
         "did: restricting the schema to an arbitrary D_S-closed label set, not " ++
         "just a stratum, since Satisfies here depends on the schema."
-      path := "ShexLean/Inheritance/Lemma2.lean" } ]
+      path := "ShexLean/Shex2025Inheritance/Lemma2.lean" } ]
 
 /-- Look up a registered proof by name. -/
 def findProof? (name : String) : Option ProofItem :=

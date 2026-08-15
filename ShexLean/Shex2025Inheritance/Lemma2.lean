@@ -1,4 +1,4 @@
-import ShexLean.Inheritance.Proposition1
+import ShexLean.Shex2025Inheritance.Proposition1
 import Mathlib.Data.Finset.Max
 
 /-!
@@ -6,7 +6,7 @@ Lemma 2 (§4.3) of the 2025 "Shape Expressions with Inheritance" paper:
 `τ_max(S,σ,G)` (Definition 8) does not depend on which stratification `σ`
 of `S` is chosen.
 
-This file ports the 2017 formalization's own `ShexLean/Lemma2.lean` — the
+This file ports the 2017 formalization's own `ShexLean/Shex2017Schemas/Lemma2.lean` — the
 paper itself only sketches this proof ("Proof. (Idea)..."), so 2017's file
 built a full, independent argument from the ground up (Fusion/Swap/a
 schedule-agnostic `cont1` process/Independence), which transfers here
@@ -15,7 +15,7 @@ almost unchanged in *shape*. What does **not** transfer for free: 2017's
 self-contained label set" was free (`Schema.restrictLabels`, sharing
 `shapeDef`, with no further invariance lemma needed). Here `Satisfies`
 genuinely depends on the schema (via `.anc`/`.ancSet`, exactly the gap
-`ShexLean/Inheritance/Proposition1.lean`'s `Satisfies_stratRestrict_agree`
+`ShexLean/Shex2025Inheritance/Proposition1.lean`'s `Satisfies_stratRestrict_agree`
 closed for *stratum*-shaped restrictions) — so this file first generalizes
 that whole schema-invariance argument from `Schema.stratRestrict` (tied to
 a stratification) to `Schema.restrictLabels` (an arbitrary `D_S`-closed
@@ -26,12 +26,12 @@ namespace ShexLean.Inheritance
 
 /-! ### `Schema.restrictLabels`: restriction to an arbitrary label set
 
-Generalizes `Schema.stratRestrict` (`ShexLean/Inheritance/Proposition1.lean`)
+Generalizes `Schema.stratRestrict` (`ShexLean/Shex2025Inheritance/Proposition1.lean`)
 away from being tied to a stratification — `Ls` here is any label set, not
 necessarily `S.stratum strat i` for some `strat`/`i`. -/
 
 /-- `S` restricted to an arbitrary label set `Ls`, keeping the same
-definitions — 2017's `Schema.restrictLabels` (`ShexLean/Lemma2.lean`),
+definitions — 2017's `Schema.restrictLabels` (`ShexLean/Shex2017Schemas/Lemma2.lean`),
 generalizing `Schema.stratRestrict`. -/
 def Schema.restrictLabels (S : Schema) (Ls : Finset ShapeLabel) : Schema where
   Y := S.Y ∩ Ls
@@ -81,7 +81,7 @@ is `Ls` when `Ls ⊆ Y ∪ X`), given `S` is `D_S`-closed on `Ls` — the genera
 analogue of `Schema.stratRestrict_DClosed`, built the same way (via the two
 cheap `rfl`/set-equality bridging lemmas above) to avoid the same `whnf`
 blow-up passing `hLsClosed` directly would cause (see `Schema.stratRestrict_
-DClosed`'s docstring, `ShexLean/Inheritance/Proposition1.lean`). -/
+DClosed`'s docstring, `ShexLean/Shex2025Inheritance/Proposition1.lean`). -/
 theorem Schema.restrictLabels_DClosed {S : Schema} {Ls : Finset ShapeLabel}
     (hLsClosed : S.DClosedOn Ls) (hLsYX : Ls ⊆ S.Y ∪ S.X) :
     (S.restrictLabels Ls).DClosedOn ((S.restrictLabels Ls).Y ∪ (S.restrictLabels Ls).X) := by
@@ -333,7 +333,7 @@ revealing it in two stages through an intermediate checkpoint `Ls1`
 `maxTypingAgreeing`'s outcome, provided everything new in `Ls2` only
 `D_S`-negatively-depends on the original `Ls`, and `Ls1` is `D_S`-closed on
 its own positive dependencies. 2025 analogue of 2017's `maxTypingAgreeing_
-fusion` (`ShexLean/Lemma2.lean`); the proof is essentially the same
+fusion` (`ShexLean/Shex2017Schemas/Lemma2.lean`); the proof is essentially the same
 mutual-inclusion argument (each side is, as a *whole object*, a valid
 candidate for the other's `maxTypingAgreeing`), just threading the four
 well-formedness hypotheses `maxTypingAgreeing_correct`/`restrictLabels_
@@ -448,7 +448,7 @@ theorem maxTypingAgreeing_self {S' : Schema} {G : Graph} {T : Typing}
 /-!
 **Lemma 2, general statement.**
 
-Same strategy as 2017's own `ShexLean/Lemma2.lean`: rather than trying to
+Same strategy as 2017's own `ShexLean/Shex2017Schemas/Lemma2.lean`: rather than trying to
 align an *arbitrary* second stratification's checkpoints with a fixed
 combination of the first (mathematically impossible in general — two
 mutually `D_S`-independent labels can be ordered oppositely by different
@@ -539,7 +539,7 @@ private theorem cont1Fuel_of_not_nonempty (S : Schema) (strat : Stratification S
     {Fixed : Finset ShapeLabel} (h : ¬ ((S.Y ∪ S.X) \ Fixed).Nonempty) (T : Typing) :
     ∀ n, cont1Fuel S strat G n Fixed T = T
   | 0 => rfl
-  | (n + 1) => by simp only [cont1Fuel, if_neg h]
+  | (n + 1) => by simp only [cont1Fuel, ite_eq_right h]
 
 /-- Once fuel is enough to exhaust the remaining labels, more fuel doesn't
 change the result. -/
@@ -555,7 +555,7 @@ theorem cont1Fuel_stable (S : Schema) (strat : Stratification S) (G : Graph) :
     · have hcardpos : 0 < card := hcard ▸ Finset.card_pos.mpr hne
       obtain ⟨m, rfl⟩ : ∃ m, n = m + 1 := ⟨n - 1, by omega⟩
       obtain ⟨m', rfl⟩ : ∃ m', n' = m' + 1 := ⟨n' - 1, by omega⟩
-      simp only [cont1Fuel, if_pos hne]
+      simp only [cont1Fuel, ite_eq_left hne]
       have hcard' : ((S.Y ∪ S.X) \ (Fixed ∪ remainingMin S strat.strat Fixed)).card < card :=
         hcard ▸ remainingMin_card_lt S strat.strat hne
       exact ih _ hcard' _ rfl
@@ -582,7 +582,7 @@ theorem cont1_done (S : Schema) (strat : Stratification S) (G : Graph)
   have hcardzero : ((S.Y ∪ S.X) \ Fixed).card = 0 := by
     rw [Finset.card_eq_zero, ← Finset.not_nonempty_iff_eq_empty]; exact h
   rw [cont1_eq_fuel S strat G Fixed T 1 (by omega)]
-  simp only [cont1Fuel, if_neg h]
+  simp only [cont1Fuel, ite_eq_right h]
 
 theorem cont1_step (S : Schema) (strat : Stratification S) (G : Graph)
     {Fixed : Finset ShapeLabel} (h : ((S.Y ∪ S.X) \ Fixed).Nonempty) (T : Typing) :
@@ -591,7 +591,7 @@ theorem cont1_step (S : Schema) (strat : Stratification S) (G : Graph)
   obtain ⟨m, hm⟩ : ∃ m, ((S.Y ∪ S.X) \ Fixed).card = m + 1 :=
     ⟨((S.Y ∪ S.X) \ Fixed).card - 1, by have := Finset.card_pos.mpr h; omega⟩
   rw [cont1_eq_fuel S strat G Fixed T (m + 1) (le_of_eq hm)]
-  simp only [cont1Fuel, if_pos h]
+  simp only [cont1Fuel, ite_eq_left h]
   refine (cont1_eq_fuel S strat G _ _ m ?_).symm
   have := remainingMin_card_lt S strat.strat h
   omega
@@ -823,10 +823,10 @@ theorem Schema.stratum_negDep_confined {S : Schema} (strat : Stratification S) (
 build the identical schema (`rfl`-close, but not literally `rfl` since
 `stratRestrict`'s per-field filters and `restrictLabels`'s intersections
 are different `Finset` expressions) — bridges `stratTypingSeq_correct`
-(`ShexLean/Inheritance/Proposition1.lean`, `stratRestrict`-based) into the
+(`ShexLean/Shex2025Inheritance/Proposition1.lean`, `stratRestrict`-based) into the
 `restrictLabels`-based vocabulary this file's general machinery needs,
 matching 2017's own `Schema.stratRestrict_eq_restrictLabels`
-(`ShexLean/Algorithm1.lean`). -/
+(`ShexLean/Shex2017Schemas/Algorithm1.lean`). -/
 theorem Schema.stratRestrict_eq_restrictLabels (S : Schema) (strat : ShapeLabel → ℕ) (i : ℕ) :
     S.stratRestrict strat i = S.restrictLabels (S.stratum strat i) := by
   unfold Schema.stratRestrict Schema.restrictLabels Schema.stratum

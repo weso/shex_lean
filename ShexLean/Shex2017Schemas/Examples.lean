@@ -1,4 +1,4 @@
-import ShexLean.Semantics
+import ShexLean.Shex2017Schemas.Semantics
 
 /-!
 Example 2 / Example 3 from Boneva, Labra Gayo, Prud'hommeaux (2017), used as
