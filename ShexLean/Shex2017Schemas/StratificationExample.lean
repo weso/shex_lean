@@ -136,8 +136,8 @@ namespace Examples
 /-- Example 5: `S₃` mixes `NOT` and recursion but is with stratified
 negation. -/
 def stratificationExample : Example where
-  name := "stratification"
-  summary := "Example 5: a schema mixing NOT and recursion that is with stratified negation."
+  name := "schemas2017-stratification"
+  summary := "NOT + recursion, with stratified negation."
   schemaText :=
     "<L1> → NOT(ex:a @<L2> ; ex:b @<Str>)\n" ++
     "<L2> → ex:c @<L3>\n" ++

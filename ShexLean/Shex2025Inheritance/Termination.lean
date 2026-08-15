@@ -381,11 +381,16 @@ theorem restrOf_noExtends_and_size_le {S : Schema} (hWFExt : S.WellFormedExtends
 /-- Sufficient fuel for `s`'s `SatisfiesMFuel`/`SatisfiesFuel` evaluation
 to have stabilized. The only case that isn't just structural AST size is
 `.extends`, which additionally needs enough fuel to cover *any* ancestor's
-own `ext-te`/`restr` (`Schema.maxDefSize`), not just `s`'s own size. -/
+own `ext-te`/`restr` (`Schema.maxDefSize`), not just `s`'s own size. `M'`'s
+own bound uses `(.ofShape h).size = h.triples.size + 1`, not bare
+`h.triples.size`: since `M'` is now checked against `.ofShape h` (Table 3
+rule 17, one recursive `SatisfiesMFuel` step) rather than directly against
+`h.triples` (Table 1), it costs one extra fuel level compared to a direct
+`SatisfiesEFuel` call at the same fuel — see the module docstring. -/
 noncomputable def ShapeExpr.reqFuel (S : Schema) : ShapeExpr → ℕ
   | .constraint _ => 1
   | .ofShape h => h.triples.size + 1
-  | .extends _ h => max h.triples.size S.maxDefSize + 1
+  | .extends _ h => max (h.triples.size + 1) S.maxDefSize + 1
   | .or s1 s2 => max (ShapeExpr.reqFuel S s1) (ShapeExpr.reqFuel S s2) + 1
   | .and s1 s2 => max (ShapeExpr.reqFuel S s1) (ShapeExpr.reqFuel S s2) + 1
   | .not s => ShapeExpr.reqFuel S s + 1
@@ -445,18 +450,20 @@ theorem stableM {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.WellFormedExtend
       have hbound2 : ∀ x ∈ S.ancSet xs, (S.shapeDef x).size ≤ f2 := by
         intro x hx; have := hboundDef x hx; omega
       show (∃ M' Mx, DisjointUnionOn M M' (S.ancSet xs) Mx ∧
-            SatisfiesEFuel f1 S G τ M' h.triples ∧
+            SatisfiesMFuel f1 S G τ M' (.ofShape h) ∧
             (∀ x ∈ S.ancSet xs, SatisfiesEFuel f1 S G τ (Mx x) (S.shapeDef x).extTe) ∧
             (∀ x ∈ S.ancSet xs, ∀ u, (S.shapeDef x).restrOf = some u →
               SatisfiesMFuel f1 S G τ ((S.anc x).biUnion Mx) u)) ↔
           (∃ M' Mx, DisjointUnionOn M M' (S.ancSet xs) Mx ∧
-            SatisfiesEFuel f2 S G τ M' h.triples ∧
+            SatisfiesMFuel f2 S G τ M' (.ofShape h) ∧
             (∀ x ∈ S.ancSet xs, SatisfiesEFuel f2 S G τ (Mx x) (S.shapeDef x).extTe) ∧
             (∀ x ∈ S.ancSet xs, ∀ u, (S.shapeDef x).restrOf = some u →
               SatisfiesMFuel f2 S G τ ((S.anc x).biUnion Mx) u))
       refine exists_congr fun M' => exists_congr fun Mx => and_congr_right fun _ => ?_
-      have he : SatisfiesEFuel f1 S G τ M' h.triples ↔ SatisfiesEFuel f2 S G τ M' h.triples :=
-        stableE h.triples f1 f2 (by omega) (by omega) S G τ M'
+      have hofshapesize : (ShapeExpr.ofShape h).size = h.triples.size + 1 := rfl
+      have he : SatisfiesMFuel f1 S G τ M' (.ofShape h) ↔ SatisfiesMFuel f2 S G τ M' (.ofShape h) :=
+        stableM_noExtends (.ofShape h) trivial f1 f2 (by rw [hofshapesize]; omega)
+          (by rw [hofshapesize]; omega) S G τ M'
       have hext : (∀ x ∈ S.ancSet xs, SatisfiesEFuel f1 S G τ (Mx x) (S.shapeDef x).extTe) ↔
           (∀ x ∈ S.ancSet xs, SatisfiesEFuel f2 S G τ (Mx x) (S.shapeDef x).extTe) := by
         refine forall_congr' fun x => forall_congr' fun hx => ?_

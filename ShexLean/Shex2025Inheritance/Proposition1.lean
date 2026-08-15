@@ -512,20 +512,18 @@ theorem agreeM {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.WellFormedExtends
       simp only [ShapeExpr.extendsTargets] at hxsZ
       have hancZ : S.ancSet xs ⊆ Z := S.ancSet_subset hZ hxsZ
       show (∃ M' Mx, DisjointUnionOn M M' (S.ancSet xs) Mx ∧
-            SatisfiesEFuel f S G τ M' h.triples ∧
+            SatisfiesMFuel f S G τ M' (.ofShape h) ∧
             (∀ x ∈ S.ancSet xs, SatisfiesEFuel f S G τ (Mx x) (S.shapeDef x).extTe) ∧
             (∀ x ∈ S.ancSet xs, ∀ u, (S.shapeDef x).restrOf = some u →
               SatisfiesMFuel f S G τ ((S.anc x).biUnion Mx) u)) ↔
           (∃ M' Mx, DisjointUnionOn M M' (S.ancSet xs) Mx ∧
-            SatisfiesEFuel f S G τ' M' h.triples ∧
+            SatisfiesMFuel f S G τ' M' (.ofShape h) ∧
             (∀ x ∈ S.ancSet xs, SatisfiesEFuel f S G τ' (Mx x) (S.shapeDef x).extTe) ∧
             (∀ x ∈ S.ancSet xs, ∀ u, (S.shapeDef x).restrOf = some u →
               SatisfiesMFuel f S G τ' ((S.anc x).biUnion Mx) u))
       refine exists_congr fun M' => exists_congr fun Mx => and_congr_right fun _ => ?_
-      have hTrefs : h.triples.refs ⊆ Z := by
-        simpa [ShapeExpr.depsAux, Shape.depInfo, TripleExpr.refs] using hrefsZ
-      have he : SatisfiesEFuel f S G τ M' h.triples ↔ SatisfiesEFuel f S G τ' M' h.triples :=
-        agreeE hagree h.triples hTrefs f M'
+      have he : SatisfiesMFuel f S G τ M' (.ofShape h) ↔ SatisfiesMFuel f S G τ' M' (.ofShape h) :=
+        agreeM_noExtends hagree (.ofShape h) trivial hrefsZ f M'
       have hext : (∀ x ∈ S.ancSet xs, SatisfiesEFuel f S G τ (Mx x) (S.shapeDef x).extTe) ↔
           (∀ x ∈ S.ancSet xs, SatisfiesEFuel f S G τ' (Mx x) (S.shapeDef x).extTe) := by
         refine forall_congr' fun x => forall_congr' fun hx => ?_
@@ -823,14 +821,6 @@ theorem monoE {S : Schema} {G : Graph} {τ τ' : Typing} (hsub : τ ⊆ τ') :
 condition) and `e`/`P'` satisfy "(*)" (`e.props ∩ P' = ∅`), then `Me τ M e`
 is already forced to be `M`'s entire `props(e)`-matching part — a set that
 doesn't mention `τ` at all. -/
-theorem mem_Me {τ : Typing} {M : Finset Triple} {e : TripleExpr} {t : Triple} :
-    t ∈ Me τ M e ↔ t ∈ M ∧ ∃ z, (t.pred, z) ∈ e.tcs ∧ τ.has t.obj z := by
-  unfold Me; simp only [Finset.mem_filter]
-
-theorem mem_Mnotin {τ : Typing} {M : Finset Triple} {e : TripleExpr} {t : Triple} :
-    t ∈ Mnotin τ M e ↔ (t ∈ M ∧ t.pred ∈ e.props) ∧ t ∉ Me τ M e := by
-  unfold Mnotin; simp only [Finset.mem_sdiff, Finset.mem_filter]
-
 theorem Me_eq_filter_of_success {τ : Typing} {e : TripleExpr} {P' : Finset IRI}
     (hWF : e.props ∩ P' = ∅) {M : Finset Triple}
     (hMnotin : props (Mnotin τ M e) ⊆ P') :
@@ -973,14 +963,18 @@ theorem stratMonoM {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.WellFormedExt
       · exact hSat
       exact monoM_ofShape hsub hWFh f M hSat
   | «extends» xs h =>
-      intro hdeps _ _ _ fuel M hSat
+      intro hdeps hWF _ _ fuel M hSat
       rcases fuel with _ | f
       · exact hSat
       obtain ⟨_, hxsZ⟩ := hdeps
       simp only [ShapeExpr.extendsTargets] at hxsZ
       have hancZ : S.ancSet xs ⊆ Z := S.ancSet_subset hZ hxsZ
       obtain ⟨M', Mx, hdu, hE, hExt, hRestr⟩ := hSat
-      refine ⟨M', Mx, hdu, monoE hsub h.triples f M' hE,
+      have hE' : SatisfiesMFuel f S G τ' M' (.ofShape h) := by
+        rcases f with _ | f'
+        · exact hE
+        · exact monoM_ofShape hsub hWF f' M' hE
+      refine ⟨M', Mx, hdu, hE',
         fun x hx => monoE hsub _ f (Mx x) (hExt x hx), ?_⟩
       intro x hx u hru
       have hxX : x ∈ S.X := Schema.mem_ancSet_mem_X hx
@@ -1358,19 +1352,19 @@ theorem schemaAgreeM {S1 S2 : Schema} (hSD : S1.shapeDef = S2.shapeDef)
         exact hAnc x (hxsZ hx)
       have hancZ : S1.ancSet xs ⊆ Z := S1.ancSet_subset hZ hxsZ
       show (∃ M' Mx, DisjointUnionOn M M' (S1.ancSet xs) Mx ∧
-            SatisfiesEFuel f S1 G τ M' h.triples ∧
+            SatisfiesMFuel f S1 G τ M' (.ofShape h) ∧
             (∀ x ∈ S1.ancSet xs, SatisfiesEFuel f S1 G τ (Mx x) (S1.shapeDef x).extTe) ∧
             (∀ x ∈ S1.ancSet xs, ∀ u, (S1.shapeDef x).restrOf = some u →
               SatisfiesMFuel f S1 G τ ((S1.anc x).biUnion Mx) u)) ↔
           (∃ M' Mx, DisjointUnionOn M M' (S2.ancSet xs) Mx ∧
-            SatisfiesEFuel f S2 G τ M' h.triples ∧
+            SatisfiesMFuel f S2 G τ M' (.ofShape h) ∧
             (∀ x ∈ S2.ancSet xs, SatisfiesEFuel f S2 G τ (Mx x) (S2.shapeDef x).extTe) ∧
             (∀ x ∈ S2.ancSet xs, ∀ u, (S2.shapeDef x).restrOf = some u →
               SatisfiesMFuel f S2 G τ ((S2.anc x).biUnion Mx) u))
       rw [hancSetEq]
       refine exists_congr fun M' => exists_congr fun Mx => and_congr_right fun _ => ?_
-      have he : SatisfiesEFuel f S1 G τ M' h.triples ↔ SatisfiesEFuel f S2 G τ M' h.triples :=
-        SatisfiesEFuel_schema_indep S1 S2 G G h.triples f τ M'
+      have he : SatisfiesMFuel f S1 G τ M' (.ofShape h) ↔ SatisfiesMFuel f S2 G τ M' (.ofShape h) :=
+        schemaAgreeM_noExtends S1 S2 G G (.ofShape h) trivial f τ M'
       have hext : (∀ x ∈ S2.ancSet xs, SatisfiesEFuel f S1 G τ (Mx x) (S1.shapeDef x).extTe) ↔
           (∀ x ∈ S2.ancSet xs, SatisfiesEFuel f S2 G τ (Mx x) (S2.shapeDef x).extTe) := by
         refine forall_congr' fun x => forall_congr' fun _ => ?_

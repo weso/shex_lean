@@ -12,16 +12,29 @@ private def usage : String :=
   "shex_lean run must be run from the project root (it reads proof source\n" ++
   "files by their path relative to it)."
 
+private def paperLabel (name : String) : String :=
+  if name.startsWith "schemas2017-" then "2017 — Semantics and Validation of Shapes Schemas for RDF"
+  else "2025 — Shape Expressions with Inheritance"
+
+/-- Print `items` (already paired with their display line) grouped under a
+`2017`/`2025` sub-header per name prefix, skipping any paper with nothing
+to show. -/
+private def listGrouped (items : List (String × String)) : IO Unit := do
+  for paper in ["schemas2017-", "inheritance2025-"] do
+    let inPaper := items.filter (fun (name, _) => name.startsWith paper)
+    if !inPaper.isEmpty then
+      IO.println s!"  {paperLabel paper}:"
+      for (name, line) in inPaper do
+        IO.println s!"    {name} — {line}"
+
 private def listAll : IO Unit := do
   IO.println usage
   IO.println ""
   IO.println "Examples:"
-  for e in Examples.all do
-    IO.println s!"  {e.name} — {e.summary}"
+  listGrouped (Examples.all.map (fun e => (e.name, e.summary)))
   IO.println ""
   IO.println "Proofs:"
-  for p in Examples.proofs do
-    IO.println s!"  {p.name} — {p.summary}"
+  listGrouped (Examples.proofs.map (fun p => (p.name, p.summary)))
 
 /-- Print a proof's Lean source, read from `p.path` so it can never drift
 from what `lake build` actually checks. -/

@@ -11,8 +11,8 @@ namespace Examples
 
 /-- The `<IssueSh>`/`<Str>` example from Example 2/3. -/
 def issueTracker : Example where
-  name := "issue-tracker"
-  summary := "Example 2/3: a recursive <IssueSh> schema over two issues that report on each other."
+  name := "schemas2017-issue-tracker"
+  summary := "Recursive <IssueSh> schema, two issues reporting on each other."
   schemaText :=
     "<IssueSh> → is:reportedBy @<Str> ; is:relatedTo @<IssueSh> [0;*]\n" ++
     "<Str>     → xsd:string"
