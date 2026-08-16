@@ -1,5 +1,4 @@
-import ShexLean.InductiveRDF.Graph
-import ShexLean.InductiveRDF.RepBound
+import ShexLean.Shex2017Schemas.RepBound
 import ShexLean.Shex2017Schemas.Semantics
 import Mathlib.Data.Finset.Powerset
 
@@ -49,9 +48,7 @@ This file itself doesn't depend on any example file (kept import-free of
 file — can import *it* without a cycle).
 -/
 
-namespace ShexLean.InductiveRDF
-
-open ShexLean
+namespace ShexLean
 
 /-! ### Bounded reformulations -/
 
@@ -199,4 +196,4 @@ def matches_decidable (G : Graph) (typing : Typing) (N : Finset Triple) :
       decidable_of_iff _ (matches_rep_iff_bounded G typing N E min max).symm
 end
 
-end ShexLean.InductiveRDF
+end ShexLean

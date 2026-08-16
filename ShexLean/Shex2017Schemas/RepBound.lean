@@ -25,9 +25,7 @@ chain of `.eachOf`s) rather than by manipulating witness lists directly:
 into an existential over `ℕ` — which `matches_rep_bound` then bounds.
 -/
 
-namespace ShexLean.InductiveRDF
-
-open ShexLean
+namespace ShexLean
 
 theorem mem_subset_foldr_union {l : List (Finset Triple)} {x : Finset Triple}
     (hx : x ∈ l) : x ⊆ l.foldr (· ∪ ·) ∅ := by
@@ -212,4 +210,4 @@ theorem matches_rep_iff_bounded (G : Graph) (typing : Typing) (N : Finset Triple
   · rintro ⟨k, -, hmin, hmax, hm⟩
     exact ⟨k, hmin, hmax, hm⟩
 
-end ShexLean.InductiveRDF
+end ShexLean

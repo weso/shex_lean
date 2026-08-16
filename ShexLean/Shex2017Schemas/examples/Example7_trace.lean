@@ -14,7 +14,7 @@ here (per Example 6's own module docstring — the paper's algorithm and
 the declarative `⊢`/`⊨` semantics, Fig. 2, are two different things,
 related only by Proposition 2, which lives in a different, unported part
 of the paper). But `⊢`/`⊨` themselves *are* now decidable
-(`ShexLean.InductiveRDF.Decidable`), and Example 7's own trace is entirely
+(`ShexLean.Shex2017Schemas.Decidable`), and Example 7's own trace is entirely
 about the declarative semantics' verdict on each call, so this file
 reproduces the trace's three `false` outcomes as theorems (as before, for
 the record) *and* the `Example` below now computes all six outcomes —
@@ -60,8 +60,7 @@ namespace Examples
 
 open Examples.ProveAlgorithmExample (G₃ typing n1 n2 n3 four L1 L2 L3 Str)
 open Examples.StratificationExample (S₃)
-open ShexLean (Schema.render Graph.render renderDecide)
-open ShexLean.InductiveRDF (satisfies_decidable)
+open ShexLean (Schema.render Graph.render renderDecide satisfies_decidable)
 
 /-- Every line of the trace below is `renderDecide (satisfies_decidable …)`
 — an actual `Decidable` computation of `Satisfies` at each call's node and
