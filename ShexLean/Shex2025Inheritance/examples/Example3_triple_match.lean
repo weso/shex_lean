@@ -146,7 +146,7 @@ theorem S_ex5_XClosed : S_ex5.XClosed := by unfold Schema.XClosed; decide
 
 theorem S_ex5_RestrOk : S_ex5.RestrOk := by
   intro x hx u hu
-  fin_cases hx <;> simp_all [S_ex5, ShapeExpr.restrOf] <;> (try subst hu) <;> trivial
+  fin_cases hx <;> (simp_all [S_ex5, ShapeExpr.restrOf]; try subst hu; trivial)
 
 end ShexLean.Inheritance
 

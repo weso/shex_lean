@@ -597,9 +597,9 @@ theorem satisfiesExtends_iff_bounded {S : Schema} {G : Graph} {τ : Typing}
       ∃ M' ∈ M.powerset, ∃ g ∈ Finset.pi (ancSetReach S xs) (fun _ => M.powerset),
         DisjointUnionOn M M' (ancSetReach S xs) (extendMx (ancSetReach S xs) g) ∧
         SatisfiesMFuel fuel S G τ M' (.ofShape h) ∧
-        (∀ x (hx : x ∈ ancSetReach S xs),
+        (∀ x ∈ ancSetReach S xs,
           SatisfiesEFuel fuel S G τ (extendMx (ancSetReach S xs) g x) (S.shapeDef x).extTe) ∧
-        (∀ x (hx : x ∈ ancSetReach S xs), ∀ u, (S.shapeDef x).restrOf = some u →
+        (∀ x ∈ ancSetReach S xs, ∀ u, (S.shapeDef x).restrOf = some u →
           SatisfiesMFuel fuel S G τ
             ((ancReach S x).biUnion (extendMx (ancSetReach S xs) g)) u) := by
   have hSet : ancSetReach S xs = S.ancSet xs := ancSetReach_eq_ancSet hXC hxs
