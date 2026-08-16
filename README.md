@@ -117,9 +117,7 @@ literally every `Prop` trivially is under Mathlib's ambient axioms).
   representation was never actually the obstacle; the bounded-
   reformulation technique above works identically over the existing
   representation, so nothing in this repo depends on the inductive-graph
-  encoding for decidability. `DecidablePayoff.lean` re-derives a handful of
-  hand-proved example facts by nothing but `native_decide`, as a
-  regression check on the whole layer.
+  encoding for decidability.
 - **2025 side** (`ShexLean/Shex2025Inheritance/Decidable.lean`): the same
   technique, applied to a harder semantics (Table 3's `extends` rule
   recurses into *other labels'* definitions and an ancestor-indexed

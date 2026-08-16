@@ -4,88 +4,49 @@ import ShexLean.Shex2017Schemas.Semantics
 import Mathlib.Data.Finset.Powerset
 
 /-!
-Does representing `G` as an inductive triple graph (`Graph.lean`) make
-`Satisfies`/`Matches` (`ShexLean.Shex2017Schemas.Semantics`, Fig. 2 of
-Boneva, Labra Gayo, Prud'hommeaux 2017) *decidable* — i.e. lets the `prove`
-algorithm (Algorithm 2) actually be *run*, rather than only reasoned about?
+Makes `Satisfies`/`Matches` (`ShexLean.Shex2017Schemas.Semantics`, Fig. 2 of
+Boneva, Labra Gayo, Prud'hommeaux 2017) genuinely `Decidable` — for every
+`ShapeExpr`/`TripleExpr`, no restricted fragment needed — so they can
+actually be *run* (`decide`/`native_decide`), not just reasoned about.
 
-**No — and switching graph representations was never going to change the
-answer.** `Satisfies`/`Matches` are already defined over this project's
-existing `Graph := Finset Triple` (`ShexLean.Common.RDF`), which is already
-finite and has decidable equality throughout (`RDFNode`, `IRI := String`,
-`Triple` all `deriving DecidableEq`) — exactly as `Finset (TContext …)`-style
-data built from an inductive triple graph would be. Neither representation
-is "more finite" than the other; converting between them (`ofGraph`/
-`toGraph`, proved inverse in `RoundTrip.lean`) doesn't touch what actually
-blocks `Decidable`.
+**How.** As stated, a few cases quantify over infinite types (`∃ subj pred
+obj, …` over all of `RDFNode × IRI × RDFNode`, `∃ N1 N2, …` over all of
+`Finset Triple × Finset Triple`, `∃ Ns : List (Finset Triple), …` over
+arbitrary-length lists), even though every witness that could actually
+satisfy the constraint is already forced — by an equation in the same
+clause — to lie inside the finite graph/typing at hand. This file proves
+each such case equivalent to a bounded search instead:
 
-The real blocker, visible directly in `Semantics.lean`'s equations, is that
-several cases are stated as **quantifiers ranging over the ambient infinite
-types** `RDFNode`/`IRI`/arbitrary `Finset Triple`/arbitrary-length
-`List (Finset Triple)`, even though every witness that can actually satisfy
-the constraint is forced — by an equation in the same clause — to already
-lie inside the finite graph/typing at hand:
+* `te-tpattern` (`matches_tPattern_iff`): the witness is forced to be `N`'s
+  own (at most one) element.
+* `te-each-of` (`matches_eachOf_iff`): `N1`/`N2` are forced `⊆ N`, i.e.
+  `∈ N.powerset`.
+* `te-repet` (`RepBound.lean`'s `matches_rep_iff_bounded`): the one
+  genuinely unbounded case — no static list length caps it — shown that any
+  witness can always be shrunk/padded to length `≤ N.card + min`.
 
-* `te-tpattern`: `∃ subj pred obj, N = {⟨subj,pred,obj⟩} ∧ …` quantifies
-  over all of `RDFNode × IRI × RDFNode`, but the `N = {…}` conjunct forces
-  the witness to be `N`'s own (at most one) element.
-* `te-each-of`: `∃ N1 N2, DisjointUnion N N1 N2 ∧ …` quantifies over all of
-  `Finset Triple × Finset Triple`, but `DisjointUnion`'s `N = N1 ∪ N2`
-  conjunct forces `N1, N2 ⊆ N`, i.e. `N1, N2 ∈ N.powerset`.
-* `te-repet`: `∃ Ns : List (Finset Triple), …` quantifies over
-  arbitrary-length lists — the one that looked genuinely unbounded, since
-  the union constraint alone doesn't bound the list *length* when `max =
-  none` and `E` itself accepts `∅` (nothing stops padding with arbitrarily
-  many empty pieces). `RepBound.lean` closes this gap too:
-  `matches_rep_iff_bounded` shows `.rep E min none`'s witness can always be
-  shrunk to length `≤ N.card + min` (drop excess empty pieces, or pad up to
-  `min` with `∅`s when `Matches G typing ∅ E` holds), so *every* case is
-  bounded after all.
+Every other case (`.valueDescr`/`.and`/`.or`/`.not`/`.someOf`/`.empty`) is
+already plain structural recursion over decidable pieces. Combining all of
+this gives `satisfies_decidable`/`matches_decidable` at the bottom of the
+file.
 
-This file proves *reformulation* lemmas (`matches_tPattern_iff`,
-`matches_eachOf_iff`, and `RepBound.lean`'s `matches_rep_iff_bounded`)
-restating all three existentials as bounded `Finset`/`Finset.powerset`/`ℕ`
-searches — logically equivalent to the originals, but with a body Lean can
-decide — and uses them (plus the fact that `.valueDescr`/`.and`/`.or`/
-`.not`/`.someOf`/`.empty` were never the problem: they're already
-structural recursion over decidable pieces) to build a genuine, `decide`-
-able `Decidable` instance for `Satisfies`/`Matches`, for **every**
-`ShapeExpr`/`TripleExpr` — no restricted fragment needed. This file itself
-doesn't depend on any example file (kept import-free of `examples/` so
-those files — and the rendering layer built on top of this file — can
-import *it* without a cycle); `DecidablePayoff.lean` re-derives a few
-example facts by `native_decide` instead of by hand, as a demonstration.
+**What's good for:** `ShexLean/Shex2017Schemas/Render.lean` (and, through
+it, `ShexLean/Shex2025Inheritance/Render.lean`) builds every worked
+example's displayed `true`/`false` claims directly on these instances via
+`renderDecide`/`native_decide`, rather than transcribing hand-proved facts
+as strings — see the "Decidability" section of the top-level `README.md`.
 
-**What's `decide`-able and what isn't, precisely:** every proposition
-proved `Decidable` this way is proved so via `Classical`-free, structural
-recursion into genuine `Finset`/`Fintype` search — reducible by the kernel,
-so `decide` actually runs, not just "exists as a classical fact" (under
-Mathlib's ambient classical axioms, *every* `Prop` trivially has *some*
-`Decidable` instance via `Classical.propDecidable`; that fact would be true
-regardless of any of this investigation and is not what's being claimed
-here).
+**Note on what's actually being claimed.** Every instance here is built via
+`Classical`-free, structural recursion into genuine `Finset`/`Fintype`
+search, so it's reducible by the kernel and `decide`/`native_decide`
+actually run — not merely "exists as a classical fact" (under Mathlib's
+ambient classical axioms, *every* `Prop` trivially has *some* `Decidable`
+instance via `Classical.propDecidable`, which is a different, much weaker
+claim than what's proved here).
 
-**Retrospective, once the 2025 formalism's own decidability layer
-(`ShexLean.Shex2025Inheritance.Decidable`) existed too: this file's "the
-representation was never the problem" conclusion held up a second time,
-independently.** The 2025 work needed the *exact same* bounded-
-reformulation technique — `Schema.anc`/`ancSet` (an unbounded `Finset.filter`
-over a classically-decided reachability `Prop`), `Me`/`Mnotin`, and `.star`'s
-unbounded repetition (this file's `.rep`, one level harder: no static upper
-bound at all, only a `Fuel`-threaded search) all got the same "restate the
-existential as a search over a known finite set" treatment as
-`matches_eachOf_iff`/`matches_tPattern_iff`/`RepBound.lean` here — on top of
-the *same* `Finset Triple`-based `Graph`, no alternative representation
-involved. The one place 2025 diverges from this file's "no restricted
-fragment needed" result: `subjectOf` (Table 3 rule 13) is `Classical.choice`-
-based with no computable equivalent *in general* (unlike every quantifier
-here, its witness isn't forced finite by a co-occurring equation — it's
-genuinely unconstrained without an extra invariant the type doesn't track),
-so `Shex2025Inheritance.Decidable` had to name an explicit restricted
-fragment (`ShapeExpr.MOk`/`FOk`) rather than getting the fully general
-result this file gets for `Satisfies`/`Matches`. That's a difference in the
-*semantics themselves* (2025's Table 3 has no 2017 analogue), not evidence
-that inductive triple graphs would have helped 2017 after all.
+This file itself doesn't depend on any example file (kept import-free of
+`examples/` so those files — and the rendering layer built on top of this
+file — can import *it* without a cycle).
 -/
 
 namespace ShexLean.InductiveRDF

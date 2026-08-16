@@ -12,18 +12,9 @@ import ShexLean.Shex2025Inheritance.examples.Example4_closed_extra
 import ShexLean.Shex2025Inheritance.examples.Example5_extends
 import ShexLean.Shex2025Inheritance.examples.Example6_dependency_graph
 import ShexLean.Shex2025Inheritance.examples.Example7_well_defined
-import ShexLean.InductiveRDF.DecidablePayoff
 
 /-!
 The list of examples the `shex_lean` executable can `list`/`run`.
-
-The `DecidablePayoff` import has no effect on `all`/`find?` below (it
-registers no `Example`) — it's imported purely so `lake build` actually
-type-checks its `native_decide` regression checks; nothing else in the
-repo imports that file, and unlike `ProofRegistry.lean`'s entries (whose
-source is read live from disk by *path*, never imported as a module),
-plain unreferenced modules aren't reachable from any build target unless
-something imports them somewhere.
 -/
 
 namespace Examples
