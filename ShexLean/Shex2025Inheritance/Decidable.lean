@@ -1,12 +1,12 @@
 import ShexLean.Shex2025Inheritance.Semantics
-import ShexLean.InductiveRDF.RepBound
+import ShexLean.Shex2017Schemas.RepBound
 import Mathlib.Data.Finset.Card
 import Mathlib.Data.Finset.Powerset
 import Mathlib.Data.Finset.Pi
 
 /-!
 Making the 2025 "Shape Expressions with Inheritance" semantics decidable —
-the 2025 analogue of `ShexLean.InductiveRDF.Decidable`. Building this out
+the 2025 analogue of `ShexLean.Shex2017Schemas.Decidable`. Building this out
 in full (every case of `SatisfiesEFuel`/`SatisfiesMFuel`/`SatisfiesFuel`) is
 a substantially bigger undertaking than the 2017 side, for two reasons this
 file confronts head-on rather than working around:
@@ -256,12 +256,12 @@ times" as a `k`-deep `.seq` chain would spuriously demand `k` fuel just to
 unfold the chain. Instead: decide existence of a partition directly, by
 well-founded recursion on `M.card` — peel one `Q`-satisfying nonempty piece
 off the remaining triples at a time (`existsPartitionDecidableAux`), bounded
-by the same `Finset InductiveRDF.RepBound` machinery 2017's `.rep` proof
-already established (nonempty pieces are pairwise disjoint subsets of `M`,
-so there are at most `M.card` of them — no padding needed here, since
-`.star` has no minimum repetition count to pad up to). -/
+by the same `Finset` machinery 2017's `.rep` proof already established
+(`ShexLean.Shex2017Schemas.RepBound`; nonempty pieces are pairwise disjoint
+subsets of `M`, so there are at most `M.card` of them — no padding needed
+here, since `.star` has no minimum repetition count to pad up to). -/
 
-open ShexLean.InductiveRDF (mem_subset_foldr_union disjoint_foldr_union_of_forall
+open ShexLean (mem_subset_foldr_union disjoint_foldr_union_of_forall
   foldr_union_filter_nonempty nonempty_filter_length_le_card)
 
 /-- `M` splits into a list of pieces, each satisfying `Q` — the shape of

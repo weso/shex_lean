@@ -1,4 +1,4 @@
-import ShexLean.InductiveRDF.Decidable
+import ShexLean.Shex2017Schemas.Decidable
 import ShexLean.Shex2017Schemas.MaximalTyping
 import Mathlib.Data.Finset.Sort
 
@@ -7,8 +7,7 @@ Turns the *real* `Graph`/`Schema`/`Typing` values of an example into the
 display text `examples/Example.lean`'s `Example.render` shows — replacing
 hand-written prose transcriptions with a genuine pretty-printer walking the
 actual Lean values, and replacing hand-typed `true`/`false`/"correct"
-claims with values computed via `ShexLean.InductiveRDF`'s `Decidable`
-instances.
+claims with values computed via `Decidable.lean`'s `Decidable` instances.
 
 **Why `Finset.sort` isn't used directly on `Finset RDFNode`/`Finset
 Triple`/etc.** `Finset.sort` needs a total order on the element type, and
@@ -96,10 +95,9 @@ def Typing.render (typing : Typing) : String :=
 
 `Schema.CorrectTyping`'s own `∀ n L, (n,L) ∈ typing → …` quantifies over
 all of `RDFNode × ShapeLabel`, same shape as the `Satisfies`/`Matches`
-existentials `ShexLean.InductiveRDF.Decidable` bounds — but the `(n,L) ∈
-typing` premise already forces `n`/`L` to range over the finite `typing`
-itself, so the same "restate as a bounded search" trick applies directly,
-one level up. -/
+existentials `Decidable.lean` bounds — but the `(n,L) ∈ typing` premise
+already forces `n`/`L` to range over the finite `typing` itself, so the
+same "restate as a bounded search" trick applies directly, one level up. -/
 
 theorem correctTyping_iff_bounded (S : Schema) (G : Graph) (typing : Typing) :
     S.CorrectTyping G typing ↔
@@ -109,21 +107,21 @@ theorem correctTyping_iff_bounded (S : Schema) (G : Graph) (typing : Typing) :
   · exact fun h n L hnL => h (n, L) hnL
 
 /-- `Schema.CorrectTyping` is decidable — bounded, via
-`correctTyping_iff_bounded`, over the same `ShexLean.InductiveRDF.
-satisfies_decidable` this whole rendering layer is built on. -/
+`correctTyping_iff_bounded`, over the same `satisfies_decidable` this whole
+rendering layer is built on. -/
 def correctTyping_decidable (S : Schema) (G : Graph) (typing : Typing) :
     Decidable (S.CorrectTyping G typing) :=
   haveI : ∀ p : RDFNode × ShapeLabel, Decidable (Satisfies G typing p.1 (S.shapeDef p.2)) :=
-    fun p => InductiveRDF.satisfies_decidable G typing p.1 (S.shapeDef p.2)
+    fun p => satisfies_decidable G typing p.1 (S.shapeDef p.2)
   decidable_of_iff _ (correctTyping_iff_bounded S G typing).symm
 
 /-- `"true"`/`"false"` for any proposition with an *explicit* `Decidable`
 instance — the computed replacement for a hand-typed claim in a
 `typingText`. Takes the instance explicitly (not via typeclass search,
 which would need `satisfies_decidable`/etc. registered as global
-instances) — see `ShexLean.InductiveRDF.Decidable`'s payoff section for why
-that matters once this is actually evaluated (`@decide` needs a *closed*
-instance term to reduce/compile, not a local one). -/
+instances) — matters once this is actually evaluated: `@decide` needs a
+*closed* instance term to reduce/compile, not a local one (a `haveI` left
+in the proof term won't do). -/
 def renderDecide {P : Prop} (inst : Decidable P) : String :=
   toString (@decide P inst)
 

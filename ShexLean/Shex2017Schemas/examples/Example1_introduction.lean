@@ -78,7 +78,6 @@ open ShexLean
 @[reducible] private def issue1 : Subject := .iri "ex:issue1"
 @[reducible] private def issue2 : Subject := .iri "ex:issue2"
 @[reducible] private def fatima : Subject := .iri "ex:fatima"
--- Not `private`: `ShexLean.InductiveRDF.Decidable`'s payoff section reuses it.
 @[reducible] def ren    : Subject := .iri "ex:ren"
 @[reducible] private def noa    : Subject := .iri "ex:noa"
 @[reducible] private def emin   : Subject := .iri "ex:emin"
@@ -157,7 +156,6 @@ private def userTE : TripleExpr :=
 
 private def userShapeDef : ShapeExpr := .neigDescr userTE
 
--- Not `private`: `ShexLean.InductiveRDF.Decidable`'s payoff section reuses it.
 def progShapeDef : ShapeExpr :=
   .neigDescr (.eachOf (.rep (.tPattern {expertise} IRIValue) 0 none)
     (.tPattern {experience} ExpValueSet))

@@ -24,7 +24,8 @@ the datatype and the two conversions to/from this project's existing
 `Finset Triple`-based `Graph` (`ShexLean.Common.RDF`); whether this
 representation actually buys *decidability* of `Satisfies`/`Matches`
 (`ShexLean.Shex2017Schemas.Semantics`) is investigated separately, in
-`Decidable.lean` — spoiler: it doesn't, see that file's docstring.
+`ShexLean.Shex2017Schemas.Decidable` — spoiler: it doesn't, see that file's
+docstring.
 
 Not ported: the paper's `RDFGraph = Ground (TGraph Resource) | Exists
 (BNodeId -> RDFGraph)` (§4), which models a blank node as a

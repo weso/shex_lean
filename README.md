@@ -30,15 +30,18 @@ paper) a full soundness/completeness story for two validation algorithms
 ```
 ShexLean/
   Common/                    -- shared between both papers, paper-independent
-  InductiveRDF/               -- makes both papers' semantics decidable/executable
-                                (see "Decidability" below) — paper-agnostic
+  InductiveRDF/               -- an alternative RDF graph representation,
+                                investigated (see "Decidability" below) as a
+                                possible route to decidability and kept as a
+                                proved-correct but non-load-bearing detour
   Shex2017Schemas/            -- the 2017 paper: syntax, semantics, propositions,
-                                lemmas, algorithms, a Decidable-backed renderer
+                                lemmas, algorithms, decidability, a renderer
     examples/                 -- the paper's own worked examples, one file per
                                 example (ExampleN_slug.lean), with real
                                 native_decide-computed display text
   Shex2025Inheritance/         -- the 2025 paper: syntax, semantics, propositions,
-                                lemmas, algorithm, a Decidable-backed renderer
+                                lemmas, algorithm, its own decidability layer,
+                                a renderer
     examples/                 -- the paper's own worked examples, one file per
                                 example (ExampleN_slug.lean), with real
                                 native_decide-computed display text
@@ -59,14 +62,15 @@ examples/                     -- the shex_lean executable's CLI infrastructure
   (`ShexLean.Inheritance` for the 2025 side — the Lean *namespace* kept its
   original name even though the *directory* is now `Shex2025Inheritance/`;
   see that section below).
-- **`ShexLean/InductiveRDF/`** makes both papers' satisfaction relations
-  genuinely `Decidable` — see "Decidability" below.
+- **`ShexLean/InductiveRDF/`** ports an alternative RDF graph
+  representation — see "Decidability" below for why it's here and why
+  nothing else in the repo actually depends on it.
 - **`ShexLean/Shex2017Schemas/`** is the 2017 paper's content: syntax,
   semantics, stratification, the maximal-typing propositions/lemmas, both
-  validation algorithms, a renderer built on `InductiveRDF/`'s
-  decidability, and (in its own `examples/` subfolder) the paper's own
-  worked examples, one file per numbered example — see "What's implemented
-  (2017 paper)" below.
+  validation algorithms, the `Decidable` instances that make `Satisfies`/
+  `Matches` executable, a renderer built on that decidability, and (in its
+  own `examples/` subfolder) the paper's own worked examples, one file per
+  numbered example — see "What's implemented (2017 paper)" below.
 - **`ShexLean/Shex2025Inheritance/`** is the 2025 paper's content, the same
   shape as the 2017 side (semantics, propositions, lemmas, its own
   validation algorithm, its own decidability layer and renderer, worked
@@ -94,7 +98,7 @@ below. Build any file explicitly if you want to check it in isolation
 Both papers' satisfaction relations are naturally stated as `Prop`s
 quantifying over infinite types (`RDFNode`, arbitrary `Finset Triple`,
 arbitrary-length lists, …), so *as written* they're existence claims, not
-executable code. `ShexLean/InductiveRDF/Decidable.lean` and
+executable code. `ShexLean/Shex2017Schemas/Decidable.lean` and
 `ShexLean/Shex2025Inheritance/Decidable.lean` close that gap: every
 quantifier that looks unbounded turns out to be **restatable as a search
 bounded to the finite graph/typing/schema at hand**, because every witness
@@ -104,20 +108,22 @@ whole relation becomes a genuine, kernel-reducible `Decidable` instance
 (`decide`/`native_decide`-able, not just "classically decidable" the way
 literally every `Prop` trivially is under Mathlib's ambient axioms).
 
-- **2017 side** (`ShexLean/InductiveRDF/`): `satisfies_decidable`/
-  `matches_decidable` are decidable **unconditionally, for every
-  `ShapeExpr`/`TripleExpr`, no restricted fragment needed** — including
-  `.rep`'s unbounded repetition (`RepBound.lean`: any witness can be
-  shrunk/padded to length `≤ N.card + min`). `Graph.lean`/`RoundTrip.lean`
-  also port Labra Gayo/Jeuring/Álvarez Rodríguez's 2013 "Inductive
-  representations of RDF Graphs" triple-graph encoding as an alternative
-  graph representation, with a proved round-trip to this project's own
-  `Finset Triple`-based `Graph` — investigated as a possible route to
-  decidability, but (see `Decidable.lean`'s own docstring) the graph
-  representation was never actually the obstacle; the bounded-
+- **2017 side** (`ShexLean/Shex2017Schemas/Decidable.lean`):
+  `satisfies_decidable`/`matches_decidable` are decidable
+  **unconditionally, for every `ShapeExpr`/`TripleExpr`, no restricted
+  fragment needed** — including `.rep`'s unbounded repetition
+  (`RepBound.lean`, same directory: any witness can be shrunk/padded to
+  length `≤ N.card + min`). `ShexLean/InductiveRDF/Graph.lean`/
+  `RoundTrip.lean` also port Labra Gayo/Jeuring/Álvarez Rodríguez's 2013
+  "Inductive representations of RDF Graphs" triple-graph encoding as an
+  alternative graph representation, with a proved round-trip to this
+  project's own `Finset Triple`-based `Graph` — investigated as a possible
+  route to decidability, but (see `Decidable.lean`'s own docstring) the
+  graph representation was never actually the obstacle; the bounded-
   reformulation technique above works identically over the existing
   representation, so nothing in this repo depends on the inductive-graph
-  encoding for decidability.
+  encoding for decidability — it's kept only as a documented, correct, but
+  non-load-bearing detour.
 - **2025 side** (`ShexLean/Shex2025Inheritance/Decidable.lean`): the same
   technique, applied to a harder semantics (Table 3's `extends` rule
   recurses into *other labels'* definitions and an ancestor-indexed
@@ -246,7 +252,7 @@ literally every `Prop` trivially is under Mathlib's ambient axioms).
   paper, one file per example (`ExampleN_slug.lean`), each combining the
   worked-out proof with display text generated from the *real* `Schema`/
   `Graph`/`Typing` values (`Render.lean`) and true/false claims computed
-  via `renderDecide (satisfies_decidable …)` (`ShexLean/InductiveRDF/
+  via `renderDecide (satisfies_decidable …)` (`ShexLean/Shex2017Schemas/
   Decidable.lean`, see "Decidability" above) rather than hand-transcribed;
   a later example's file imports an earlier one when it genuinely reuses
   its definitions (e.g. Example 3 imports Example 2 for `G₂`/`S₁`):

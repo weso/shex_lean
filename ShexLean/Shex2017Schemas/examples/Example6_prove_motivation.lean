@@ -12,7 +12,7 @@ introduces a new graph `G₃`, alongside `S₃` from Example 5
 `Satisfies`/`Matches` are `Prop`s over infinite types (`RDFNode`, `IRI :=
 String`), so Algorithm 2 itself was never literally executable via
 `Satisfies`/`Matches` as *stated* (per `ShexLean.Shex2017Schemas.
-Semantics`'s own module docstring) — but `ShexLean.InductiveRDF.Decidable`
+Semantics`'s own module docstring) — but `ShexLean.Shex2017Schemas.Decidable`
 now provides genuine, kernel-reducible `Decidable` instances for both,
 bounding every existential to the finite graph/typing at hand. This file
 proves Example 6's headline claim the traditional way, at the level of the
@@ -133,8 +133,8 @@ namespace Examples
 
 open Examples.ProveAlgorithmExample (G₃ typing n1 L1)
 open Examples.StratificationExample (S₃)
-open ShexLean (Schema.render Graph.render Typing.render renderDecide correctTyping_decidable)
-open ShexLean.InductiveRDF (satisfies_decidable)
+open ShexLean (Schema.render Graph.render Typing.render renderDecide correctTyping_decidable
+  satisfies_decidable)
 
 /-- Example 6: motivating `G₃` for Algorithm 2, showing `ex:n1` has shape
 `<L1>` under `S₃`. `schemaText`/`graphText`/`typingText`'s correctness

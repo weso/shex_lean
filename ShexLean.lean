@@ -14,8 +14,8 @@ import ShexLean.Shex2017Schemas.Algorithm1
 import ShexLean.Shex2017Schemas.Algorithm2
 import ShexLean.InductiveRDF.Graph
 import ShexLean.InductiveRDF.RoundTrip
-import ShexLean.InductiveRDF.RepBound
-import ShexLean.InductiveRDF.Decidable
+import ShexLean.Shex2017Schemas.RepBound
+import ShexLean.Shex2017Schemas.Decidable
 import ShexLean.Shex2017Schemas.Render
 import ShexLean.Shex2025Inheritance.Syntax
 import ShexLean.Shex2025Inheritance.Semantics
