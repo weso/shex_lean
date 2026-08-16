@@ -29,14 +29,17 @@ paper) a full soundness/completeness story for two validation algorithms
 
 ```
 ShexLean/
-  Common/              -- shared between both papers, paper-independent
-  Shex2017Schemas/      -- the 2017 paper: syntax, semantics, propositions,
-                          lemmas, algorithms, and worked examples
-  Shex2025Inheritance/   -- the 2025 paper: syntax, semantics, propositions,
-                          lemmas, and worked examples
-examples/               -- the shex_lean executable's CLI infrastructure
-                          (example/proof registries), plus the 2017-side
-                          worked examples aren't here anymore — see below
+  Common/                    -- shared between both papers, paper-independent
+  Shex2017Schemas/            -- the 2017 paper: syntax, semantics, propositions,
+                                lemmas, algorithms
+    examples/                 -- the paper's own worked examples, one file per
+                                example (ExampleN_slug.lean)
+  Shex2025Inheritance/         -- the 2025 paper: syntax, semantics, propositions,
+                                lemmas
+    examples/                 -- the paper's own worked examples, one file per
+                                example (ExampleN_slug.lean)
+examples/                     -- the shex_lean executable's CLI infrastructure
+                                (example/proof registries) — paper-agnostic
 ```
 
 - **`ShexLean/Common/`** holds the vocabulary both papers use *unchanged*:
@@ -54,12 +57,12 @@ examples/               -- the shex_lean executable's CLI infrastructure
   see that section below).
 - **`ShexLean/Shex2017Schemas/`** is the 2017 paper's content: syntax,
   semantics, stratification, the maximal-typing propositions/lemmas, both
-  validation algorithms, and the paper's own worked examples (moved here
-  from the top-level `examples/` folder, since they're 2017-specific
-  content, not paper-agnostic CLI plumbing) — see "What's implemented (2017
-  paper)" below.
+  validation algorithms, and (in its own `examples/` subfolder) the
+  paper's own worked examples, one file per numbered example — see "What's
+  implemented (2017 paper)" below.
 - **`ShexLean/Shex2025Inheritance/`** is the 2025 paper's content, the same
-  shape as the 2017 side — see "What's implemented (2025 paper)" below.
+  shape as the 2017 side, worked examples included — see "What's
+  implemented (2025 paper)" below.
 - **`examples/`** now holds only paper-*agnostic* infrastructure for the
   `shex_lean` CLI: `Example.lean`/`Proof.lean` (the plain-data record types
   for a displayable worked example / a displayable proof), and
@@ -67,15 +70,17 @@ examples/               -- the shex_lean executable's CLI infrastructure
   commands read from, referencing content in both `Shex2017Schemas/` and
   `Shex2025Inheritance/`).
 
-`ShexLean.lean` re-exports `Common/`, `Shex2017Schemas/`, and
-`Shex2025Inheritance/` together as the single `ShexLean` library (built by
-a bare `lake build`); `Algorithm1.lean`/`Algorithm2.lean` (2017) and
-`Proposition1.lean`/`Lemma2.lean` (2025) are complete but deliberately
-*not* wired into that import chain — matching the precedent already set by
-`Algorithm1`/`Algorithm2` — so build them explicitly if you want to check
-them without the rest (`lake build ShexLean.Shex2017Schemas.Algorithm2`,
-etc.); `examples/` is a separate `Examples` library, and `Main.lean` builds
-the executable that lists/prints everything — see "Running" below.
+`ShexLean.lean` re-exports the core (non-worked-example) files of `Common/`,
+`Shex2017Schemas/`, and `Shex2025Inheritance/` as the single `ShexLean`
+library (built by a bare `lake build`, which — via Lake's default globbing
+— also independently builds every other file under `ShexLean/`, including
+`examples/`, `Algorithm1.lean`/`Algorithm2.lean` (2017), and
+`Proposition1.lean`/`Lemma2.lean` (2025), regardless of whether
+`ShexLean.lean` imports them); build any one of them explicitly if you want
+to check it in isolation (`lake build ShexLean.Shex2017Schemas.Algorithm2`,
+etc.); `examples/` (top-level) is a separate `Examples` library, and
+`Main.lean` builds the executable that lists/prints everything — see
+"Running" below.
 
 ## What's implemented (2017 paper)
 
@@ -177,23 +182,34 @@ the executable that lists/prints everything — see "Running" below.
   descendant's dependency chain looping back to `(n, L)` itself — a genuine
   positive cycle — never needs `(n, L)`'s own correctness re-derived first,
   only its `T`-membership, which is immediate by construction).
-- `ShexLean/Shex2017Schemas/Examples.lean` — Example 2/3 from the paper (a
-  recursive `<IssueSh>` schema over two issues that report on each other),
-  a worked example used as a regression check that the pieces fit
-  together.
-- `ShexLean/Shex2017Schemas/Introduction.lean` — the paper's §1
-  Introductory Example (`S₀`/`G₀`: users, programmers, clients and
-  issues), a second, larger regression check exercising
-  `AND`/`someOf`/`eachOf`/repetition together, with its typing proved
-  correct (Definition 2) for all 18 node/shape associations it induces.
-- `ShexLean/Shex2017Schemas/NegationRecursion.lean` — Example 4: `NOT`
-  mixed with mutual recursion gives two contradicting correct typings, and
-  the schema is not with stratified negation.
-- `ShexLean/Shex2017Schemas/StratificationExample.lean` — Example 5: a
-  schema mixing `NOT` and recursion that *is* with stratified negation,
-  with a witness stratification.
-- `ShexLean/Shex2017Schemas/IssueTracker.lean` — a small standalone worked
-  example (Example 2/3's `<IssueSh>` schema by itself), used by the CLI.
+- `ShexLean/Shex2017Schemas/examples/` — every numbered example from the
+  paper, one file per example (`ExampleN_slug.lean`), each combining the
+  worked-out proof with the display text the CLI shows for it; a later
+  example's file imports an earlier one when it genuinely reuses its
+  definitions (e.g. Example 3 imports Example 2 for `G₂`/`S₁`):
+  - `Example1_introduction.lean` — the paper's §1 Introductory Example
+    (`S₀`/`G₀`: users, programmers, clients and issues), a regression check
+    exercising `AND`/`someOf`/`eachOf`/repetition together, with its typing
+    proved correct (Definition 2) for all 18 node/shape associations it
+    induces.
+  - `Example2_issue_tracker.lean` — a recursive `<IssueSh>` schema over two
+    issues that report on each other (`G₂`/`S₁`), with `typing_1` proved
+    correct.
+  - `Example3_typings.lean` — the other three typings of `G₂` by `S₁`:
+    `typing_2`/`typing_4` proved correct, `typing_3` proved *not* correct
+    (the paper's own counterexample).
+  - `Example4_negation_recursion.lean` — `NOT` mixed with mutual recursion
+    gives two contradicting correct typings, and the schema is not with
+    stratified negation.
+  - `Example5_stratification.lean` — a schema mixing `NOT` and recursion
+    that *is* with stratified negation, with a witness stratification.
+  - `Example6_prove_motivation.lean` — a new graph `G₃` over Example 5's
+    `S₃`, motivating Algorithm 2 (§4.2): `ex:n1` has shape `<L1>`, proved
+    directly against the declarative semantics (`⊢`/`⊨`).
+  - `Example7_trace.lean` — the three `false` outcomes of Algorithm 2's own
+    execution trace of `prove(ex:n1, <L1>, [])` on `G₃`/`S₃`, proved the
+    same way (Algorithm 2 itself isn't executable here, since
+    `Satisfies`/`Matches` are `Prop`s over infinite types).
 
 ## What's implemented (2025 paper: Shape Expressions with Inheritance)
 
@@ -276,23 +292,44 @@ the 2017 side's own triple-expression semantics.
   `Termination.lean`, with the new abstract-label case: `(n,z) ∈ τ` for
   `z ∈ A` requires *some* non-abstract descendant of `z` to be satisfied,
   not `z`'s own definition).
-- `ShexLean/Shex2025Inheritance/Examples.lean` — regression checks against
-  the files above, playing the same role as
-  `ShexLean/Shex2017Schemas/Examples.lean`/`Introduction.lean` do for the
-  2017 formalism: Example 3's triple expression
-  `e = p @T_even ; (p @T_<5* | p @T_str)` proved to match/not match all
-  four of the paper's example triple sets; Example 5's schema (labels
-  `x0..x6`) with `M24,τ ⊨ def(x1)` proved by explicitly constructing the
-  `extends` rule's partition (the one proof here that exercises
-  `Schema.anc`/`Schema.ancSet`, via `Relation.ReflTransGen`); and a first
-  slice of §2's motivating example (the `Attribute` shape and node `a1`,
-  Fig. 1/2) — the fuller multiple-inheritance `ColouredCircle` chain of
-  that example is left for later. `ExampleTripleMatch.lean`/
-  `ExampleExtends.lean`/`ExampleAttribute.lean` are lightweight display-only
-  wrappers around these three (schema/graph/typing text for the CLI, in
-  the same style as `Shex2017Schemas/IssueTracker.lean`), registered as
-  `inheritance2025-triple-match`/`inheritance2025-extends`/
-  `inheritance2025-attribute`.
+- `ShexLean/Shex2025Inheritance/examples/` — every numbered example from
+  the paper, one file per example (`ExampleN_slug.lean`), each combining
+  the worked-out proof with the display text the CLI shows for it; a later
+  example's file imports an earlier one when it genuinely reuses its
+  definitions:
+  - `Example1_figures.lean` — the full `ColouredCircle` schema/graph
+    (`S_fig1`/`G_fig1`, Fig. 1/2), proving every headline claim
+    (`c1_satisfies_Coord`, …, `f1_satisfies_ColouredCircle` — the
+    multiple-inheritance punchline). Also hosts `H_{S1}`'s own ancestor
+    facts (Fig. 3, `hancCircle`/`hancColouredFigure`/
+    `hancSetCircleColouredFigure`) since `f1_satisfies_ColouredCircle`
+    needs them for its own rule-18 partition, even though the extension
+    hierarchy is Example 2's own subject.
+  - `Example2_extension_hierarchy.lean` — imports Example 1 and re-displays
+    its `H_{S1}` ancestor facts (the one that shows `Figure` counted once,
+    not twice, for `ColouredCircle`).
+  - `Example3_triple_match.lean` — the triple expression
+    `e = p @T_even ; (p @T_<5* | p @T_str)` proved to match/not match all
+    four of the paper's example triple sets. Also hosts the ambient schema
+    `S_ex5` (Example 5's own schema) and node constraints, since Examples
+    3-5 all state their claims against it.
+  - `Example4_closed_extra.lean` — imports Example 3 for `S_ex5`/`M24`/
+    `M246`/`M2a`/`M24a`; the `closed`/`extra` semantics on the same triple
+    sets.
+  - `Example5_extends.lean` — imports Example 3 for `S_ex5`; the
+    `extends`-chain schema (labels `x0..x6`) with `M24,τ ⊨ def(x1)` proved
+    by explicitly constructing the `extends` rule's partition (the one
+    proof here that exercises `Schema.anc`/`Schema.ancSet`, via
+    `Relation.ReflTransGen`).
+  - `Example6_dependency_graph.lean` — three small schemas `S1`/`S2`/`S3`
+    and their 13 enumerated dependency-relation facts.
+  - `Example7_well_defined.lean` — imports Example 6 for `S1`/`S2`/`S3`;
+    their well-definedness verdicts.
+
+  The generic `ofShape`-lifting helper lemmas several of these files need
+  (`ofShape_of_Me_eq_self`/`singleton_tc_ofShape`/
+  `Me_eq_self_of_props_subset`) live in `Semantics.lean` itself instead,
+  since they aren't tied to any particular example.
 - `ShexLean/Shex2025Inheritance/Proposition1.lean` — Definition 7
   (`Stratification`, edge-based, plus the path form the paper states it
   with), Definition 8 (`stratTypingSeq`/`Typing8`, the maximal typing
@@ -362,13 +399,15 @@ $ lake exe shex_lean list
 ...
 Examples:
   2017 — Semantics and Validation of Shapes Schemas for RDF:
-    schemas2017-issue-tracker — Recursive <IssueSh> schema, two issues reporting on each other.
-    schemas2017-introduction — §1 Introductory Example: users, programmers, clients, issues.
+    schemas2017-example1-introduction — §1 Introductory Example: users, programmers, clients, issues.
+    schemas2017-example2-issue-tracker — Recursive <IssueSh> schema, two issues reporting on each other.
+    schemas2017-example3-typings — Four typings of G₂ by S₁ from Ex. 2; which are correct (Def. 2).
     ...
   2025 — Shape Expressions with Inheritance:
-    inheritance2025-triple-match — Triple expression p@T_even;(p@T_<5*|p@T_str) matched against three sets.
-    inheritance2025-extends — extends chain x0..x6; M24,τ ⊨ def(x1) via x1's rule-18 partition.
-    inheritance2025-attribute — §2's Attribute shape (Fig. 1/2), satisfied by node a1.
+    inheritance2025-example1-figures — Fig. 1/2's full ColouredCircle schema: f1 is both a Circle and a ColouredFigure.
+    inheritance2025-example2-extension-hierarchy — H_S1 (Fig. 3): anc(ColouredCircle) counts Figure once, not twice.
+    inheritance2025-example3-triple-match — Triple expression p@T_even;(p@T_<5*|p@T_str) matched against three sets.
+    ...
 
 Proofs:
   2017 — Semantics and Validation of Shapes Schemas for RDF:
@@ -388,8 +427,8 @@ sub-header; every summary is kept to one line.
 Print one example's schema, graph, and typing:
 
 ```
-lake exe shex_lean run schemas2017-introduction
-lake exe shex_lean run schemas2017-issue-tracker
+lake exe shex_lean run schemas2017-example1-introduction
+lake exe shex_lean run schemas2017-example2-issue-tracker
 ```
 
 This only prints the example's text — the actual proof that its typing is

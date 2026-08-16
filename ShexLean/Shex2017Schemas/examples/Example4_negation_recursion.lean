@@ -1,5 +1,6 @@
 import ShexLean.Shex2017Schemas.Semantics
 import ShexLean.Shex2017Schemas.Stratification
+import ShexLean.Shex2017Schemas.Render
 import Example
 
 /-!
@@ -24,8 +25,8 @@ namespace Examples.NegationRecursion
 
 open ShexLean
 
-@[reducible] private def n1 : RDFNode := .iri "n1"
-@[reducible] private def n2 : RDFNode := .iri "n2"
+@[reducible] private def n1 : Subject := .iri "n1"
+@[reducible] private def n2 : Subject := .iri "n2"
 
 @[reducible] private def p : IRI := "ex:p"
 
@@ -52,10 +53,10 @@ def G₂ : Graph := {t1, t2}
     | _ => L2Def
 
 /-- `typing₅` from Example 4. -/
-def typing5 : Typing := {(n1, L1)}
+def typing5 : Typing := {((n1 : RDFNode), L1)}
 
 /-- `typing₆` from Example 4. -/
-def typing6 : Typing := {(n2, L2)}
+def typing6 : Typing := {((n2 : RDFNode), L2)}
 
 private theorem neigh_n1 : neigh G₂ n1 = {t1} := by decide
 private theorem neigh_n2 : neigh G₂ n2 = {t2} := by decide
@@ -106,20 +107,31 @@ end Examples.NegationRecursion
 
 namespace Examples
 
+open Examples.NegationRecursion (S₂ G₂ typing5 typing6 L1 L2)
+open ShexLean (Schema.render Graph.render Typing.render renderDecide correctTyping_decidable
+  DepNeg)
+
 /-- Example 4: negation mixed with recursion, showing correct typings are
-not enough for a sound semantics, and `S₂` is not with stratified negation. -/
+not enough for a sound semantics, and `S₂` is not with stratified negation.
+`schemaText`/`graphText`/the two correctness verdicts are generated from
+the real `S₂`/`G₂`/`typing5`/`typing6` values; `DepNeg`'s two edges are
+likewise computed (it *is* `Decidable`). `S₂.StratifiedNegation` itself
+(`Nonempty (Stratification S₂)`, an existential over stratification
+*functions*) genuinely isn't decidable, so that one claim still just names
+the theorem proving it. -/
 def negationRecursion : Example where
-  name := "schemas2017-negation-recursion"
+  name := "schemas2017-example4-negation-recursion"
   summary := "NOT + mutual recursion: two contradicting typings, not stratified."
-  schemaText :=
-    "<L1> → NOT(ex:p @<L2>)\n" ++
-    "<L2> → NOT(ex:p @<L1>)"
-  graphText :=
-    "<n1> ex:p <n2> .\n" ++
-    "<n2> ex:p <n1> ."
+  schemaText := Schema.render S₂
+  graphText := Graph.render G₂
   typingText :=
-    "typing₅ = {(<n1>, <L1>)}    (correct)\n" ++
-    "typing₆ = {(<n2>, <L2>)}    (also correct, and contradicts typing₅)\n" ++
-    "S₂ is NOT with stratified negation (dep⁻(<L1>,<L2>) and dep⁻(<L2>,<L1>))."
+    s!"typing₅ = {Typing.render typing5}    " ++
+      s!"(correct = {renderDecide (correctTyping_decidable S₂ G₂ typing5)})\n" ++
+    s!"typing₆ = {Typing.render typing6}    " ++
+      s!"(correct = {renderDecide (correctTyping_decidable S₂ G₂ typing6)}, " ++
+      "and contradicts typing₅)\n" ++
+    s!"dep⁻(<L1>,<L2>) = {renderDecide (inferInstance : Decidable (DepNeg S₂ L1 L2))}, " ++
+      s!"dep⁻(<L2>,<L1>) = {renderDecide (inferInstance : Decidable (DepNeg S₂ L2 L1))}\n" ++
+    "⇒ S₂ is NOT with stratified negation (`S₂_not_stratified`)."
 
 end Examples

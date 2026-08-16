@@ -89,7 +89,6 @@ def Matches (G : Graph) (typing : Typing) (N : Finset Triple) : TripleExpr → P
       ∃ Ns : List (Finset Triple), DisjointUnionList N Ns ∧
         min ≤ Ns.length ∧ (∀ m', max = some m' → Ns.length ≤ m') ∧
         ∀ Ni ∈ Ns, Matches G typing Ni E
-
 end
 
 end ShexLean

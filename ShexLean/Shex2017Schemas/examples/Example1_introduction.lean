@@ -1,11 +1,13 @@
 import ShexLean.Shex2017Schemas.Semantics
+import ShexLean.Shex2017Schemas.Render
 import Example
 
 /-!
-The "Introductory Example" from §1 of Boneva, Labra Gayo, Prud'hommeaux
-(2017), used as a second, larger regression check (alongside
-`ShexLean.Examples`'s Example 2/3) that the pieces of the formalization fit
-together.
+The "Introductory Example" (schema `S₀`) from §1 of Boneva, Labra Gayo,
+Prud'hommeaux (2017) — the schema that the paper's own Example 1 (§2)
+later names and discusses — used as a second, larger regression check
+(alongside `ShexLean.Examples`'s Example 2/3) that the pieces of the
+formalization fit together.
 
 ```
 <UserShape>      → foaf:name @<StringValue> ; foaf:mbox @<IRIValue> [0;1]
@@ -73,12 +75,13 @@ namespace Examples.Introduction
 open ShexLean
 
 -- Nodes, marked `@[reducible]` for `decide`, as in `ShexLean.Examples`.
-@[reducible] private def issue1 : RDFNode := .iri "ex:issue1"
-@[reducible] private def issue2 : RDFNode := .iri "ex:issue2"
-@[reducible] private def fatima : RDFNode := .iri "ex:fatima"
-@[reducible] private def ren    : RDFNode := .iri "ex:ren"
-@[reducible] private def noa    : RDFNode := .iri "ex:noa"
-@[reducible] private def emin   : RDFNode := .iri "ex:emin"
+@[reducible] private def issue1 : Subject := .iri "ex:issue1"
+@[reducible] private def issue2 : Subject := .iri "ex:issue2"
+@[reducible] private def fatima : Subject := .iri "ex:fatima"
+-- Not `private`: `ShexLean.InductiveRDF.Decidable`'s payoff section reuses it.
+@[reducible] def ren    : Subject := .iri "ex:ren"
+@[reducible] private def noa    : Subject := .iri "ex:noa"
+@[reducible] private def emin   : Subject := .iri "ex:emin"
 @[reducible] private def semweb : RDFNode := .iri "ex:semweb"
 @[reducible] private def senior : RDFNode := .iri "ex:senior"
 @[reducible] private def junior : RDFNode := .iri "ex:junior"
@@ -154,7 +157,8 @@ private def userTE : TripleExpr :=
 
 private def userShapeDef : ShapeExpr := .neigDescr userTE
 
-private def progShapeDef : ShapeExpr :=
+-- Not `private`: `ShexLean.InductiveRDF.Decidable`'s payoff section reuses it.
+def progShapeDef : ShapeExpr :=
   .neigDescr (.eachOf (.rep (.tPattern {expertise} IRIValue) 0 none)
     (.tPattern {experience} ExpValueSet))
 
@@ -205,9 +209,9 @@ def S₀ : Schema where
 every leaf `ValueDescr`/`<AnythgShape>` association that a `⊢` derivation
 needs along the way (see the module docstring). 18 associations in total. -/
 def typing2 : Typing :=
-  { (issue1, IssueShape), (issue2, IssueShape),
-    (fatima, ClientAndUser), (emin, ClientAndUser),
-    (ren, ProgShape), (noa, ProgShape),
+  { ((issue1 : RDFNode), IssueShape), ((issue2 : RDFNode), IssueShape),
+    ((fatima : RDFNode), ClientAndUser), ((emin : RDFNode), ClientAndUser),
+    ((ren : RDFNode), ProgShape), ((noa : RDFNode), ProgShape),
     (lit1, IntValue), (lit1, AnythgShape),
     (eminAffil, AnythgShape),
     (fatimaName, StringValue), (fatimaName, AnythgShape),
@@ -470,40 +474,21 @@ end Examples.Introduction
 
 namespace Examples
 
-/-- The Introduction's `S₀`/`G₀` example. -/
+open Examples.Introduction (S₀ G₀ typing2)
+open ShexLean (Schema.render Graph.render Typing.render renderDecide correctTyping_decidable)
+
+/-- The Introduction's `S₀`/`G₀` example. `schemaText`/`graphText`/
+`typingText` are all generated from the real `S₀`/`G₀`/`typing2` values —
+`typing2`'s correctness verdict is a genuine (if slower — 18 associations,
+several through nested `.rep`/`.eachOf`/`AND`) `Decidable` computation,
+not a hand-typed "(correct)". -/
 def introduction : Example where
-  name := "schemas2017-introduction"
+  name := "schemas2017-example1-introduction"
   summary := "§1 Introductory Example: users, programmers, clients, issues."
-  schemaText :=
-    "<UserShape>      → foaf:name @<StringValue> ; foaf:mbox @<IRIValue> [0;1]\n" ++
-    "<ProgShape>      → ex:expertise @<IRIValue> [0;*] ; ex:experience @<ExpValueSet>\n" ++
-    "<ClientShape>    → ex:clientNbr @<IntValue> | ex:clientAffil @<AnythgShape>\n" ++
-    "<IssueShape>     → is:reportedBy @<ClientAndUser> ;\n" ++
-    "                   is:reproducedBy @<ProgShape> [1;5] ;\n" ++
-    "                   is:relatedTo @<IssueShape> [0;*]\n" ++
-    "<AnythgShape>    → IRI @<AnythgShape> [0;*]\n" ++
-    "<ClientAndUser>  → Def_Client ; IRI − {ex:clientNbr, ex:clientAffil} @<AnythgShape> [0;*]\n" ++
-    "                   AND\n" ++
-    "                   Def_User ; IRI − {foaf:name, foaf:mbox} @<AnythgShape> [0;*]\n" ++
-    "<StringValue>    → xsd:string\n" ++
-    "<IRIValue>       → IRI\n" ++
-    "<ExpValueSet>    → {ex:senior, ex:junior}\n" ++
-    "<IntValue>       → xsd:integer"
-  graphText :=
-    "ex:issue1 is:reportedBy ex:fatima ; is:reproducedBy ex:ren , ex:noa ;\n" ++
-    "          is:relatedTo ex:issue2 .\n" ++
-    "ex:issue2 is:reportedBy ex:emin ; is:reproducedBy ex:ren ;\n" ++
-    "          is:relatedTo ex:issue1 .\n" ++
-    "ex:fatima ex:clientNbr 1 ; foaf:name \"Fatima Smith\" .\n" ++
-    "ex:ren    ex:expertise ex:semweb ; ex:experience ex:senior .\n" ++
-    "ex:noa    ex:experience ex:junior .\n" ++
-    "ex:emin   ex:clientAffil \"ABC\" ; foaf:name \"Emin V. Petrov\" ;\n" ++
-    "          foaf:mbox <mailto:evp@example.org> ."
+  schemaText := Schema.render S₀
+  graphText := Graph.render G₀
   typingText :=
-    "ex:issue1, ex:issue2 : <IssueShape>\n" ++
-    "ex:fatima, ex:emin   : <ClientAndUser>\n" ++
-    "ex:ren, ex:noa       : <ProgShape>\n" ++
-    "(plus leaf associations for nested ValueDescr/<AnythgShape> targets — " ++
-    "see Introduction.typing2 for the full 18-pair typing proved correct.)"
+    Typing.render typing2 ++
+    s!"\n\n(correct = {renderDecide (correctTyping_decidable S₀ G₀ typing2)})"
 
 end Examples
