@@ -64,6 +64,28 @@ Mathlib's ambient classical axioms, *every* `Prop` trivially has *some*
 `Decidable` instance via `Classical.propDecidable`; that fact would be true
 regardless of any of this investigation and is not what's being claimed
 here).
+
+**Retrospective, once the 2025 formalism's own decidability layer
+(`ShexLean.Shex2025Inheritance.Decidable`) existed too: this file's "the
+representation was never the problem" conclusion held up a second time,
+independently.** The 2025 work needed the *exact same* bounded-
+reformulation technique — `Schema.anc`/`ancSet` (an unbounded `Finset.filter`
+over a classically-decided reachability `Prop`), `Me`/`Mnotin`, and `.star`'s
+unbounded repetition (this file's `.rep`, one level harder: no static upper
+bound at all, only a `Fuel`-threaded search) all got the same "restate the
+existential as a search over a known finite set" treatment as
+`matches_eachOf_iff`/`matches_tPattern_iff`/`RepBound.lean` here — on top of
+the *same* `Finset Triple`-based `Graph`, no alternative representation
+involved. The one place 2025 diverges from this file's "no restricted
+fragment needed" result: `subjectOf` (Table 3 rule 13) is `Classical.choice`-
+based with no computable equivalent *in general* (unlike every quantifier
+here, its witness isn't forced finite by a co-occurring equation — it's
+genuinely unconstrained without an extra invariant the type doesn't track),
+so `Shex2025Inheritance.Decidable` had to name an explicit restricted
+fragment (`ShapeExpr.MOk`/`FOk`) rather than getting the fully general
+result this file gets for `Satisfies`/`Matches`. That's a difference in the
+*semantics themselves* (2025's Table 3 has no 2017 analogue), not evidence
+that inductive triple graphs would have helped 2017 after all.
 -/
 
 namespace ShexLean.InductiveRDF
