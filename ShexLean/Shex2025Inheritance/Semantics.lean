@@ -64,7 +64,7 @@ junk value (`.iri ""`) on `M = ∅`, where the paper's own notion is not
 defined either (Table 3's rule 13 is only ever exercised with `M` an
 actual node's neighbourhood). -/
 noncomputable def subjectOf (M : Finset Triple) : RDFNode :=
-  if h : M.Nonempty then h.choose.subj else RDFNode.iri ""
+  if h : M.Nonempty then (h.choose.subj : RDFNode) else RDFNode.iri ""
 
 /-- `M^e` (Table 3, discussion before rule 18): the triples of `M` that
 satisfy some triple constraint of `e` under `τ`, i.e. whose predicate
@@ -168,5 +168,77 @@ def SatisfiesFuel : (Fuel : ℕ) → Schema → Graph → Typing → RDFNode →
   | fuel+1, S, G, τ, n, .or s1 s2 => SatisfiesFuel fuel S G τ n s1 ∨ SatisfiesFuel fuel S G τ n s2
   | fuel+1, S, G, τ, n, .and s1 s2 => SatisfiesFuel fuel S G τ n s1 ∧ SatisfiesFuel fuel S G τ n s2
   | fuel+1, S, G, τ, n, .not s => ¬ SatisfiesFuel fuel S G τ n s
+
+/-! General-purpose lemmas about `Me`/`Mnotin`/`SatisfiesMFuel`'s `.ofShape`
+case, reused by several worked examples
+(`ShexLean/Shex2025Inheritance/examples/`) rather than tied to any one of
+them. -/
+
+/-- Whenever `Me τ M e = M` (every triple of `M` is "consumed" by some
+triple constraint of `e`), `M` satisfying `e` (Table 1) lifts directly to
+`M` satisfying the trivial `[closed:=false][extra:=none]⟨e⟩` shape (Table
+3 rule 17) — `Mnotin` is forced empty since it's always `⊆ M \ Me = M \ M
+= ∅`. This is exactly what an `extends X h`'s own `M'` piece needs to
+satisfy (`M', τ ⊨ h`, Table 3 rule 18), now that it's checked against `h`
+as a shape rather than directly against `h.triples` (see
+`ShexLean/Shex2025Inheritance/Termination.lean`'s module docstring for
+why). -/
+theorem ofShape_of_Me_eq_self {S : Schema} {G : Graph} {τ : Typing} {fuel : ℕ}
+    {M : Finset Triple} {e : TripleExpr} (hMe : Me τ M e = M)
+    (hE : SatisfiesEFuel fuel S G τ M e) :
+    SatisfiesMFuel (fuel + 1) S G τ M (.ofShape ⟨false, none, e⟩) := by
+  refine ⟨?_, ?_, by simp⟩
+  · show SatisfiesEFuel fuel S G τ (Me τ M e) e
+    rw [hMe]; exact hE
+  · show props (Mnotin τ M e) ⊆ (∅ : Finset IRI)
+    rw [Finset.subset_empty, Finset.eq_empty_iff_forall_notMem]
+    intro t ht
+    unfold props at ht
+    obtain ⟨t', ht', rfl⟩ := Finset.mem_image.mp ht
+    rw [mem_Mnotin] at ht'
+    obtain ⟨⟨htM, _⟩, hnotMe⟩ := ht'
+    exact hnotMe (by rw [hMe]; exact htM)
+
+/-- A singleton `{(n,p,o)}` satisfying a bare `p @z` triple constraint
+under `τ` also satisfies the trivial shape `[closed:=false][extra:=none]
+⟨p @z⟩` (rule 17, `.ofShape`) — the special case of `ofShape_of_Me_eq_self`
+most `.extends` proofs actually need. -/
+theorem singleton_tc_ofShape {S : Schema} {G : Graph} {τ : Typing} {fuel : ℕ}
+    {p : IRI} {z : ShapeLabel} {n : Subject} {o : RDFNode} (hty : τ.has o z) :
+    SatisfiesMFuel (fuel + 2) S G τ {(⟨n, p, o⟩ : Triple)} (.ofShape ⟨false, none, .tc p z⟩) := by
+  apply ofShape_of_Me_eq_self (fuel := fuel + 1) (e := .tc p z) (M := {(⟨n, p, o⟩ : Triple)})
+  · apply Finset.Subset.antisymm
+    · intro t ht; rw [mem_Me] at ht; exact ht.1
+    · intro t ht
+      simp only [Finset.mem_singleton] at ht
+      subst ht
+      rw [mem_Me]
+      exact ⟨Finset.mem_singleton_self _, z, by simp [TripleExpr.tcs], hty⟩
+  · exact ⟨n, o, rfl, hty⟩
+
+/-- Converse of the reasoning inside `ofShape_of_Me_eq_self`: if every
+triple of `M` has a predicate already among `e`'s (so none can escape into
+the "extra" bucket), an `M, τ ⊨ [extra:=none]⟨e⟩` witness (Table 3 rule 17)
+forces `Me τ M e = M`, i.e. `M` itself, not just some sub-multiset of it,
+is exactly what satisfies `e` (Table 1). Needed once a `M', τ ⊨ h`
+obligation (Table 3 rule 18's `.ofShape h` piece) must be turned back into
+a `SatisfiesEFuel` fact about the concrete `M'` at hand, now that rule 18
+no longer checks `h.triples` directly (see
+`ShexLean/Shex2025Inheritance/Termination.lean`'s module docstring). -/
+theorem Me_eq_self_of_props_subset {S : Schema} {G : Graph} {τ : Typing} {fuel : ℕ}
+    {M : Finset Triple} {e : TripleExpr}
+    (hM : SatisfiesMFuel (fuel + 1) S G τ M (.ofShape ⟨false, none, e⟩))
+    (hsub : props M ⊆ e.props) :
+    Me τ M e = M := by
+  obtain ⟨-, hMnotinSub, -⟩ := hM
+  apply Finset.Subset.antisymm
+  · intro t ht; rw [mem_Me] at ht; exact ht.1
+  · intro t ht
+    by_contra hnotMe
+    have htin : t ∈ Mnotin τ M e := by
+      rw [mem_Mnotin]
+      exact ⟨⟨ht, hsub (Finset.mem_image_of_mem Triple.pred ht)⟩, hnotMe⟩
+    have := hMnotinSub (Finset.mem_image_of_mem Triple.pred htin)
+    simp at this
 
 end ShexLean.Inheritance

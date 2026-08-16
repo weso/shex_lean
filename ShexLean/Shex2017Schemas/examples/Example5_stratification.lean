@@ -1,5 +1,6 @@
 import ShexLean.Shex2017Schemas.Semantics
 import ShexLean.Shex2017Schemas.Stratification
+import ShexLean.Shex2017Schemas.Render
 import Example
 
 /-!
@@ -133,22 +134,28 @@ end Examples.StratificationExample
 
 namespace Examples
 
+open Examples.StratificationExample (S₃ L1 L2 L3 Str)
+open ShexLean (Schema.render renderDecide DepNeg DepPos)
+
 /-- Example 5: `S₃` mixes `NOT` and recursion but is with stratified
-negation. -/
+negation. `schemaText` generated from the real `S₃`; the four dependency
+edges are each a genuine `Decidable` (`DepNeg`/`DepPos`) computation.
+`S₃.StratifiedNegation` itself (`Nonempty (Stratification S₃)`) isn't
+decidable — same reason as Example 4 — so that claim still names the
+witnessing theorem/stratification. -/
 def stratificationExample : Example where
-  name := "schemas2017-stratification"
+  name := "schemas2017-example5-stratification"
   summary := "NOT + recursion, with stratified negation."
-  schemaText :=
-    "<L1> → NOT(ex:a @<L2> ; ex:b @<Str>)\n" ++
-    "<L2> → ex:c @<L3>\n" ++
-    "<L3> → ex:c @<L2>\n" ++
-    "<Str> → xsd:string"
+  schemaText := Schema.render S₃
   graphText :=
     "(none — Example 5 illustrates Definition 3 on the schema alone;\n" ++
     " a graph for S₃ appears later, in Example 6.)"
   typingText :=
-    "Dependency edges: dep⁻(<L1>,<L2>), dep⁻(<L1>,<Str>), dep⁺(<L2>,<L3>), dep⁺(<L3>,<L2>).\n" ++
-    "S₃ is with stratified negation: one stratification puts <L1> on stratum 2\n" ++
-    "and <L2>, <L3>, <Str> on stratum 1."
+    s!"dep⁻(<L1>,<L2>) = {renderDecide (inferInstance : Decidable (DepNeg S₃ L1 L2))}, " ++
+      s!"dep⁻(<L1>,<Str>) = {renderDecide (inferInstance : Decidable (DepNeg S₃ L1 Str))}\n" ++
+    s!"dep⁺(<L2>,<L3>) = {renderDecide (inferInstance : Decidable (DepPos S₃ L2 L3))}, " ++
+      s!"dep⁺(<L3>,<L2>) = {renderDecide (inferInstance : Decidable (DepPos S₃ L3 L2))}\n" ++
+    "⇒ S₃ IS with stratified negation (`S₃_stratified`, witnessed by " ++
+    "`strat1`: <L1> on stratum 2, the rest on stratum 1)."
 
 end Examples

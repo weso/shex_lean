@@ -15,5 +15,3 @@ import ShexLean.Shex2025Inheritance.Semantics
 import ShexLean.Shex2025Inheritance.Stratification
 import ShexLean.Shex2025Inheritance.Termination
 import ShexLean.Shex2025Inheritance.CorrectTyping
-import ShexLean.Shex2025Inheritance.Examples
-import ShexLean.Shex2017Schemas.Examples
