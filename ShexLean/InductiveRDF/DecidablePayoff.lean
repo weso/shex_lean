@@ -8,6 +8,19 @@ facts proved by hand elsewhere in this repo, re-derived here by nothing but
 `native_decide`. Split out from `Decidable.lean` itself so that file stays
 free of any `examples/` import (avoiding a cycle once example files import
 it too, e.g. via the rendering layer built on top of it).
+
+This file predates that rendering layer and was the original proof-of-
+concept for the `@of_decide_eq_true` pattern below — it's since become the
+*standard* way every worked example in this repo states its claims:
+`ShexLean/Shex2017Schemas/Render.lean`'s `renderDecide` and
+`ShexLean/Shex2025Inheritance/Render.lean`'s (reusing the same
+`renderDecide`) apply the identical pattern across all 14
+`Shex2017Schemas/examples/*.lean` + `Shex2025Inheritance/examples/*.lean`
+files, so `schemaText`/`graphText`/`typingText` display genuinely computed
+`true`/`false` verdicts rather than hand-transcribed prose. Kept as its own
+small file rather than folded into an example, since its point is
+specifically to show the same three-line pattern working — no `Example`
+registration, no display text, just the bare re-derivations.
 -/
 
 /-! ### Example 7's `false` outcomes, `decide`d instead of proved

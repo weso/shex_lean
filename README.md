@@ -30,14 +30,18 @@ paper) a full soundness/completeness story for two validation algorithms
 ```
 ShexLean/
   Common/                    -- shared between both papers, paper-independent
+  InductiveRDF/               -- makes both papers' semantics decidable/executable
+                                (see "Decidability" below) — paper-agnostic
   Shex2017Schemas/            -- the 2017 paper: syntax, semantics, propositions,
-                                lemmas, algorithms
+                                lemmas, algorithms, a Decidable-backed renderer
     examples/                 -- the paper's own worked examples, one file per
-                                example (ExampleN_slug.lean)
+                                example (ExampleN_slug.lean), with real
+                                native_decide-computed display text
   Shex2025Inheritance/         -- the 2025 paper: syntax, semantics, propositions,
-                                lemmas
+                                lemmas, algorithm, a Decidable-backed renderer
     examples/                 -- the paper's own worked examples, one file per
-                                example (ExampleN_slug.lean)
+                                example (ExampleN_slug.lean), with real
+                                native_decide-computed display text
 examples/                     -- the shex_lean executable's CLI infrastructure
                                 (example/proof registries) — paper-agnostic
 ```
@@ -55,14 +59,18 @@ examples/                     -- the shex_lean executable's CLI infrastructure
   (`ShexLean.Inheritance` for the 2025 side — the Lean *namespace* kept its
   original name even though the *directory* is now `Shex2025Inheritance/`;
   see that section below).
+- **`ShexLean/InductiveRDF/`** makes both papers' satisfaction relations
+  genuinely `Decidable` — see "Decidability" below.
 - **`ShexLean/Shex2017Schemas/`** is the 2017 paper's content: syntax,
   semantics, stratification, the maximal-typing propositions/lemmas, both
-  validation algorithms, and (in its own `examples/` subfolder) the
-  paper's own worked examples, one file per numbered example — see "What's
-  implemented (2017 paper)" below.
+  validation algorithms, a renderer built on `InductiveRDF/`'s
+  decidability, and (in its own `examples/` subfolder) the paper's own
+  worked examples, one file per numbered example — see "What's implemented
+  (2017 paper)" below.
 - **`ShexLean/Shex2025Inheritance/`** is the 2025 paper's content, the same
-  shape as the 2017 side, worked examples included — see "What's
-  implemented (2025 paper)" below.
+  shape as the 2017 side (semantics, propositions, lemmas, its own
+  validation algorithm, its own decidability layer and renderer, worked
+  examples) — see "What's implemented (2025 paper)" below.
 - **`examples/`** now holds only paper-*agnostic* infrastructure for the
   `shex_lean` CLI: `Example.lean`/`Proof.lean` (the plain-data record types
   for a displayable worked example / a displayable proof), and
@@ -70,17 +78,71 @@ examples/                     -- the shex_lean executable's CLI infrastructure
   commands read from, referencing content in both `Shex2017Schemas/` and
   `Shex2025Inheritance/`).
 
-`ShexLean.lean` re-exports the core (non-worked-example) files of `Common/`,
-`Shex2017Schemas/`, and `Shex2025Inheritance/` as the single `ShexLean`
-library (built by a bare `lake build`, which — via Lake's default globbing
-— also independently builds every other file under `ShexLean/`, including
-`examples/`, `Algorithm1.lean`/`Algorithm2.lean` (2017), and
-`Proposition1.lean`/`Lemma2.lean` (2025), regardless of whether
-`ShexLean.lean` imports them); build any one of them explicitly if you want
-to check it in isolation (`lake build ShexLean.Shex2017Schemas.Algorithm2`,
-etc.); `examples/` (top-level) is a separate `Examples` library, and
-`Main.lean` builds the executable that lists/prints everything — see
-"Running" below.
+`ShexLean.lean` is the single `ShexLean` library's root and imports every
+non-worked-example file across `Common/`, `InductiveRDF/`,
+`Shex2017Schemas/`, and `Shex2025Inheritance/` explicitly (so `lake build
+ShexLean` alone type-checks the whole formalization, not just whichever
+subset happens to be reachable from the CLI); `examples/` (top-level,
+including both papers' `examples/` subfolders under `ShexLean/`) is built
+separately via the `Examples` library and the `shex_lean` executable, which
+is what actually exercises the worked examples and proofs — see "Running"
+below. Build any file explicitly if you want to check it in isolation
+(`lake build ShexLean.Shex2017Schemas.Algorithm2`, etc.).
+
+## Decidability
+
+Both papers' satisfaction relations are naturally stated as `Prop`s
+quantifying over infinite types (`RDFNode`, arbitrary `Finset Triple`,
+arbitrary-length lists, …), so *as written* they're existence claims, not
+executable code. `ShexLean/InductiveRDF/Decidable.lean` and
+`ShexLean/Shex2025Inheritance/Decidable.lean` close that gap: every
+quantifier that looks unbounded turns out to be **restatable as a search
+bounded to the finite graph/typing/schema at hand**, because every witness
+that could actually satisfy the constraint is already forced — by an
+equation in the same clause — to lie inside it. Reformulated that way, the
+whole relation becomes a genuine, kernel-reducible `Decidable` instance
+(`decide`/`native_decide`-able, not just "classically decidable" the way
+literally every `Prop` trivially is under Mathlib's ambient axioms).
+
+- **2017 side** (`ShexLean/InductiveRDF/`): `satisfies_decidable`/
+  `matches_decidable` are decidable **unconditionally, for every
+  `ShapeExpr`/`TripleExpr`, no restricted fragment needed** — including
+  `.rep`'s unbounded repetition (`RepBound.lean`: any witness can be
+  shrunk/padded to length `≤ N.card + min`). `Graph.lean`/`RoundTrip.lean`
+  also port Labra Gayo/Jeuring/Álvarez Rodríguez's 2013 "Inductive
+  representations of RDF Graphs" triple-graph encoding as an alternative
+  graph representation, with a proved round-trip to this project's own
+  `Finset Triple`-based `Graph` — investigated as a possible route to
+  decidability, but (see `Decidable.lean`'s own docstring) the graph
+  representation was never actually the obstacle; the bounded-
+  reformulation technique above works identically over the existing
+  representation, so nothing in this repo depends on the inductive-graph
+  encoding for decidability. `DecidablePayoff.lean` re-derives a handful of
+  hand-proved example facts by nothing but `native_decide`, as a
+  regression check on the whole layer.
+- **2025 side** (`ShexLean/Shex2025Inheritance/Decidable.lean`): the same
+  technique, applied to a harder semantics (Table 3's `extends` rule
+  recurses into *other labels'* definitions and an ancestor-indexed
+  partition search, not just the current expression) — `Schema.anc`/
+  `ancSet` made computable (`ancReach`/`ancSetReach`, proved equal given
+  the paper's own `XClosed` hierarchy assumption), `.star`'s unbounded
+  repetition made decidable via a `Fuel`-threaded partition search, and
+  rule 18's ancestor-indexed partition made decidable via a `Finset.pi`-
+  bounded reformulation of its witness function. One genuine restriction
+  *is* needed here, unlike 2017: `subjectOf` (rule 13) is
+  `Classical.choice`-based with no computable equivalent in general, so
+  `.constraint` is only decided at the node level (where it needs no
+  `subjectOf` at all) — `ShapeExpr.MOk`/`FOk` name the resulting fragment
+  explicitly, following this repo's existing `WellFormedX`/
+  `WellFormedExtends`-style precedent of naming restrictions rather than
+  leaving them implicit. Verified to cost nothing in practice: none of the
+  worked examples below ever hit the excluded case.
+- **Rendering** (`ShexLean/Shex2017Schemas/Render.lean`,
+  `ShexLean/Shex2025Inheritance/Render.lean`): pretty-prints the *real*
+  `Schema`/`Graph`/`Typing` Lean values (not hand-typed transcriptions) and
+  computes every true/false claim in a worked example's display text via
+  `renderDecide`, wrapping the `Decidable` instances above — see "Running"
+  below for what this looks like from the CLI.
 
 ## What's implemented (2017 paper)
 
@@ -184,9 +246,12 @@ etc.); `examples/` (top-level) is a separate `Examples` library, and
   only its `T`-membership, which is immediate by construction).
 - `ShexLean/Shex2017Schemas/examples/` — every numbered example from the
   paper, one file per example (`ExampleN_slug.lean`), each combining the
-  worked-out proof with the display text the CLI shows for it; a later
-  example's file imports an earlier one when it genuinely reuses its
-  definitions (e.g. Example 3 imports Example 2 for `G₂`/`S₁`):
+  worked-out proof with display text generated from the *real* `Schema`/
+  `Graph`/`Typing` values (`Render.lean`) and true/false claims computed
+  via `renderDecide (satisfies_decidable …)` (`ShexLean/InductiveRDF/
+  Decidable.lean`, see "Decidability" above) rather than hand-transcribed;
+  a later example's file imports an earlier one when it genuinely reuses
+  its definitions (e.g. Example 3 imports Example 2 for `G₂`/`S₁`):
   - `Example1_introduction.lean` — the paper's §1 Introductory Example
     (`S₀`/`G₀`: users, programmers, clients and issues), a regression check
     exercising `AND`/`someOf`/`eachOf`/repetition together, with its typing
@@ -206,10 +271,14 @@ etc.); `examples/` (top-level) is a separate `Examples` library, and
   - `Example6_prove_motivation.lean` — a new graph `G₃` over Example 5's
     `S₃`, motivating Algorithm 2 (§4.2): `ex:n1` has shape `<L1>`, proved
     directly against the declarative semantics (`⊢`/`⊨`).
-  - `Example7_trace.lean` — the three `false` outcomes of Algorithm 2's own
-    execution trace of `prove(ex:n1, <L1>, [])` on `G₃`/`S₃`, proved the
-    same way (Algorithm 2 itself isn't executable here, since
-    `Satisfies`/`Matches` are `Prop`s over infinite types).
+  - `Example7_trace.lean` — Algorithm 2's own execution trace of
+    `prove(ex:n1, <L1>, [])` on `G₃`/`S₃`: all six recursive-call outcomes
+    (three `true`, three `false`) are computed live via
+    `satisfies_decidable`/`native_decide` against the declarative
+    semantics (`⊢`/`⊨`) — Algorithm 2's own recursive `prove` procedure
+    isn't itself formalized as executable code (it's `Algorithm2.lean`'s
+    *subject*, related to `⊢`/`⊨` only via Proposition 2), but the
+    semantics it's proved equal to now genuinely is.
 
 ## What's implemented (2025 paper: Shape Expressions with Inheritance)
 
@@ -294,9 +363,11 @@ the 2017 side's own triple-expression semantics.
   not `z`'s own definition).
 - `ShexLean/Shex2025Inheritance/examples/` — every numbered example from
   the paper, one file per example (`ExampleN_slug.lean`), each combining
-  the worked-out proof with the display text the CLI shows for it; a later
-  example's file imports an earlier one when it genuinely reuses its
-  definitions:
+  the worked-out proof with display text generated from the real `Schema`/
+  `Graph` values and true/false claims computed via `renderDecide
+  (satisfiesFuel_decidable …)` (`Decidable.lean`, see "Decidability"
+  above) rather than hand-transcribed; a later example's file imports an
+  earlier one when it genuinely reuses its definitions:
   - `Example1_figures.lean` — the full `ColouredCircle` schema/graph
     (`S_fig1`/`G_fig1`, Fig. 1/2), proving every headline claim
     (`c1_satisfies_Coord`, …, `f1_satisfies_ColouredCircle` — the
@@ -362,13 +433,21 @@ the 2017 side's own triple-expression semantics.
   (`Satisfies_stratRestrict_agree`) to an arbitrary `D_S`-closed label set
   (`Schema.restrictLabels`, `Satisfies_restrictLabels_agree`), since
   `cont1`'s schedule-agnostic batches aren't shaped like strata.
+- `ShexLean/Shex2025Inheritance/Algorithm1.lean` — the §5 validation/
+  refinement algorithm for ShEx with inheritance, ported from the 2017
+  formalism's own `Algorithm1.lean` the same way `Lemma2.lean` was: proved
+  fully correct (`algorithm1_correct : Algorithm1 = Typing8`,
+  `algorithm1_correctTyping`), no `sorry`.
+- `ShexLean/Shex2025Inheritance/Decidable.lean`,
+  `ShexLean/Shex2025Inheritance/Render.lean` — decidability and rendering
+  for this formalism, see "Decidability" above.
 
 ## CLI infrastructure (`examples/`)
 
 - `examples/Example.lean`, `examples/Registry.lean` — a small `Example`
-  record (name, summary, schema/graph/typing as text) wrapping each 2017
-  worked example for display, plus a registry the executable lists and
-  selects from.
+  record (name, summary, schema/graph/typing as text) wrapping each worked
+  example, from either paper, for display, plus a registry the executable
+  lists and selects from.
 - `examples/Proof.lean`, `examples/ProofRegistry.lean` — a `ProofItem`
   record (name, summary, and the `.lean` file path containing the theorem)
   for theorems shown by their actual Lean source rather than curated text
@@ -427,14 +506,33 @@ sub-header; every summary is kept to one line.
 Print one example's schema, graph, and typing:
 
 ```
-lake exe shex_lean run schemas2017-example1-introduction
-lake exe shex_lean run schemas2017-example2-issue-tracker
+$ lake exe shex_lean run schemas2017-example2-issue-tracker
+schemas2017-example2-issue-tracker — Recursive <IssueSh> schema, two issues reporting on each other.
+
+Schema:
+<IssueSh> → ({is:reportedBy} @<Str> ; {is:relatedTo} @<IssueSh> [0;*])
+<Str> → {"Bob", "Ren"}
+
+Graph:
+<i1> is:relatedTo <i2> .
+<i1> is:reportedBy "Ren" .
+<i2> is:relatedTo <i1> .
+<i2> is:reportedBy "Bob" .
+
+Typing:
+{("Bob",<Str>), ("Ren",<Str>), (<i1>,<IssueSh>), (<i2>,<IssueSh>)}   (correct = true)
 ```
 
-This only prints the example's text — the actual proof that its typing is
-correct (Definition 2) lives in the corresponding `.lean` file and is
-checked by `lake build`, not re-derived at runtime (`Satisfies`/`Matches`
-are `Prop`s over infinite types, so they aren't executable).
+Every part of that output is generated, not transcribed: `schemaText`/
+`graphText`/`typingText` are pretty-printed straight from the real `Schema`/
+`Graph`/`Typing` Lean values (`Render.lean`), and the `correct = true`
+verdict is a `native_decide` computation of `Schema.CorrectTyping` against
+the `Decidable` instances in "Decidability" above, run *at CLI runtime* —
+not a value asserted once in a proof and copied into a string. The
+underlying theorem that this typing is correct (`typing_1_correct` etc.)
+still lives in the corresponding `.lean` file and is checked by `lake
+build`; the CLI's `true`/`false` is an independent, second computation of
+the same fact.
 
 Print a proof's Lean source (statement and tactic proof) — unlike
 examples, this reads the `.lean` file directly, so run it from the project
