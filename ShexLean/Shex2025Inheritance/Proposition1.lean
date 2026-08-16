@@ -942,8 +942,8 @@ but with `monoE` in place of `agreeE` for `M'`/`ext-te(x)` (no
 monotone) and `stratMonoM_noExtends` in place of `agreeM_noExtends` for
 `restr(x)` (which only ever needs *its own* negative-dependency bound, via
 `restrOf_negRefs_subset` + the schema-wide `hLo`). -/
-theorem stratMonoM {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.WellFormedExtends)
-    (hWFExtra : S.WellFormedExtra) (hNEF : S.NotIsExtendsFree)
+theorem stratMonoM {S : Schema} (_hWFX : S.WellFormedX) (hWFExt : S.WellFormedExtends)
+    (hWFExtra : S.WellFormedExtra) (_hNEF : S.NotIsExtendsFree)
     {G : Graph} {τ τ' : Typing} {Z Lo : Finset ShapeLabel}
     (hZ : S.DClosedOn Z) (hsub : τ ⊆ τ') (hagree : ∀ n z, z ∈ Lo → ((n, z) ∈ τ ↔ (n, z) ∈ τ'))
     (hLo : ∀ z ∈ Z, ((S.shapeDef z).depsAux false).negRefs ⊆ Lo) :
