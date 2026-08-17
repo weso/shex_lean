@@ -48,7 +48,7 @@ inductive Subject where
 instance below, wherever a subject is compared against/passed as a general
 `RDFNode` — e.g. `Graph.nodes`, `neigh`, or a shape-satisfaction query,
 which may ask about a literal that can never be *anyone's* subject). -/
-@[reducible] def Subject.toNode : Subject → RDFNode
+def Subject.toNode : Subject → RDFNode
   | .iri i => .iri i
   | .bnode b => .bnode b
 
@@ -58,7 +58,7 @@ instance : Coe Subject RDFNode := ⟨Subject.toNode⟩
 literal. Used wherever some *other* representation of a graph only tracks
 "the node," but needs to rebuild an actual `Triple` — e.g.
 `ShexLean.InductiveRDF.Graph`'s `TContext.toTriples`. -/
-@[reducible] def RDFNode.toSubject? : RDFNode → Option Subject
+def RDFNode.toSubject? : RDFNode → Option Subject
   | .iri i => some (.iri i)
   | .bnode b => some (.bnode b)
   | .lit _ => none

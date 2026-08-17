@@ -30,34 +30,34 @@ namespace Examples.StratificationExample
 
 open ShexLean
 
-@[reducible] private def L1  : ShapeLabel := "L1"
-@[reducible] private def L2  : ShapeLabel := "L2"
-@[reducible] private def L3  : ShapeLabel := "L3"
-@[reducible] private def Str : ShapeLabel := "Str"
+private abbrev L1  : ShapeLabel := "L1"
+private abbrev L2  : ShapeLabel := "L2"
+private abbrev L3  : ShapeLabel := "L3"
+private abbrev Str : ShapeLabel := "Str"
 
-@[reducible] private def a : IRI := "ex:a"
-@[reducible] private def b : IRI := "ex:b"
-@[reducible] private def c : IRI := "ex:c"
+private abbrev a : IRI := "ex:a"
+private abbrev b : IRI := "ex:b"
+private abbrev c : IRI := "ex:c"
 
 /-- `<L1> → NOT(ex:a @<L2> ; ex:b @<Str>)`. -/
-@[reducible] private def L1Def : ShapeExpr :=
+private abbrev L1Def : ShapeExpr :=
   .not (.neigDescr (.eachOf (.tPattern {a} L2) (.tPattern {b} Str)))
 
 /-- `<L2> → ex:c @<L3>`. -/
-@[reducible] private def L2Def : ShapeExpr := .neigDescr (.tPattern {c} L3)
+private abbrev L2Def : ShapeExpr := .neigDescr (.tPattern {c} L3)
 
 /-- `<L3> → ex:c @<L2>`. -/
-@[reducible] private def L3Def : ShapeExpr := .neigDescr (.tPattern {c} L2)
+private abbrev L3Def : ShapeExpr := .neigDescr (.tPattern {c} L2)
 
 /-- `<Str> → xsd:string`, stood in (as elsewhere, e.g. `ShexLean.Examples`)
 by a placeholder literal, since Example 5 has no accompanying graph to
 size the set against. -/
-@[reducible] private def StrDef : ShapeExpr := .valueDescr {.lit (.str "placeholder")}
+private abbrev StrDef : ShapeExpr := .valueDescr {.lit (.str "placeholder")}
 
 /-- The schema `S₃` from Example 5. Written with an explicit `if`-chain
 (rather than the `|`-pattern style used elsewhere) so that `S₃.shapeDef`'s
 case split is directly available to `simp` in the proofs below. -/
-@[reducible] def S₃ : Schema where
+abbrev S₃ : Schema where
   labels := {L1, L2, L3, Str}
   shapeDef := fun L =>
     if L = L1 then L1Def

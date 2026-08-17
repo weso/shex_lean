@@ -14,13 +14,14 @@ private def usage : String :=
 
 private def paperLabel (name : String) : String :=
   if name.startsWith "schemas2017-" then "2017 — Semantics and Validation of Shapes Schemas for RDF"
-  else "2025 — Shape Expressions with Inheritance"
+  else if name.startsWith "inheritance2025-" then "2025 — Shape Expressions with Inheritance"
+  else "2026 — Shape Expressions with Inheritance, disjunctive extends explored (§6)"
 
 /-- Print `items` (already paired with their display line) grouped under a
 `2017`/`2025` sub-header per name prefix, skipping any paper with nothing
 to show. -/
 private def listGrouped (items : List (String × String)) : IO Unit := do
-  for paper in ["schemas2017-", "inheritance2025-"] do
+  for paper in ["schemas2017-", "inheritance2025-", "inheritance2026-"] do
     let inPaper := items.filter (fun (name, _) => name.startsWith paper)
     if !inPaper.isEmpty then
       IO.println s!"  {paperLabel paper}:"

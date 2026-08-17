@@ -12,6 +12,7 @@ import ShexLean.Shex2025Inheritance.examples.Example4_closed_extra
 import ShexLean.Shex2025Inheritance.examples.Example5_extends
 import ShexLean.Shex2025Inheritance.examples.Example6_dependency_graph
 import ShexLean.Shex2025Inheritance.examples.Example7_well_defined
+import ShexLean.Shex2026InheritanceDisjunction.examples.Example1_coloured_circle
 
 /-!
 The list of examples the `shex_lean` executable can `list`/`run`.
@@ -27,7 +28,8 @@ def all : List Example :=
     proveAlgorithmMotivation, proveAlgorithmTrace,
     inheritance2025Figures, inheritance2025ExtensionHierarchy, inheritance2025TripleMatch,
     inheritance2025ClosedExtra, inheritance2025Extends, inheritance2025DependencyGraph,
-    inheritance2025WellDefined]
+    inheritance2025WellDefined,
+    inheritanceDisjunctionColouredCircle]
 
 /-- Look up a registered example by name. -/
 def find? (name : String) : Option Example :=

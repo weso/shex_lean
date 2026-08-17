@@ -34,22 +34,19 @@ namespace ShexLean.Examples
 
 open ShexLean
 
--- Marked `@[reducible]` throughout so that `decide` (whose instance search
--- only unfolds reducible definitions) can see through them to the concrete
--- constructors underneath. Not `private`: `Example3_typings.lean` reuses
--- all of these.
-@[reducible] def i1 : Subject := .iri "i1"
-@[reducible] def i2 : Subject := .iri "i2"
-@[reducible] def ren : RDFNode := .lit (.str "Ren")
-@[reducible] def bob : RDFNode := .lit (.str "Bob")
+-- Not `private`: `Example3_typings.lean` reuses all of these.
+def i1 : Subject := .iri "i1"
+def i2 : Subject := .iri "i2"
+def ren : RDFNode := .lit (.str "Ren")
+def bob : RDFNode := .lit (.str "Bob")
 
-@[reducible] def reportedBy : IRI := "is:reportedBy"
-@[reducible] def relatedTo : IRI := "is:relatedTo"
+def reportedBy : IRI := "is:reportedBy"
+def relatedTo : IRI := "is:relatedTo"
 
-@[reducible] def t1 : Triple := ⟨i1, reportedBy, ren⟩
-@[reducible] def t2 : Triple := ⟨i1, relatedTo, i2⟩
-@[reducible] def t3 : Triple := ⟨i2, reportedBy, bob⟩
-@[reducible] def t4 : Triple := ⟨i2, relatedTo, i1⟩
+def t1 : Triple := ⟨i1, reportedBy, ren⟩
+def t2 : Triple := ⟨i1, relatedTo, i2⟩
+def t3 : Triple := ⟨i2, reportedBy, bob⟩
+def t4 : Triple := ⟨i2, relatedTo, i1⟩
 
 /-- The graph `G₂` from Example 2. -/
 def G₂ : Graph := {t1, t2, t3, t4}
@@ -87,37 +84,17 @@ theorem satisfies_issueSh_i1 : Satisfies G₂ typing1 i1 issueShDef := by
   show Matches G₂ typing1 (neigh G₂ i1) _
   have hneigh : neigh G₂ i1 = {t1, t2} := by decide
   rw [hneigh]
-  refine ⟨{t1}, {t2}, ⟨?_, ?_⟩, ?_, ?_⟩
-  · decide
-  · decide
-  · exact ⟨i1, reportedBy, ren, by decide, by decide, by decide⟩
-  · refine ⟨[{t2}], ⟨?_, ?_⟩, ?_, ?_, ?_⟩
-    · decide
-    · decide
-    · decide
-    · intro m hm; cases hm
-    · intro Ni hNi
-      simp only [List.mem_singleton] at hNi
-      subst hNi
-      exact ⟨i1, relatedTo, i2, by decide, by decide, by decide⟩
+  refine Matches.eachOf_of G₂ typing1 {t1} {t2}
+    (Matches.tPattern_of G₂ typing1 i1 reportedBy ren) ?_
+  exact Matches.rep_single_of G₂ typing1 {t2} (Matches.tPattern_of G₂ typing1 i1 relatedTo i2)
 
 theorem satisfies_issueSh_i2 : Satisfies G₂ typing1 i2 issueShDef := by
   show Matches G₂ typing1 (neigh G₂ i2) _
   have hneigh : neigh G₂ i2 = {t3, t4} := by decide
   rw [hneigh]
-  refine ⟨{t3}, {t4}, ⟨?_, ?_⟩, ?_, ?_⟩
-  · decide
-  · decide
-  · exact ⟨i2, reportedBy, bob, by decide, by decide, by decide⟩
-  · refine ⟨[{t4}], ⟨?_, ?_⟩, ?_, ?_, ?_⟩
-    · decide
-    · decide
-    · decide
-    · intro m hm; cases hm
-    · intro Ni hNi
-      simp only [List.mem_singleton] at hNi
-      subst hNi
-      exact ⟨i2, relatedTo, i1, by decide, by decide, by decide⟩
+  refine Matches.eachOf_of G₂ typing1 {t3} {t4}
+    (Matches.tPattern_of G₂ typing1 i2 reportedBy bob) ?_
+  exact Matches.rep_single_of G₂ typing1 {t4} (Matches.tPattern_of G₂ typing1 i2 relatedTo i1)
 
 /-- `typing1` is a correct typing of `G₂` by `S₁` (Definition 2): every
 node-type association it contains is backed by a `⊢` derivation. -/
