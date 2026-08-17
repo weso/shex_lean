@@ -74,50 +74,49 @@ namespace Examples.Introduction
 
 open ShexLean
 
--- Nodes, marked `@[reducible]` for `decide`, as in `ShexLean.Examples`.
-@[reducible] private def issue1 : Subject := .iri "ex:issue1"
-@[reducible] private def issue2 : Subject := .iri "ex:issue2"
-@[reducible] private def fatima : Subject := .iri "ex:fatima"
-@[reducible] def ren    : Subject := .iri "ex:ren"
-@[reducible] private def noa    : Subject := .iri "ex:noa"
-@[reducible] private def emin   : Subject := .iri "ex:emin"
-@[reducible] private def semweb : RDFNode := .iri "ex:semweb"
-@[reducible] private def senior : RDFNode := .iri "ex:senior"
-@[reducible] private def junior : RDFNode := .iri "ex:junior"
-@[reducible] private def mbox   : RDFNode := .iri "mailto:evp@example.org"
+private def issue1 : Subject := .iri "ex:issue1"
+private def issue2 : Subject := .iri "ex:issue2"
+private def fatima : Subject := .iri "ex:fatima"
+def ren    : Subject := .iri "ex:ren"
+private def noa    : Subject := .iri "ex:noa"
+private def emin   : Subject := .iri "ex:emin"
+private def semweb : RDFNode := .iri "ex:semweb"
+private def senior : RDFNode := .iri "ex:senior"
+private def junior : RDFNode := .iri "ex:junior"
+private def mbox   : RDFNode := .iri "mailto:evp@example.org"
 
-@[reducible] private def lit1       : RDFNode := .lit (.int 1)
-@[reducible] private def fatimaName : RDFNode := .lit (.str "Fatima Smith")
-@[reducible] private def eminName   : RDFNode := .lit (.str "Emin V. Petrov")
-@[reducible] private def eminAffil  : RDFNode := .lit (.str "ABC")
+private def lit1       : RDFNode := .lit (.int 1)
+private def fatimaName : RDFNode := .lit (.str "Fatima Smith")
+private def eminName   : RDFNode := .lit (.str "Emin V. Petrov")
+private def eminAffil  : RDFNode := .lit (.str "ABC")
 
 -- Predicates.
-@[reducible] private def reportedBy   : IRI := "is:reportedBy"
-@[reducible] private def reproducedBy : IRI := "is:reproducedBy"
-@[reducible] private def relatedTo    : IRI := "is:relatedTo"
-@[reducible] private def clientNbr    : IRI := "ex:clientNbr"
-@[reducible] private def clientAffil  : IRI := "ex:clientAffil"
-@[reducible] private def expertise    : IRI := "ex:expertise"
-@[reducible] private def experience   : IRI := "ex:experience"
-@[reducible] private def foafName     : IRI := "foaf:name"
-@[reducible] private def foafMbox     : IRI := "foaf:mbox"
+private def reportedBy   : IRI := "is:reportedBy"
+private def reproducedBy : IRI := "is:reproducedBy"
+private def relatedTo    : IRI := "is:relatedTo"
+private def clientNbr    : IRI := "ex:clientNbr"
+private def clientAffil  : IRI := "ex:clientAffil"
+private def expertise    : IRI := "ex:expertise"
+private def experience   : IRI := "ex:experience"
+private def foafName     : IRI := "foaf:name"
+private def foafMbox     : IRI := "foaf:mbox"
 
 -- The 15 triples of `G₀`.
-@[reducible] private def t1  : Triple := ⟨issue1, reportedBy, fatima⟩
-@[reducible] private def t2  : Triple := ⟨issue1, reproducedBy, ren⟩
-@[reducible] private def t3  : Triple := ⟨issue1, reproducedBy, noa⟩
-@[reducible] private def t4  : Triple := ⟨issue1, relatedTo, issue2⟩
-@[reducible] private def t5  : Triple := ⟨issue2, reportedBy, emin⟩
-@[reducible] private def t6  : Triple := ⟨issue2, reproducedBy, ren⟩
-@[reducible] private def t7  : Triple := ⟨issue2, relatedTo, issue1⟩
-@[reducible] private def t8  : Triple := ⟨fatima, clientNbr, lit1⟩
-@[reducible] private def t9  : Triple := ⟨fatima, foafName, fatimaName⟩
-@[reducible] private def t10 : Triple := ⟨ren, expertise, semweb⟩
-@[reducible] private def t11 : Triple := ⟨ren, experience, senior⟩
-@[reducible] private def t12 : Triple := ⟨noa, experience, junior⟩
-@[reducible] private def t13 : Triple := ⟨emin, clientAffil, eminAffil⟩
-@[reducible] private def t14 : Triple := ⟨emin, foafName, eminName⟩
-@[reducible] private def t15 : Triple := ⟨emin, foafMbox, mbox⟩
+private def t1  : Triple := ⟨issue1, reportedBy, fatima⟩
+private def t2  : Triple := ⟨issue1, reproducedBy, ren⟩
+private def t3  : Triple := ⟨issue1, reproducedBy, noa⟩
+private def t4  : Triple := ⟨issue1, relatedTo, issue2⟩
+private def t5  : Triple := ⟨issue2, reportedBy, emin⟩
+private def t6  : Triple := ⟨issue2, reproducedBy, ren⟩
+private def t7  : Triple := ⟨issue2, relatedTo, issue1⟩
+private def t8  : Triple := ⟨fatima, clientNbr, lit1⟩
+private def t9  : Triple := ⟨fatima, foafName, fatimaName⟩
+private def t10 : Triple := ⟨ren, expertise, semweb⟩
+private def t11 : Triple := ⟨ren, experience, senior⟩
+private def t12 : Triple := ⟨noa, experience, junior⟩
+private def t13 : Triple := ⟨emin, clientAffil, eminAffil⟩
+private def t14 : Triple := ⟨emin, foafName, eminName⟩
+private def t15 : Triple := ⟨emin, foafMbox, mbox⟩
 
 /-- The graph `G₀` from the Introduction. -/
 def G₀ : Graph := {t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15}
@@ -203,7 +202,7 @@ def S₀ : Schema where
     | "ExpValueSet" => expValueSetDef
     | _ => intValueDef
 
-/-- The typing of `G₀` by `S₀` described in the paper's prose, extended with
+/-- The typing of `G₀` by `S₀` described in the paper, extended with
 every leaf `ValueDescr`/`<AnythgShape>` association that a `⊢` derivation
 needs along the way (see the module docstring). 18 associations in total. -/
 def typing2 : Typing :=
@@ -225,12 +224,7 @@ private theorem neigh_empty_satisfies_anythg (n : RDFNode) (h : neigh G₀ n = �
     Satisfies G₀ typing2 n anythgShapeDef := by
   show Matches G₀ typing2 (neigh G₀ n) _
   rw [h]
-  refine ⟨[], ⟨?_, ?_⟩, ?_, ?_, ?_⟩
-  · decide
-  · decide
-  · decide
-  · intro m' hm'; cases hm'
-  · intro Ni hNi; cases hNi
+  exact Matches.rep_empty_of G₀ typing2
 
 private theorem satisfies_stringValue (n : RDFNode) (h : n = fatimaName ∨ n = eminName) :
     Satisfies G₀ typing2 n stringValueDef := by
@@ -259,185 +253,81 @@ theorem satisfies_progShape_ren : Satisfies G₀ typing2 ren progShapeDef := by
   show Matches G₀ typing2 (neigh G₀ ren) _
   have hneigh : neigh G₀ ren = {t10, t11} := by decide
   rw [hneigh]
-  refine ⟨{t10}, {t11}, ⟨?_, ?_⟩, ?_, ?_⟩
-  · decide
-  · decide
-  · refine ⟨[{t10}], ⟨?_, ?_⟩, ?_, ?_, ?_⟩
-    · decide
-    · decide
-    · decide
-    · intro m' hm'; cases hm'
-    · intro Ni hNi
-      simp only [List.mem_singleton] at hNi
-      subst hNi
-      exact ⟨ren, expertise, semweb, by decide, by decide, by decide⟩
-  · exact ⟨ren, experience, senior, by decide, by decide, by decide⟩
+  refine Matches.eachOf_of G₀ typing2 {t10} {t11} ?_
+    (Matches.tPattern_of G₀ typing2 ren experience senior)
+  exact Matches.rep_single_of G₀ typing2 {t10} (Matches.tPattern_of G₀ typing2 ren expertise semweb)
 
 theorem satisfies_progShape_noa : Satisfies G₀ typing2 noa progShapeDef := by
   show Matches G₀ typing2 (neigh G₀ noa) _
   have hneigh : neigh G₀ noa = {t12} := by decide
   rw [hneigh]
-  refine ⟨∅, {t12}, ⟨?_, ?_⟩, ?_, ?_⟩
-  · decide
-  · decide
-  · refine ⟨[], ⟨?_, ?_⟩, ?_, ?_, ?_⟩
-    · decide
-    · decide
-    · decide
-    · intro m' hm'; cases hm'
-    · intro Ni hNi; cases hNi
-  · exact ⟨noa, experience, junior, by decide, by decide, by decide⟩
+  refine Matches.eachOf_of G₀ typing2 ∅ {t12}
+    (Matches.rep_empty_of G₀ typing2)
+    (Matches.tPattern_of G₀ typing2 noa experience junior)
 
 theorem satisfies_issueShape_issue1 : Satisfies G₀ typing2 issue1 issueShapeDef := by
   show Matches G₀ typing2 (neigh G₀ issue1) _
   have hneigh : neigh G₀ issue1 = {t1, t2, t3, t4} := by decide
   rw [hneigh]
-  refine ⟨{t1}, {t2, t3, t4}, ⟨?_, ?_⟩, ?_, ?_⟩
-  · decide
-  · decide
-  · exact ⟨issue1, reportedBy, fatima, by decide, by decide, by decide⟩
-  · refine ⟨{t2, t3}, {t4}, ⟨?_, ?_⟩, ?_, ?_⟩
-    · decide
-    · decide
-    · refine ⟨[{t2}, {t3}], ⟨?_, ?_⟩, ?_, ?_, ?_⟩
-      · decide
-      · decide
-      · decide
-      · intro m' hm'; cases hm'; decide
-      · intro Ni hNi
-        simp only [List.mem_cons, List.not_mem_nil, or_false] at hNi
-        rcases hNi with hNi | hNi <;> subst hNi
-        · exact ⟨issue1, reproducedBy, ren, by decide, by decide, by decide⟩
-        · exact ⟨issue1, reproducedBy, noa, by decide, by decide, by decide⟩
-    · refine ⟨[{t4}], ⟨?_, ?_⟩, ?_, ?_, ?_⟩
-      · decide
-      · decide
-      · decide
-      · intro m' hm'; cases hm'
-      · intro Ni hNi
-        simp only [List.mem_singleton] at hNi
-        subst hNi
-        exact ⟨issue1, relatedTo, issue2, by decide, by decide, by decide⟩
+  refine Matches.eachOf_of G₀ typing2 {t1} {t2, t3, t4}
+    (Matches.tPattern_of G₀ typing2 issue1 reportedBy fatima) ?_
+  refine Matches.eachOf_of G₀ typing2 {t2, t3} {t4} ?_ ?_
+  · exact Matches.rep_of G₀ typing2 [{t2}, {t3}]
+      (by intro Ni hNi
+          simp only [List.mem_cons, List.not_mem_nil, or_false] at hNi
+          rcases hNi with hNi | hNi <;> subst hNi
+          · exact Matches.tPattern_of G₀ typing2 issue1 reproducedBy ren
+          · exact Matches.tPattern_of G₀ typing2 issue1 reproducedBy noa)
+  · exact Matches.rep_single_of G₀ typing2 {t4} (Matches.tPattern_of G₀ typing2 issue1 relatedTo issue2)
 
 theorem satisfies_issueShape_issue2 : Satisfies G₀ typing2 issue2 issueShapeDef := by
   show Matches G₀ typing2 (neigh G₀ issue2) _
   have hneigh : neigh G₀ issue2 = {t5, t6, t7} := by decide
   rw [hneigh]
-  refine ⟨{t5}, {t6, t7}, ⟨?_, ?_⟩, ?_, ?_⟩
-  · decide
-  · decide
-  · exact ⟨issue2, reportedBy, emin, by decide, by decide, by decide⟩
-  · refine ⟨{t6}, {t7}, ⟨?_, ?_⟩, ?_, ?_⟩
-    · decide
-    · decide
-    · refine ⟨[{t6}], ⟨?_, ?_⟩, ?_, ?_, ?_⟩
-      · decide
-      · decide
-      · decide
-      · intro m' hm'; cases hm'; decide
-      · intro Ni hNi
-        simp only [List.mem_singleton] at hNi
-        subst hNi
-        exact ⟨issue2, reproducedBy, ren, by decide, by decide, by decide⟩
-    · refine ⟨[{t7}], ⟨?_, ?_⟩, ?_, ?_, ?_⟩
-      · decide
-      · decide
-      · decide
-      · intro m' hm'; cases hm'
-      · intro Ni hNi
-        simp only [List.mem_singleton] at hNi
-        subst hNi
-        exact ⟨issue2, relatedTo, issue1, by decide, by decide, by decide⟩
+  refine Matches.eachOf_of G₀ typing2 {t5} {t6, t7}
+    (Matches.tPattern_of G₀ typing2 issue2 reportedBy emin) ?_
+  refine Matches.eachOf_of G₀ typing2 {t6} {t7} ?_ ?_
+  · exact Matches.rep_single_of G₀ typing2 {t6} (Matches.tPattern_of G₀ typing2 issue2 reproducedBy ren)
+  · exact Matches.rep_single_of G₀ typing2 {t7} (Matches.tPattern_of G₀ typing2 issue2 relatedTo issue1)
 
 theorem satisfies_clientAndUser_fatima : Satisfies G₀ typing2 fatima clientAndUserDef := by
   have hneigh : neigh G₀ fatima = {t8, t9} := by decide
   constructor
   · show Matches G₀ typing2 (neigh G₀ fatima) _
     rw [hneigh]
-    refine ⟨{t8}, {t9}, ⟨?_, ?_⟩, ?_, ?_⟩
-    · decide
-    · decide
-    · exact Or.inl ⟨fatima, clientNbr, lit1, by decide, by decide, by decide⟩
-    · refine ⟨[{t9}], ⟨?_, ?_⟩, ?_, ?_, ?_⟩
-      · decide
-      · decide
-      · decide
-      · intro m' hm'; cases hm'
-      · intro Ni hNi
-        simp only [List.mem_singleton] at hNi
-        subst hNi
-        exact ⟨fatima, foafName, fatimaName, by decide, by decide, by decide⟩
+    refine Matches.eachOf_of G₀ typing2 {t8} {t9}
+      (Or.inl (Matches.tPattern_of G₀ typing2 fatima clientNbr lit1)) ?_
+    exact Matches.rep_single_of G₀ typing2 {t9}
+      (Matches.tPattern_of G₀ typing2 fatima foafName fatimaName)
   · show Matches G₀ typing2 (neigh G₀ fatima) _
     rw [hneigh]
-    refine ⟨{t9}, {t8}, ⟨?_, ?_⟩, ?_, ?_⟩
-    · decide
-    · decide
-    · refine ⟨{t9}, ∅, ⟨?_, ?_⟩, ?_, ?_⟩
-      · decide
-      · decide
-      · exact ⟨fatima, foafName, fatimaName, by decide, by decide, by decide⟩
-      · refine ⟨[], ⟨?_, ?_⟩, ?_, ?_, ?_⟩
-        · decide
-        · decide
-        · decide
-        · intro m' hm'; cases hm'; decide
-        · intro Ni hNi; cases hNi
-    · refine ⟨[{t8}], ⟨?_, ?_⟩, ?_, ?_, ?_⟩
-      · decide
-      · decide
-      · decide
-      · intro m' hm'; cases hm'
-      · intro Ni hNi
-        simp only [List.mem_singleton] at hNi
-        subst hNi
-        exact ⟨fatima, clientNbr, lit1, by decide, by decide, by decide⟩
+    refine Matches.eachOf_of G₀ typing2 {t9} {t8} ?_ ?_
+    · exact Matches.eachOf_of G₀ typing2 {t9} ∅
+        (Matches.tPattern_of G₀ typing2 fatima foafName fatimaName)
+        (Matches.rep_empty_of G₀ typing2)
+    · exact Matches.rep_single_of G₀ typing2 {t8} (Matches.tPattern_of G₀ typing2 fatima clientNbr lit1)
 
 theorem satisfies_clientAndUser_emin : Satisfies G₀ typing2 emin clientAndUserDef := by
   have hneigh : neigh G₀ emin = {t13, t14, t15} := by decide
   constructor
   · show Matches G₀ typing2 (neigh G₀ emin) _
     rw [hneigh]
-    refine ⟨{t13}, {t14, t15}, ⟨?_, ?_⟩, ?_, ?_⟩
-    · decide
-    · decide
-    · exact Or.inr ⟨emin, clientAffil, eminAffil, by decide, by decide, by decide⟩
-    · refine ⟨[{t14}, {t15}], ⟨?_, ?_⟩, ?_, ?_, ?_⟩
-      · decide
-      · decide
-      · decide
-      · intro m' hm'; cases hm'
-      · intro Ni hNi
-        simp only [List.mem_cons, List.not_mem_nil, or_false] at hNi
-        rcases hNi with hNi | hNi <;> subst hNi
-        · exact ⟨emin, foafName, eminName, by decide, by decide, by decide⟩
-        · exact ⟨emin, foafMbox, mbox, by decide, by decide, by decide⟩
+    refine Matches.eachOf_of G₀ typing2 {t13} {t14, t15}
+      (Or.inr (Matches.tPattern_of G₀ typing2 emin clientAffil eminAffil)) ?_
+    exact Matches.rep_of G₀ typing2 [{t14}, {t15}]
+      (by intro Ni hNi
+          simp only [List.mem_cons, List.not_mem_nil, or_false] at hNi
+          rcases hNi with hNi | hNi <;> subst hNi
+          · exact Matches.tPattern_of G₀ typing2 emin foafName eminName
+          · exact Matches.tPattern_of G₀ typing2 emin foafMbox mbox)
   · show Matches G₀ typing2 (neigh G₀ emin) _
     rw [hneigh]
-    refine ⟨{t14, t15}, {t13}, ⟨?_, ?_⟩, ?_, ?_⟩
-    · decide
-    · decide
-    · refine ⟨{t14}, {t15}, ⟨?_, ?_⟩, ?_, ?_⟩
-      · decide
-      · decide
-      · exact ⟨emin, foafName, eminName, by decide, by decide, by decide⟩
-      · refine ⟨[{t15}], ⟨?_, ?_⟩, ?_, ?_, ?_⟩
-        · decide
-        · decide
-        · decide
-        · intro m' hm'; cases hm'; decide
-        · intro Ni hNi
-          simp only [List.mem_singleton] at hNi
-          subst hNi
-          exact ⟨emin, foafMbox, mbox, by decide, by decide, by decide⟩
-    · refine ⟨[{t13}], ⟨?_, ?_⟩, ?_, ?_, ?_⟩
-      · decide
-      · decide
-      · decide
-      · intro m' hm'; cases hm'
-      · intro Ni hNi
-        simp only [List.mem_singleton] at hNi
-        subst hNi
-        exact ⟨emin, clientAffil, eminAffil, by decide, by decide, by decide⟩
+    refine Matches.eachOf_of G₀ typing2 {t14, t15} {t13} ?_ ?_
+    · exact Matches.eachOf_of G₀ typing2 {t14} {t15}
+        (Matches.tPattern_of G₀ typing2 emin foafName eminName)
+        (Matches.rep_single_of G₀ typing2 {t15} (Matches.tPattern_of G₀ typing2 emin foafMbox mbox))
+    · exact Matches.rep_single_of G₀ typing2 {t13}
+        (Matches.tPattern_of G₀ typing2 emin clientAffil eminAffil)
 
 /-- `typing2` is a correct typing of `G₀` by `S₀` (Definition 2). -/
 theorem typing2_correct :

@@ -25,28 +25,28 @@ namespace Examples.NegationRecursion
 
 open ShexLean
 
-@[reducible] private def n1 : Subject := .iri "n1"
-@[reducible] private def n2 : Subject := .iri "n2"
+private def n1 : Subject := .iri "n1"
+private def n2 : Subject := .iri "n2"
 
-@[reducible] private def p : IRI := "ex:p"
+private def p : IRI := "ex:p"
 
-@[reducible] private def t1 : Triple := ⟨n1, p, n2⟩
-@[reducible] private def t2 : Triple := ⟨n2, p, n1⟩
+private def t1 : Triple := ⟨n1, p, n2⟩
+private def t2 : Triple := ⟨n2, p, n1⟩
 
 /-- The graph `G₂` from Example 4. -/
 def G₂ : Graph := {t1, t2}
 
-@[reducible] private def L1 : ShapeLabel := "L1"
-@[reducible] private def L2 : ShapeLabel := "L2"
+private def L1 : ShapeLabel := "L1"
+private def L2 : ShapeLabel := "L2"
 
 /-- `<L1> → NOT(ex:p @<L2>)`. -/
-@[reducible] private def L1Def : ShapeExpr := .not (.neigDescr (.tPattern {p} L2))
+private def L1Def : ShapeExpr := .not (.neigDescr (.tPattern {p} L2))
 
 /-- `<L2> → NOT(ex:p @<L1>)`. -/
-@[reducible] private def L2Def : ShapeExpr := .not (.neigDescr (.tPattern {p} L1))
+private def L2Def : ShapeExpr := .not (.neigDescr (.tPattern {p} L1))
 
 /-- The schema `S₂` from Example 4. -/
-@[reducible] def S₂ : Schema where
+def S₂ : Schema where
   labels := {L1, L2}
   shapeDef
     | "L1" => L1Def

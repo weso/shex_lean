@@ -3,8 +3,9 @@ import Proof
 /-!
 The list of proofs the `shex_lean` executable can `list`/`run` alongside the
 worked examples (`Examples.Registry`). Names are prefixed `schemas2017-`/
-`inheritance2025-` so it's clear at a glance which paper each proof belongs
-to, and each summary is kept to one line.
+`inheritance2025-`/`inheritance2026-` so it's clear at a glance which paper
+(or exploratory variant) each proof belongs to, and each summary is kept to
+one line.
 -/
 
 namespace Examples
@@ -37,7 +38,16 @@ def proofs : List ProofItem :=
       path := "ShexLean/Shex2025Inheritance/Proposition1.lean" },
     { name := "inheritance2025-lemma2"
       summary := "τ_max(S,σ,G) doesn't depend on the stratification chosen (§4.3)."
-      path := "ShexLean/Shex2025Inheritance/Lemma2.lean" } ]
+      path := "ShexLean/Shex2025Inheritance/Lemma2.lean" },
+    { name := "inheritance2026-lemma1"
+      summary := "Termination still holds with disjunctive extends (§6 explored, §4.2)."
+      path := "ShexLean/Shex2026InheritanceDisjunction/Termination.lean" },
+    { name := "inheritance2026-proposition1"
+      summary := "τ_max(S,σ,G) is still correct with disjunctive extends (§6 explored, §4.3)."
+      path := "ShexLean/Shex2026InheritanceDisjunction/Proposition1.lean" },
+    { name := "inheritance2026-lemma2"
+      summary := "τ_max still stratification-independent with disjunctive extends (§6, §4.3)."
+      path := "ShexLean/Shex2026InheritanceDisjunction/Lemma2.lean" } ]
 
 /-- Look up a registered proof by name. -/
 def findProof? (name : String) : Option ProofItem :=

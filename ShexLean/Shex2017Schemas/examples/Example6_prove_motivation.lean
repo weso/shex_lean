@@ -30,19 +30,19 @@ open ShexLean
 open Examples.StratificationExample (S₃)
 
 -- Not `private`: `Example7_trace.lean` reuses all of these.
-@[reducible] def n1 : Subject := .iri "n1"
-@[reducible] def n2 : Subject := .iri "n2"
-@[reducible] def n3 : Subject := .iri "n3"
-@[reducible] def four : RDFNode := .lit (.int 4)
+def n1 : Subject := .iri "n1"
+def n2 : Subject := .iri "n2"
+def n3 : Subject := .iri "n3"
+def four : RDFNode := .lit (.int 4)
 
-@[reducible] def a : IRI := "ex:a"
-@[reducible] def b : IRI := "ex:b"
-@[reducible] def c : IRI := "ex:c"
+def a : IRI := "ex:a"
+def b : IRI := "ex:b"
+def c : IRI := "ex:c"
 
-@[reducible] def t1 : Triple := ⟨n1, a, n2⟩
-@[reducible] def t2 : Triple := ⟨n1, b, four⟩
-@[reducible] def t3 : Triple := ⟨n2, c, n3⟩
-@[reducible] def t4 : Triple := ⟨n3, c, n2⟩
+def t1 : Triple := ⟨n1, a, n2⟩
+def t2 : Triple := ⟨n1, b, four⟩
+def t3 : Triple := ⟨n2, c, n3⟩
+def t4 : Triple := ⟨n3, c, n2⟩
 
 /-- `G₃` from Example 6. -/
 def G₃ : Graph := {t1, t2, t3, t4}
@@ -50,17 +50,17 @@ def G₃ : Graph := {t1, t2, t3, t4}
 -- The same shape-label aliases as `Examples.StratificationExample` (same
 -- string values, so `S₃.shapeDef` — defined there against *its own*
 -- `L1`/`L2`/`L3`/`Str` — unfolds against these identically).
-@[reducible] def L1 : ShapeLabel := "L1"
-@[reducible] def L2 : ShapeLabel := "L2"
-@[reducible] def L3 : ShapeLabel := "L3"
-@[reducible] def Str : ShapeLabel := "Str"
+def L1 : ShapeLabel := "L1"
+def L2 : ShapeLabel := "L2"
+def L3 : ShapeLabel := "L3"
+def Str : ShapeLabel := "Str"
 
 -- `rfl` (not `simp`) is needed here: `S₃.shapeDef`'s `if`-chain compares
 -- against `Examples.StratificationExample`'s own (private, so not
 -- nameable here) `L1`/`L2`/`L3`/`Str` constants. `rfl` unfolds through
--- private `@[reducible]` definitions via full definitional equality
--- regardless of accessibility, whereas `simp` needs each unfolded
--- constant named explicitly in its argument list.
+-- private `abbrev` definitions via full definitional equality regardless
+-- of accessibility, whereas `simp` needs each unfolded constant named
+-- explicitly in its argument list.
 theorem shapeDef_L1 :
     S₃.shapeDef L1 =
       .not (.neigDescr (.eachOf (.tPattern {a} L2) (.tPattern {b} Str))) := rfl

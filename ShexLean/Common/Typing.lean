@@ -22,9 +22,9 @@ abbrev NodeTypeAssoc := RDFNode × ShapeLabel
 abbrev Typing := Finset NodeTypeAssoc
 
 /-- `(n, L) ∈ typing`, i.e. `n` is asserted to have shape `L` by `typing`.
-Marked `@[reducible]` so that `decide` can see through it to the underlying
+An `abbrev` (reducible) so that `decide` can see through it to the underlying
 (decidable) `Finset` membership. -/
-@[reducible] def Typing.has (typing : Typing) (n : RDFNode) (L : ShapeLabel) : Prop :=
+abbrev Typing.has (typing : Typing) (n : RDFNode) (L : ShapeLabel) : Prop :=
   (n, L) ∈ typing
 
 end ShexLean

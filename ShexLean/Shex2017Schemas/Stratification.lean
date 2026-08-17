@@ -66,26 +66,26 @@ end
 
 /-- Shape labels appearing in `S` via some `TriplePattern`, never under a
 `NOT` on the path from `S`. -/
-@[reducible] def ShapeExpr.posDeps (S : ShapeExpr) : Finset ShapeLabel := (ShapeExpr.depsAux false S).1
+abbrev ShapeExpr.posDeps (S : ShapeExpr) : Finset ShapeLabel := (ShapeExpr.depsAux false S).1
 
 /-- Shape labels appearing in `S` via some `TriplePattern`, under at least
 one `NOT` on the path from `S`. -/
-@[reducible] def ShapeExpr.negDeps (S : ShapeExpr) : Finset ShapeLabel := (ShapeExpr.depsAux false S).2
+abbrev ShapeExpr.negDeps (S : ShapeExpr) : Finset ShapeLabel := (ShapeExpr.depsAux false S).2
 
 /-- Shape labels appearing in `E` via some `TriplePattern`, never under a
 `NOT` on the path from `E`. -/
-@[reducible] def TripleExpr.posDeps (E : TripleExpr) : Finset ShapeLabel := (TripleExpr.depsAux false E).1
+abbrev TripleExpr.posDeps (E : TripleExpr) : Finset ShapeLabel := (TripleExpr.depsAux false E).1
 
 /-- Shape labels appearing in `E` via some `TriplePattern`, under at least
 one `NOT` on the path from `E`. -/
-@[reducible] def TripleExpr.negDeps (E : TripleExpr) : Finset ShapeLabel := (TripleExpr.depsAux false E).2
+abbrev TripleExpr.negDeps (E : TripleExpr) : Finset ShapeLabel := (TripleExpr.depsAux false E).2
 
 /-- `dep⁺(L1, L2)`: `L2` appears in `def(L1)` but never under an occurrence
 of `NOT`. -/
-@[reducible] def DepPos (S : Schema) (L1 L2 : ShapeLabel) : Prop := L2 ∈ (S.shapeDef L1).posDeps
+abbrev DepPos (S : Schema) (L1 L2 : ShapeLabel) : Prop := L2 ∈ (S.shapeDef L1).posDeps
 
 /-- `dep⁻(L1, L2)`: `L2` appears in `def(L1)` under an occurrence of `NOT`. -/
-@[reducible] def DepNeg (S : Schema) (L1 L2 : ShapeLabel) : Prop := L2 ∈ (S.shapeDef L1).negDeps
+abbrev DepNeg (S : Schema) (L1 L2 : ShapeLabel) : Prop := L2 ∈ (S.shapeDef L1).negDeps
 
 /-- Definition 3 (schema with stratified negation): a stratification of `S`
 into `[1; k]` such that negative dependencies strictly decrease the stratum
