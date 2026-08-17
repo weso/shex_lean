@@ -82,14 +82,14 @@ theorem Finset.decreasing_iterate_fixed {α : Type*} [DecidableEq α] (f : Finse
 /-- The initial guess for stratum `S'` relative to the previous stratum's
 `(Lo, T)`: keep `T`'s contribution on `Lo` exactly, and guess every possible
 node-type association for the rest of `S'`'s labels. Lines 3-5 of `refine`. -/
-def bigStart (S' : Schema) (G : Graph) (Lo : Finset ShapeLabel) (T : Typing) : Typing :=
+def bigStart (S' : Schema) (G : Graph) (Lo : Finset Label) (T : Typing) : Typing :=
   (S'.univTyping G).filter (fun p => p.2 ∈ Lo → p ∈ T)
 
-theorem mem_bigStart {S' : Schema} {G : Graph} {Lo : Finset ShapeLabel} {T : Typing}
-    {p : NodeTypeAssoc} : p ∈ bigStart S' G Lo T ↔ p ∈ S'.univTyping G ∧ (p.2 ∈ Lo → p ∈ T) :=
+theorem mem_bigStart {S' : Schema} {G : Graph} {Lo : Finset Label} {T : Typing}
+    {p : Assoc} : p ∈ bigStart S' G Lo T ↔ p ∈ S'.univTyping G ∧ (p.2 ∈ Lo → p ∈ T) :=
   Finset.mem_filter
 
-theorem bigStart_restrictTo {S' : Schema} {G : Graph} {Lo : Finset ShapeLabel} {T : Typing}
+theorem bigStart_restrictTo {S' : Schema} {G : Graph} {Lo : Finset Label} {T : Typing}
     (hTsub : T ⊆ S'.univTyping G) :
     restrictTyping (bigStart S' G Lo T) Lo = restrictTyping T Lo := by
   apply Finset.ext
@@ -110,28 +110,28 @@ abstract label), the per-pair keep-condition here has to mirror
 just "not `Satisfies ... def(L)`" (an abstract `L` is never itself
 directly `Satisfies`-checked; Definition 4 instead requires some
 *descendant* to be). -/
-def Schema.locallyCorrect (S' : Schema) (G : Graph) (τ : Typing) (p : NodeTypeAssoc) : Prop :=
+def Schema.locallyCorrect (S' : Schema) (G : Graph) (τ : Typing) (p : Assoc) : Prop :=
   (p.2 ∉ S'.A → Satisfies S' G τ p.1 (S'.shapeDef p.2)) ∧
   (p.2 ∈ S'.A → ∃ x ∈ S'.desc p.2 \ S'.A, Satisfies S' G τ p.1 (S'.shapeDef x))
 
-noncomputable def refineStep (S' : Schema) (G : Graph) (Lo : Finset ShapeLabel)
+noncomputable def refineStep (S' : Schema) (G : Graph) (Lo : Finset Label)
     (current : Typing) : Typing :=
-  haveI := Classical.decPred (fun p : NodeTypeAssoc => p.2 ∈ Lo ∨ S'.locallyCorrect G current p)
+  haveI := Classical.decPred (fun p : Assoc => p.2 ∈ Lo ∨ S'.locallyCorrect G current p)
   current.filter (fun p => p.2 ∈ Lo ∨ S'.locallyCorrect G current p)
 
-theorem mem_refineStep {S' : Schema} {G : Graph} {Lo : Finset ShapeLabel} {current : Typing}
-    {p : NodeTypeAssoc} :
+theorem mem_refineStep {S' : Schema} {G : Graph} {Lo : Finset Label} {current : Typing}
+    {p : Assoc} :
     p ∈ refineStep S' G Lo current ↔
       p ∈ current ∧ (p.2 ∈ Lo ∨ S'.locallyCorrect G current p) := by
   unfold refineStep
   simp only [Finset.mem_filter]
 
-theorem refineStep_subset (S' : Schema) (G : Graph) (Lo : Finset ShapeLabel) (current : Typing) :
+theorem refineStep_subset (S' : Schema) (G : Graph) (Lo : Finset Label) (current : Typing) :
     refineStep S' G Lo current ⊆ current := by
   intro p hp; exact (mem_refineStep.mp hp).1
 
 /-- `refineStep` never touches (adds or removes) a `Lo`-labeled pair. -/
-theorem refineStep_restrictTo {S' : Schema} {G : Graph} {Lo : Finset ShapeLabel} {current : Typing} :
+theorem refineStep_restrictTo {S' : Schema} {G : Graph} {Lo : Finset Label} {current : Typing} :
     restrictTyping (refineStep S' G Lo current) Lo = restrictTyping current Lo := by
   apply Finset.ext
   rintro ⟨n, L⟩
@@ -143,15 +143,15 @@ theorem refineStep_restrictTo {S' : Schema} {G : Graph} {Lo : Finset ShapeLabel}
 /-- The per-stratum computation `refine` performs: start from `bigStart`
 and iterate `refineStep` to a fixed point (`Finset.card`-many iterations
 always suffice, by `Finset.decreasing_iterate_fixed`). -/
-noncomputable def refine1 (S' : Schema) (G : Graph) (Lo : Finset ShapeLabel) (T : Typing) : Typing :=
+noncomputable def refine1 (S' : Schema) (G : Graph) (Lo : Finset Label) (T : Typing) : Typing :=
   (refineStep S' G Lo)^[(bigStart S' G Lo T).card] (bigStart S' G Lo T)
 
-theorem refine1_fixed (S' : Schema) (G : Graph) (Lo : Finset ShapeLabel) (T : Typing) :
+theorem refine1_fixed (S' : Schema) (G : Graph) (Lo : Finset Label) (T : Typing) :
     refineStep S' G Lo (refine1 S' G Lo T) = refine1 S' G Lo T :=
   Finset.decreasing_iterate_fixed (refineStep S' G Lo) (refineStep_subset S' G Lo)
     (bigStart S' G Lo T)
 
-theorem refine1_subset (S' : Schema) (G : Graph) (Lo : Finset ShapeLabel) (T : Typing) :
+theorem refine1_subset (S' : Schema) (G : Graph) (Lo : Finset Label) (T : Typing) :
     refine1 S' G Lo T ⊆ bigStart S' G Lo T := by
   suffices h : ∀ n, (refineStep S' G Lo)^[n] (bigStart S' G Lo T) ⊆ bigStart S' G Lo T by
     exact h _
@@ -162,7 +162,7 @@ theorem refine1_subset (S' : Schema) (G : Graph) (Lo : Finset ShapeLabel) (T : T
       rw [Function.iterate_succ_apply']
       exact (refineStep_subset S' G Lo _).trans ihn
 
-theorem iterate_refineStep_restrictTo {S' : Schema} {G : Graph} {Lo : Finset ShapeLabel} {T : Typing}
+theorem iterate_refineStep_restrictTo {S' : Schema} {G : Graph} {Lo : Finset Label} {T : Typing}
     (hTsub : T ⊆ S'.univTyping G) :
     ∀ n, restrictTyping ((refineStep S' G Lo)^[n] (bigStart S' G Lo T)) Lo = restrictTyping T Lo := by
   intro n
@@ -171,7 +171,7 @@ theorem iterate_refineStep_restrictTo {S' : Schema} {G : Graph} {Lo : Finset Sha
   | succ n ihn =>
       rw [Function.iterate_succ_apply', refineStep_restrictTo, ihn]
 
-theorem refine1_restrictTo {S' : Schema} {G : Graph} {Lo : Finset ShapeLabel} {T : Typing}
+theorem refine1_restrictTo {S' : Schema} {G : Graph} {Lo : Finset Label} {T : Typing}
     (hTsub : T ⊆ S'.univTyping G) : restrictTyping (refine1 S' G Lo T) Lo = restrictTyping T Lo :=
   iterate_refineStep_restrictTo hTsub _
 
@@ -188,7 +188,7 @@ pairs, is automatically correct at any bigger `D_S`-closed schema level
 (`Satisfies_restrictLabels_agree`, `Schema.restrictLabels_desc_eq`) show
 the checks for the *existing* pairs transport unchanged. -/
 theorem correctTyping_restrictLabels_lift {S : Schema} (hWFX : S.WellFormedX)
-    (hWFExt : S.WellFormedExtends) {G : Graph} {Lo Ls' : Finset ShapeLabel} {T : Typing}
+    (hWFExt : S.WellFormedExtends) {G : Graph} {Lo Ls' : Finset Label} {T : Typing}
     (hLoLs' : Lo ⊆ Ls') (hLoClosed : S.DClosedOn Lo) (hLs'Closed : S.DClosedOn Ls')
     (hTsub : T ⊆ (S.restrictLabels Lo).univTyping G)
     (hTcorrect : (S.restrictLabels Lo).CorrectTyping G T) :
@@ -229,7 +229,7 @@ needed since `T`'s own correctness is witnessed at `Lo`'s schema level but
 fixed schema); outside `Lo` it holds directly from `refine1` being a fixed
 point of `refineStep`. -/
 theorem refine1_correct {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.WellFormedExtends)
-    {G : Graph} {Ls' Lo : Finset ShapeLabel} {T : Typing}
+    {G : Graph} {Ls' Lo : Finset Label} {T : Typing}
     (hLoLs' : Lo ⊆ Ls') (hLoClosed : S.DClosedOn Lo) (hLs'Closed : S.DClosedOn Ls')
     (hTsub : T ⊆ (S.restrictLabels Lo).univTyping G)
     (hTcorrect : (S.restrictLabels Lo).CorrectTyping G T) :
@@ -297,7 +297,7 @@ starts below `bigStart`, so it stays below every iterate — in particular
 below `refine1`. -/
 theorem maxTypingAgreeing_subset_refine1 {S : Schema} (hWFX : S.WellFormedX)
     (hWFExt : S.WellFormedExtends) (hWFExtra : S.WellFormedExtra) (hNEF : S.NotIsExtendsFree)
-    {G : Graph} {Ls' Lo : Finset ShapeLabel} {T : Typing} (hLoLs' : Lo ⊆ Ls')
+    {G : Graph} {Ls' Lo : Finset Label} {T : Typing} (hLoLs' : Lo ⊆ Ls')
     (hLoClosed : S.DClosedOn Lo) (hLs'Closed : S.DClosedOn Ls') (hLs'YX : Ls' ⊆ S.Y ∪ S.X)
     (hTsub : T ⊆ (S.restrictLabels Lo).univTyping G)
     (hTcorrect : (S.restrictLabels Lo).CorrectTyping G T)
@@ -387,7 +387,7 @@ theorem maxTypingAgreeing_subset_refine1 {S : Schema} (hWFX : S.WellFormedX)
 /-- The per-stratum core lemma: `refine1` computes exactly `maxTypingAgreeing`. -/
 theorem refine1_eq_maxTypingAgreeing {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.WellFormedExtends)
     (hWFExtra : S.WellFormedExtra) (hNEF : S.NotIsExtendsFree)
-    {G : Graph} {Ls' Lo : Finset ShapeLabel} {T : Typing} (hLoLs' : Lo ⊆ Ls')
+    {G : Graph} {Ls' Lo : Finset Label} {T : Typing} (hLoLs' : Lo ⊆ Ls')
     (hLoClosed : S.DClosedOn Lo) (hLs'Closed : S.DClosedOn Ls') (hLs'YX : Ls' ⊆ S.Y ∪ S.X)
     (hTsub : T ⊆ (S.restrictLabels Lo).univTyping G)
     (hTcorrect : (S.restrictLabels Lo).CorrectTyping G T)
@@ -414,7 +414,7 @@ recursions agree everywhere, and in particular at `strat.k`.
 := ∅`, and each successor stratum refines from `bigStart` (lines 3-5 of
 `refine`) down to a fixed point (lines 6-12), reusing the previous
 stratum's result as the "frozen" part of the initial guess. -/
-noncomputable def refineAlg (S : Schema) (strat : ShapeLabel → ℕ) (G : Graph) : ℕ → Typing
+noncomputable def refineAlg (S : Schema) (strat : Label → ℕ) (G : Graph) : ℕ → Typing
   | 0 => ∅
   | i + 1 => refine1 (S.stratRestrict strat (i + 1)) G (S.stratum strat i) (refineAlg S strat G i)
 

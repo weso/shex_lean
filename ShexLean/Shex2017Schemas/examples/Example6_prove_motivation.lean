@@ -16,7 +16,7 @@ Semantics`'s own module docstring) — but `ShexLean.Shex2017Schemas.Decidable`
 now provides genuine, kernel-reducible `Decidable` instances for both,
 bounding every existential to the finite graph/typing at hand. This file
 proves Example 6's headline claim the traditional way, at the level of the
-declarative semantics (`⊢`/`⊨`, Fig. 2): `typing = {(ex:n1,<L1>),
+declarative semantics (`⊢`/`⊨`, Fig. 2): `t = {(ex:n1,<L1>),
 (ex:n2,<L2>), (ex:n3,<L3>)}` is a correct typing of `G₃` by `S₃`
 (`typing_correct`) — and the `Example` at the bottom additionally *runs*
 that same claim via `native_decide`, rather than only asserting it in
@@ -50,10 +50,10 @@ def G₃ : Graph := {t1, t2, t3, t4}
 -- The same shape-label aliases as `Examples.StratificationExample` (same
 -- string values, so `S₃.shapeDef` — defined there against *its own*
 -- `L1`/`L2`/`L3`/`Str` — unfolds against these identically).
-def L1 : ShapeLabel := "L1"
-def L2 : ShapeLabel := "L2"
-def L3 : ShapeLabel := "L3"
-def Str : ShapeLabel := "Str"
+def L1 : Label := "L1"
+def L2 : Label := "L2"
+def L3 : Label := "L3"
+def Str : Label := "Str"
 
 -- `rfl` (not `simp`) is needed here: `S₃.shapeDef`'s `if`-chain compares
 -- against `Examples.StratificationExample`'s own (private, so not
@@ -71,33 +71,33 @@ theorem shapeDef_L3 : S₃.shapeDef L3 = .neigDescr (.tPattern {c} L2) := rfl
 
 theorem shapeDef_Str : S₃.shapeDef Str = .valueDescr {.lit (.str "placeholder")} := rfl
 
-/-- The typing witnessing `ex:n1 ⊢ <L1>` (Example 6's claim), reusing
+/-- The `t` witnessing `ex:n1 ⊢ <L1>` (Example 6's claim), reusing
 `S₃`'s three cyclic labels. -/
-def typing : Typing := {((n1 : RDFNode), L1), ((n2 : RDFNode), L2), ((n3 : RDFNode), L3)}
+def t : Typing := {((n1 : RDFNode), L1), ((n2 : RDFNode), L2), ((n3 : RDFNode), L3)}
 
-theorem satisfies_L2_n2 : Satisfies G₃ typing n2 (S₃.shapeDef L2) := by
+theorem satisfies_L2_n2 : Satisfies G₃ t n2 (S₃.shapeDef L2) := by
   rw [shapeDef_L2]
-  show Matches G₃ typing (neigh G₃ n2) _
+  show Matches G₃ t (neigh G₃ n2) _
   have hneigh : neigh G₃ n2 = {t3} := by decide
   rw [hneigh]
   exact ⟨n2, c, n3, rfl, by decide, by decide⟩
 
-theorem satisfies_L3_n3 : Satisfies G₃ typing n3 (S₃.shapeDef L3) := by
+theorem satisfies_L3_n3 : Satisfies G₃ t n3 (S₃.shapeDef L3) := by
   rw [shapeDef_L3]
-  show Matches G₃ typing (neigh G₃ n3) _
+  show Matches G₃ t (neigh G₃ n3) _
   have hneigh : neigh G₃ n3 = {t4} := by decide
   rw [hneigh]
   exact ⟨n3, c, n2, rfl, by decide, by decide⟩
 
 /-- `ex:n1 ⊢ <L1>` (Example 6's headline claim): `<L1> = NOT(ex:a @<L2> ;
 ex:b @<Str>)`, and the `eachOf` fails because `n1`'s unique `ex:b`
-neighbour, `4`, is never typed `<Str>` by `typing`. -/
-theorem satisfies_L1_n1 : Satisfies G₃ typing n1 (S₃.shapeDef L1) := by
+neighbour, `4`, is never typed `<Str>` by `t`. -/
+theorem satisfies_L1_n1 : Satisfies G₃ t n1 (S₃.shapeDef L1) := by
   rw [shapeDef_L1]
-  show ¬ Satisfies G₃ typing n1 _
+  show ¬ Satisfies G₃ t n1 _
   intro hsat
-  have hmatch : Matches G₃ typing (neigh G₃ n1) _ :=
-    (show Matches G₃ typing (neigh G₃ n1) _ from hsat)
+  have hmatch : Matches G₃ t (neigh G₃ n1) _ :=
+    (show Matches G₃ t (neigh G₃ n1) _ from hsat)
   have hneigh : neigh G₃ n1 = {t1, t2} := by decide
   rw [hneigh] at hmatch
   obtain ⟨N1, N2, ⟨-, hunion⟩, -, hN2⟩ := hmatch
@@ -118,10 +118,10 @@ theorem satisfies_L1_n1 : Satisfies G₃ typing n1 (S₃.shapeDef L1) := by
     rw [hobjEq] at hty
     exact absurd hty (by decide)
 
-/-- `typing` is a correct typing of `G₃` by `S₃` (Definition 2). -/
-theorem typing_correct : S₃.CorrectTyping G₃ typing := by
+/-- `t` is a correct typing of `G₃` by `S₃` (Definition 2). -/
+theorem typing_correct : S₃.CorrTyping G₃ t := by
   intro n L hmem
-  simp only [typing, Finset.mem_insert, Finset.mem_singleton, Prod.mk.injEq] at hmem
+  simp only [t, Finset.mem_insert, Finset.mem_singleton, Prod.mk.injEq] at hmem
   rcases hmem with ⟨hn, hL⟩ | ⟨hn, hL⟩ | ⟨hn, hL⟩ <;> subst hn <;> subst hL
   · exact satisfies_L1_n1
   · exact satisfies_L2_n2
@@ -131,16 +131,16 @@ end Examples.ProveAlgorithmExample
 
 namespace Examples
 
-open Examples.ProveAlgorithmExample (G₃ typing n1 L1)
+open Examples.ProveAlgorithmExample (G₃ t n1 L1)
 open Examples.StratificationExample (S₃)
-open ShexLean (Schema.render Graph.render Typing.render renderDecide correctTyping_decidable
+open ShexLean (Schema.render Graph.render Typing.render renderDecide corrTyping_decidable
   satisfies_decidable)
 
 /-- Example 6: motivating `G₃` for Algorithm 2, showing `ex:n1` has shape
 `<L1>` under `S₃`. `schemaText`/`graphText`/`typingText`'s correctness
-verdict are generated from the real `S₃`/`G₃`/`typing` values; the
+verdict are generated from the real `S₃`/`G₃`/`t` values; the
 headline "`ex:n1` has shape `<L1>`" claim is a `native_decide`
-computation of `Satisfies G₃ typing n1 (S₃.shapeDef L1)` itself, not
+computation of `Satisfies G₃ t n1 (S₃.shapeDef L1)` itself, not
 prose. -/
 def proveAlgorithmMotivation : Example where
   name := "schemas2017-example6-prove-motivation"
@@ -148,9 +148,9 @@ def proveAlgorithmMotivation : Example where
   schemaText := Schema.render S₃
   graphText := Graph.render G₃
   typingText :=
-    s!"typing = {Typing.render typing}   " ++
-      s!"(correct = {renderDecide (correctTyping_decidable S₃ G₃ typing)})\n\n" ++
+    s!"t = {Typing.render t}   " ++
+      s!"(correct = {renderDecide (corrTyping_decidable S₃ G₃ t)})\n\n" ++
     s!"ex:n1 has shape <L1> = " ++
-      s!"{renderDecide (satisfies_decidable G₃ typing n1 (S₃.shapeDef L1))}"
+      s!"{renderDecide (satisfies_decidable G₃ t n1 (S₃.shapeDef L1))}"
 
 end Examples

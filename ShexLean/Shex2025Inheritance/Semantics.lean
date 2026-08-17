@@ -100,9 +100,9 @@ theorem mem_Mnotin {τ : Typing} {M : Finset Triple} {e : TripleExpr} {t : Tripl
 `x ∈ Idx`) are pairwise disjoint and their union is `M` — Table 3's rule
 18 partition of a neighbourhood set into the portion satisfying `h` and
 one portion per ancestor being (transitively) extended. -/
-def DisjointUnionOn (M M' : Finset Triple) (Idx : Finset ShapeLabel)
-    (Mx : ShapeLabel → Finset Triple) : Prop :=
-  Disjoint M' (Idx.biUnion Mx) ∧ (Idx : Set ShapeLabel).PairwiseDisjoint Mx ∧
+def DisjointUnionOn (M M' : Finset Triple) (Idx : Finset Label)
+    (Mx : Label → Finset Triple) : Prop :=
+  Disjoint M' (Idx.biUnion Mx) ∧ (Idx : Set Label).PairwiseDisjoint Mx ∧
     M = M' ∪ Idx.biUnion Mx
 
 /-- `M,τ ⊨ e` (Table 1), `Fuel`-bounded — see the module docstring. -/
@@ -204,7 +204,7 @@ under `τ` also satisfies the trivial shape `[closed:=false][extra:=none]
 ⟨p @z⟩` (rule 17, `.ofShape`) — the special case of `ofShape_of_Me_eq_self`
 most `.extends` proofs actually need. -/
 theorem singleton_tc_ofShape {S : Schema} {G : Graph} {τ : Typing} {fuel : ℕ}
-    {p : IRI} {z : ShapeLabel} {n : Subject} {o : RDFNode} (hty : τ.has o z) :
+    {p : IRI} {z : Label} {n : Subject} {o : RDFNode} (hty : τ.has o z) :
     SatisfiesMFuel (fuel + 2) S G τ {(⟨n, p, o⟩ : Triple)} (.ofShape ⟨false, none, .tc p z⟩) := by
   apply ofShape_of_Me_eq_self (fuel := fuel + 1) (e := .tc p z) (M := {(⟨n, p, o⟩ : Triple)})
   · apply Finset.Subset.antisymm

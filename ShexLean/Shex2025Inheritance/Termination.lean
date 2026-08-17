@@ -71,7 +71,7 @@ with the edge `x → y` — close a cycle through `x`). This is the standard
 whole reason `Schema.ExtAcyclic` is enough to guarantee termination: it
 turns "no cycle" into a genuine well-founded measure. -/
 theorem Schema.anc_ssubset_of_extEdge {S : Schema} (hAcyclic : S.ExtAcyclic)
-    {x y : ShapeLabel} (hxX : x ∈ S.X) (hxy : S.extEdge x y) :
+    {x y : Label} (hxX : x ∈ S.X) (hxy : S.extEdge x y) :
     S.anc y ⊂ S.anc x := by
   have hsub : S.anc y ⊆ S.anc x := by
     intro z hz
@@ -100,12 +100,12 @@ theorem Schema.anc_ssubset_of_extEdge {S : Schema} (hAcyclic : S.ExtAcyclic)
 `H_S`'s acyclicity, strictly decreasing along every edge
 (`extRank_lt_of_extEdge` below) — the well-founded measure the rest of
 this file's termination argument is built on. -/
-noncomputable def Schema.extRank (S : Schema) (x : ShapeLabel) : ℕ := (S.anc x).card
+noncomputable def Schema.extRank (S : Schema) (x : Label) : ℕ := (S.anc x).card
 
 /-- The rank form of `anc_ssubset_of_extEdge`: `extRank` strictly decreases
 along every `H_S` edge out of a label of `S`. -/
 theorem Schema.extRank_lt_of_extEdge {S : Schema} (hAcyclic : S.ExtAcyclic)
-    {x y : ShapeLabel} (hxX : x ∈ S.X) (hxy : S.extEdge x y) :
+    {x y : Label} (hxX : x ∈ S.X) (hxy : S.extEdge x y) :
     S.extRank y < S.extRank x :=
   Finset.card_lt_card (S.anc_ssubset_of_extEdge hAcyclic hxX hxy)
 
@@ -113,7 +113,7 @@ theorem Schema.extRank_lt_of_extEdge {S : Schema} (hAcyclic : S.ExtAcyclic)
 has `extRank x' ≤ extRank x` (not strict — `x ∈ S.anc x` reflexively, the
 `= x'` case). Used to bound the rank of *every* label reached by a rule-18
 partition (`x' ∈ S.ancSet xs`), not just the direct targets `xs`. -/
-theorem Schema.extRank_le_of_mem_anc {S : Schema} {x x' : ShapeLabel} (hx' : x' ∈ S.anc x) :
+theorem Schema.extRank_le_of_mem_anc {S : Schema} {x x' : Label} (hx' : x' ∈ S.anc x) :
     S.extRank x' ≤ S.extRank x := by
   apply Finset.card_le_card
   intro z hz
@@ -352,7 +352,7 @@ theorem stableM_noExtends (u : ShapeExpr) (hu : u.NoExtends) :
 /-- `ext-te(x)` is always strictly smaller than `def(x)` itself (it's a
 sub-part of it, per Definition 2's "`def(x) = extends X h [and u]`") — so
 `Schema.maxDefSize` bounds it too. -/
-theorem extTe_size_le {S : Schema} (hWFX : S.WellFormedX) {x : ShapeLabel} (hx : x ∈ S.X) :
+theorem extTe_size_le {S : Schema} (hWFX : S.WellFormedX) {x : Label} (hx : x ∈ S.X) :
     (S.shapeDef x).extTe.size ≤ (S.shapeDef x).size := by
   obtain ⟨xs', h', hcase⟩ := hWFX x hx
   rcases hcase with heq | ⟨u, heq⟩ <;> rw [heq] <;>
@@ -362,7 +362,7 @@ theorem extTe_size_le {S : Schema} (hWFX : S.WellFormedX) {x : ShapeLabel} (hx :
 `Schema.WellFormedExtends` hypothesis) and strictly smaller than `def(x)`
 itself, for the same reason as `extTe_size_le`. -/
 theorem restrOf_noExtends_and_size_le {S : Schema} (hWFExt : S.WellFormedExtends)
-    {x : ShapeLabel} {u : ShapeExpr} (hu : (S.shapeDef x).restrOf = some u) :
+    {x : Label} {u : ShapeExpr} (hu : (S.shapeDef x).restrOf = some u) :
     u.NoExtends ∧ u.size ≤ (S.shapeDef x).size := by
   have hWFx := hWFExt x
   generalize hg : S.shapeDef x = e at hu hWFx
@@ -602,7 +602,7 @@ sufficiently large `Fuel` computes the same, `Fuel`-independent answer that
 well-defined limit, for every node `n`, typing `τ`, and label
 `z ∈ Y ∪ X` (`def(z) := S.shapeDef z`, any `ShapeExpr`). -/
 theorem lemma1 {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.WellFormedExtends)
-    (G : Graph) (τ : Typing) (n : RDFNode) (z : ShapeLabel) (fuel : ℕ)
+    (G : Graph) (τ : Typing) (n : RDFNode) (z : Label) (fuel : ℕ)
     (hfuel : ShapeExpr.reqFuel S (S.shapeDef z) + 1 ≤ fuel) :
     SatisfiesFuel fuel S G τ n (S.shapeDef z) ↔ Satisfies S G τ n (S.shapeDef z) :=
   stableFuel hWFX hWFExt (S.shapeDef z) fuel (ShapeExpr.reqFuel S (S.shapeDef z) + 1) hfuel

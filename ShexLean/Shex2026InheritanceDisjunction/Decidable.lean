@@ -97,10 +97,10 @@ def Schema.XClosed (S : Schema) : Prop :=
 
 /-- One step of ancestor-set closure: add every not-yet-included `X`-vertex
 reachable by one more `extEdge` hop from the current set. -/
-private def ancStep (S : Schema) (t : Finset ShapeLabel) : Finset ShapeLabel :=
+private def ancStep (S : Schema) (t : Finset Label) : Finset Label :=
   t ∪ S.X.filter (fun y' => ∃ y ∈ t, S.extEdge y y')
 
-private theorem mem_ancStep_iff {S : Schema} {t : Finset ShapeLabel} {x' : ShapeLabel} :
+private theorem mem_ancStep_iff {S : Schema} {t : Finset Label} {x' : Label} :
     x' ∈ ancStep S t ↔ x' ∈ t ∨ (x' ∈ S.X ∧ ∃ y ∈ t, S.extEdge y x') := by
   unfold ancStep
   rw [Finset.mem_union, Finset.mem_filter]
@@ -113,15 +113,15 @@ private theorem ancStep_subset_X {S : Schema} : ∀ t ⊆ S.X, ancStep S t ⊆ S
 private theorem subset_ancStep {S : Schema} : ∀ t ⊆ S.X, t ⊆ ancStep S t :=
   fun _ _ => Finset.subset_union_left
 
-private theorem iterate_subset_X {S : Schema} {x : ShapeLabel} (hx : x ∈ S.X) :
+private theorem iterate_subset_X {S : Schema} {x : Label} (hx : x ∈ S.X) :
     ∀ n, (ancStep S)^[n] {x} ⊆ S.X := by
   intro n
   induction n with
   | zero => simpa using Finset.singleton_subset_iff.mpr hx
   | succ n ih => rw [Function.iterate_succ_apply']; exact ancStep_subset_X _ ih
 
-private theorem start_subset_iterate {S : Schema} {x : ShapeLabel}
-    (hx : x ∈ S.X) : ∀ n, ({x} : Finset ShapeLabel) ⊆ (ancStep S)^[n] {x} := by
+private theorem start_subset_iterate {S : Schema} {x : Label}
+    (hx : x ∈ S.X) : ∀ n, ({x} : Finset Label) ⊆ (ancStep S)^[n] {x} := by
   intro n
   induction n with
   | zero => simp
@@ -132,21 +132,21 @@ private theorem start_subset_iterate {S : Schema} {x : ShapeLabel}
 /-- The computable ancestor set: iterate `ancStep` from `{x}` until it
 stabilizes (guaranteed within `(S.X \ {x}).card` steps, `Finset.increasing_
 iterate_fixed`). -/
-def ancReach (S : Schema) (x : ShapeLabel) : Finset ShapeLabel :=
+def ancReach (S : Schema) (x : Label) : Finset Label :=
   (ancStep S)^[(S.X \ {x}).card] {x}
 
 /-- Every `extEdge`-step out of an `S.X`-point reached from `x` stays in
 `S.X` (this is what `XClosed`, propagated along a path, actually buys). -/
-private theorem reflTransGen_mem_X {S : Schema} (hXC : S.XClosed) {x : ShapeLabel} (hx : x ∈ S.X)
-    {x' : ShapeLabel} (h : Relation.ReflTransGen S.extEdge x x') : x' ∈ S.X := by
+private theorem reflTransGen_mem_X {S : Schema} (hXC : S.XClosed) {x : Label} (hx : x ∈ S.X)
+    {x' : Label} (h : Relation.ReflTransGen S.extEdge x x') : x' ∈ S.X := by
   induction h with
   | refl => exact hx
   | tail _ hbc ih => exact hXC _ ih hbc
 
 /-- Forward direction: anything the iteration reaches really is
 `extEdge`-reachable. -/
-private theorem reflTransGen_of_mem_iterate {S : Schema} {x : ShapeLabel} :
-    ∀ n (x' : ShapeLabel), x' ∈ (ancStep S)^[n] {x} → Relation.ReflTransGen S.extEdge x x' := by
+private theorem reflTransGen_of_mem_iterate {S : Schema} {x : Label} :
+    ∀ n (x' : Label), x' ∈ (ancStep S)^[n] {x} → Relation.ReflTransGen S.extEdge x x' := by
   intro n
   induction n with
   | zero =>
@@ -163,8 +163,8 @@ private theorem reflTransGen_of_mem_iterate {S : Schema} {x : ShapeLabel} :
 /-- Reverse direction: given `XClosed`, every `extEdge`-reachable point
 lands inside `ancReach` (which is exactly the fixed point of `ancStep`
 reached from `{x}`, by `Finset.increasing_iterate_fixed`). -/
-private theorem mem_ancReach_of_reflTransGen {S : Schema} (hXC : S.XClosed) {x : ShapeLabel}
-    (hx : x ∈ S.X) {x' : ShapeLabel} (h : Relation.ReflTransGen S.extEdge x x') :
+private theorem mem_ancReach_of_reflTransGen {S : Schema} (hXC : S.XClosed) {x : Label}
+    (hx : x ∈ S.X) {x' : Label} (h : Relation.ReflTransGen S.extEdge x x') :
     x' ∈ ancReach S x := by
   have hFPfix : ancStep S (ancReach S x) = ancReach S x :=
     Finset.increasing_iterate_fixed (ancStep S) S.X subset_ancStep ancStep_subset_X
@@ -180,7 +180,7 @@ private theorem mem_ancReach_of_reflTransGen {S : Schema} (hXC : S.XClosed) {x :
 
 /-- `ancReach` is exactly `Schema.anc`, given the natural closure hypothesis
 Definition 3 already assumes. -/
-theorem ancReach_eq_anc {S : Schema} (hXC : S.XClosed) {x : ShapeLabel} (hx : x ∈ S.X) :
+theorem ancReach_eq_anc {S : Schema} (hXC : S.XClosed) {x : Label} (hx : x ∈ S.X) :
     ancReach S x = S.anc x := by
   ext x'
   unfold Schema.anc
@@ -192,10 +192,10 @@ theorem ancReach_eq_anc {S : Schema} (hXC : S.XClosed) {x : ShapeLabel} (hx : x 
     exact mem_ancReach_of_reflTransGen hXC hx hrtg
 
 /-- The computable `ancSet`. -/
-def ancSetReach (S : Schema) (xs : Finset ShapeLabel) : Finset ShapeLabel :=
+def ancSetReach (S : Schema) (xs : Finset Label) : Finset Label :=
   xs.biUnion (ancReach S)
 
-theorem ancSetReach_eq_ancSet {S : Schema} (hXC : S.XClosed) {xs : Finset ShapeLabel}
+theorem ancSetReach_eq_ancSet {S : Schema} (hXC : S.XClosed) {xs : Finset Label}
     (hxs : xs ⊆ S.X) : ancSetReach S xs = S.ancSet xs := by
   unfold ancSetReach Schema.ancSet
   apply Finset.biUnion_congr rfl
@@ -207,7 +207,7 @@ theorem ancSetReach_eq_ancSet {S : Schema} (hXC : S.XClosed) {xs : Finset ShapeL
 Unlike `anc`/`ancSet`, these never needed `Classical.decPred` at all — the
 existential `∃ z, (t.pred,z) ∈ e.tcs ∧ τ.has t.obj z` is already bounded to
 the finite `e.tcs`, just not in a shape Lean's instance search recognizes
-syntactically (`z` ranges over all of `ShapeLabel` as written). Restating
+syntactically (`z` ranges over all of `Label` as written). Restating
 it as a bounded search over `e.tcs` itself makes the *same* proposition
 directly decidable — no extra hypothesis needed, unlike `anc`/`ancSet`. -/
 
@@ -384,7 +384,7 @@ def existsPartitionDecidable (Q : Finset Triple → Prop) (hQ : ∀ N', Decidabl
 bounded to `M` itself — same trick as the 2017 `matches_tPattern_iff`, one
 level simpler since `.tc`'s property `p` is a single fixed `IRI`, not a
 whole `PropSet`. -/
-theorem satisfiesTc_iff_bounded (τ : Typing) (p : IRI) (z : ShapeLabel) (M : Finset Triple) :
+theorem satisfiesTc_iff_bounded (τ : Typing) (p : IRI) (z : Label) (M : Finset Triple) :
     (∃ n o, M = {(⟨n, p, o⟩ : Triple)} ∧ τ.has o z) ↔
       ∃ t ∈ M, M = {t} ∧ t.pred = p ∧ τ.has t.obj z := by
   constructor
@@ -513,15 +513,15 @@ def ShapeExpr.AllConstraintsDecidable : ShapeExpr → Prop
   | .not s => s.AllConstraintsDecidable
 
 /-- Extends a `Finset.pi`-style dependent witness `g : ∀ a ∈ Idx, Finset
-Triple` to an ordinary `ShapeLabel → Finset Triple`, junk (`∅`) outside
-`Idx` — the shape rule 18's own `Mx : ShapeLabel → Finset Triple` needs,
+Triple` to an ordinary `Label → Finset Triple`, junk (`∅`) outside
+`Idx` — the shape rule 18's own `Mx : Label → Finset Triple` needs,
 reformulated as a bounded search over `Idx = ancSetReach S xs` alone. -/
-def extendMx (Idx : Finset ShapeLabel) (g : ∀ a ∈ Idx, Finset Triple) :
-    ShapeLabel → Finset Triple :=
+def extendMx (Idx : Finset Label) (g : ∀ a ∈ Idx, Finset Triple) :
+    Label → Finset Triple :=
   fun x => if h : x ∈ Idx then g x h else ∅
 
-theorem extendMx_eq {Idx : Finset ShapeLabel} {g : ∀ a ∈ Idx, Finset Triple}
-    {x : ShapeLabel} (hx : x ∈ Idx) : extendMx Idx g x = g x hx := by
+theorem extendMx_eq {Idx : Finset Label} {g : ∀ a ∈ Idx, Finset Triple}
+    {x : Label} (hx : x ∈ Idx) : extendMx Idx g x = g x hx := by
   unfold extendMx; simp [hx]
 
 /-- The finite search space for `pick x` (rule 18's new disjunct-choice
@@ -529,25 +529,25 @@ witness, `Semantics.lean`): every distinct `extTeAt` result at `x` is
 already reached by some index below `(S.shapeDef x).extTeList.length`
 (`ShapeExpr.extTeAt_mod`, `Syntax.lean`), `max 1 _`-guarded so the search
 space is never empty even when `x`'s `extTeList` is (junk `.empty` case). -/
-def ShapeExpr.pickBound (S : Schema) (x : ShapeLabel) : Finset ℕ :=
+def ShapeExpr.pickBound (S : Schema) (x : Label) : Finset ℕ :=
   Finset.range (max 1 (S.shapeDef x).extTeList.length)
 
 /-- `extendMx`'s analogue for `pick`: extends a `Finset.pi`-style dependent
-witness `p : ∀ a ∈ Idx, ℕ` to an ordinary `ShapeLabel → ℕ`, junk (`0`)
+witness `p : ∀ a ∈ Idx, ℕ` to an ordinary `Label → ℕ`, junk (`0`)
 outside `Idx`. -/
-def extendPick (Idx : Finset ShapeLabel) (p : ∀ a ∈ Idx, ℕ) : ShapeLabel → ℕ :=
+def extendPick (Idx : Finset Label) (p : ∀ a ∈ Idx, ℕ) : Label → ℕ :=
   fun x => if h : x ∈ Idx then p x h else 0
 
-theorem extendPick_eq {Idx : Finset ShapeLabel} {p : ∀ a ∈ Idx, ℕ} {x : ShapeLabel}
+theorem extendPick_eq {Idx : Finset Label} {p : ∀ a ∈ Idx, ℕ} {x : Label}
     (hx : x ∈ Idx) : extendPick Idx p x = p x hx := by
   unfold extendPick; simp [hx]
 
-/-- Every `pick : ShapeLabel → ℕ` agrees, at every `x ∈ Idx`, with *some*
+/-- Every `pick : Label → ℕ` agrees, at every `x ∈ Idx`, with *some*
 bounded representative in `ShapeExpr.pickBound S x` — as far as `extTeAt`
 can tell (`ShapeExpr.extTeAt_mod`). What makes it sound for the bounded
 search below to only ever try `extendPick Idx p` for `p ∈ Finset.pi Idx
 (ShapeExpr.pickBound S)`, rather than an arbitrary `pick`. -/
-theorem exists_pickBound_eq_extTeAt {S : Schema} {Idx : Finset ShapeLabel} (pick : ShapeLabel → ℕ) :
+theorem exists_pickBound_eq_extTeAt {S : Schema} {Idx : Finset Label} (pick : Label → ℕ) :
     ∃ p ∈ Finset.pi Idx (ShapeExpr.pickBound S),
       ∀ x ∈ Idx, (S.shapeDef x).extTeAt (extendPick Idx p x) = (S.shapeDef x).extTeAt (pick x) := by
   refine ⟨fun x _ => pick x % max 1 (S.shapeDef x).extTeList.length, ?_, ?_⟩
@@ -563,8 +563,8 @@ theorem exists_pickBound_eq_extTeAt {S : Schema} {Idx : Finset ShapeLabel} (pick
 what makes it sound to only ever query `Mx` at points of `ancSetReach S xs`
 in rule 18's `restr(x)` clause (`(S.anc x).biUnion Mx`, `x` ranging over the
 very same set). -/
-theorem ancReach_subset_ancSetReach {S : Schema} (hXC : S.XClosed) {xs : Finset ShapeLabel}
-    (hxs : xs ⊆ S.X) {x : ShapeLabel} (hx : x ∈ ancSetReach S xs) :
+theorem ancReach_subset_ancSetReach {S : Schema} (hXC : S.XClosed) {xs : Finset Label}
+    (hxs : xs ⊆ S.X) {x : Label} (hx : x ∈ ancSetReach S xs) :
     ancReach S x ⊆ ancSetReach S xs := by
   rw [ancSetReach_eq_ancSet hXC hxs] at hx ⊢
   unfold Schema.ancSet at hx ⊢
@@ -586,8 +586,8 @@ theorem ancReach_subset_ancSetReach {S : Schema} (hXC : S.XClosed) {xs : Finset 
 functions there give the same proposition — what lets rule 18's decidability
 freely swap `Mx` for `extendMx Idx g` (which is `Mx` on `Idx`, junk
 elsewhere). -/
-theorem DisjointUnionOn_congr {M M' : Finset Triple} {Idx : Finset ShapeLabel}
-    {Mx Mx' : ShapeLabel → Finset Triple} (hEq : ∀ x ∈ Idx, Mx x = Mx' x) :
+theorem DisjointUnionOn_congr {M M' : Finset Triple} {Idx : Finset Label}
+    {Mx Mx' : Label → Finset Triple} (hEq : ∀ x ∈ Idx, Mx x = Mx' x) :
     DisjointUnionOn M M' Idx Mx ↔ DisjointUnionOn M M' Idx Mx' := by
   unfold DisjointUnionOn
   have hbU : Idx.biUnion Mx = Idx.biUnion Mx' := Finset.biUnion_congr rfl hEq
@@ -605,7 +605,7 @@ theorem DisjointUnionOn_congr {M M' : Finset Triple} {Idx : Finset ShapeLabel}
 
 /-- Every point of `ancSetReach S xs` is itself in `S.X` (it's a union of
 `S.anc`-images, and `S.anc _ ⊆ S.X` always, by construction). -/
-theorem ancSetReach_subset_X {S : Schema} (hXC : S.XClosed) {xs : Finset ShapeLabel}
+theorem ancSetReach_subset_X {S : Schema} (hXC : S.XClosed) {xs : Finset Label}
     (hxs : xs ⊆ S.X) : ancSetReach S xs ⊆ S.X := by
   intro x hx
   rw [ancSetReach_eq_ancSet hXC hxs] at hx
@@ -622,9 +622,9 @@ via `ancSetReach_eq_ancSet`/`ancReach_eq_anc` (sound since `xs ⊆ S.X`, from
 `.extends xs h`'s own `MOk` requirement, and every `x` in scope is reached
 from `xs` and so itself `∈ S.X`). -/
 theorem satisfiesExtends_iff_bounded {S : Schema} {G : Graph} {τ : Typing}
-    (hXC : S.XClosed) {fuel : ℕ} {M : Finset Triple} {xs : Finset ShapeLabel} {hs : List Shape}
+    (hXC : S.XClosed) {fuel : ℕ} {M : Finset Triple} {xs : Finset Label} {hs : List Shape}
     (hxs : xs ⊆ S.X) :
-    (∃ M' Mx, ∃ pick : ShapeLabel → ℕ, DisjointUnionOn M M' (S.ancSet xs) Mx ∧
+    (∃ M' Mx, ∃ pick : Label → ℕ, DisjointUnionOn M M' (S.ancSet xs) Mx ∧
         (∃ h ∈ hs, SatisfiesMFuel fuel S G τ M' (.ofShape h)) ∧
         (∀ x ∈ S.ancSet xs,
           SatisfiesEFuel fuel S G τ (Mx x) ((S.shapeDef x).extTeAt (pick x))) ∧
@@ -681,8 +681,8 @@ theorem satisfiesExtends_iff_bounded {S : Schema} {G : Graph} {τ : Typing}
 computable function (e.g. `extendMx Idx g`): `Set.PairwiseDisjoint`
 restated as a `Finset`-bounded double `∀`. -/
 
-theorem pairwiseDisjoint_iff_bounded (Idx : Finset ShapeLabel) (f : ShapeLabel → Finset Triple) :
-    (Idx : Set ShapeLabel).PairwiseDisjoint f ↔
+theorem pairwiseDisjoint_iff_bounded (Idx : Finset Label) (f : Label → Finset Triple) :
+    (Idx : Set Label).PairwiseDisjoint f ↔
       ∀ a ∈ Idx, ∀ b ∈ Idx, a ≠ b → Disjoint (f a) (f b) := by
   unfold Set.PairwiseDisjoint Set.Pairwise
   constructor
@@ -691,12 +691,12 @@ theorem pairwiseDisjoint_iff_bounded (Idx : Finset ShapeLabel) (f : ShapeLabel �
   · intro h a ha b hb hab
     exact h a (Finset.mem_coe.mp ha) b (Finset.mem_coe.mp hb) hab
 
-instance decidablePairwiseDisjoint (Idx : Finset ShapeLabel) (f : ShapeLabel → Finset Triple) :
-    Decidable ((Idx : Set ShapeLabel).PairwiseDisjoint f) :=
+instance decidablePairwiseDisjoint (Idx : Finset Label) (f : Label → Finset Triple) :
+    Decidable ((Idx : Set Label).PairwiseDisjoint f) :=
   decidable_of_iff _ (pairwiseDisjoint_iff_bounded Idx f).symm
 
-instance decidableDisjointUnionOn (M M' : Finset Triple) (Idx : Finset ShapeLabel)
-    (Mx : ShapeLabel → Finset Triple) : Decidable (DisjointUnionOn M M' Idx Mx) := by
+instance decidableDisjointUnionOn (M M' : Finset Triple) (Idx : Finset Label)
+    (Mx : Label → Finset Triple) : Decidable (DisjointUnionOn M M' Idx Mx) := by
   unfold DisjointUnionOn; infer_instance
 
 /-- **`SatisfiesMFuel` is decidable, on the `MOk` fragment** (see the module
@@ -735,7 +735,7 @@ def satisfiesMFuel_decidable (S : Schema) (G : Graph) (τ : Typing)
       haveI := satisfiesMFuel_decidable S G τ hXC hRestr fuel M s hOk
       infer_instance
   | fuel + 1, M, .extends xs hs, hOk => by
-      show Decidable (∃ M' Mx, ∃ pick : ShapeLabel → ℕ, DisjointUnionOn M M' (S.ancSet xs) Mx ∧
+      show Decidable (∃ M' Mx, ∃ pick : Label → ℕ, DisjointUnionOn M M' (S.ancSet xs) Mx ∧
         (∃ h ∈ hs, SatisfiesMFuel fuel S G τ M' (.ofShape h)) ∧
         (∀ x ∈ S.ancSet xs, SatisfiesEFuel fuel S G τ (Mx x) ((S.shapeDef x).extTeAt (pick x))) ∧
         (∀ x ∈ S.ancSet xs, ∀ u, (S.shapeDef x).restrOf = some u →

@@ -11,19 +11,19 @@ asserts a canonical "most refined" stratification exists and that every
 stratification agrees with it, without spelling out why. This file gives a
 full, independent proof, built from the ground up:
 
-- `maxTypingAgreeing_fusion` ("Fusion"): revealing a schema's labels in one
-  batch vs. two nested batches gives the same `maxTypingAgreeing` result.
-- `combineStrat` + `Typing4_combineStrat`: a concrete "lex-combine"
+- `maxAgree_fusion` ("Fusion"): revealing a schema's labels in one
+  batch vs. two nested batches gives the same `maxAgree` result.
+- `combStrat` + `Typing4_combStrat`: a concrete "lex-combine"
   stratification and *refinement invariance* along it — not needed by the
   final proof below, but a genuine, independently useful fact, and the
   route originally attempted before it became clear that exact
   checkpoint-alignment with an *arbitrary* second stratification is
   mathematically impossible (two mutually-independent labels can be
   ordered differently by different valid stratifications).
-- `maxTypingAgreeing_swap` ("Swap"): two batches that *each individually*
+- `maxAgree_swap` ("Swap"): two batches that *each individually*
   only depend on a common base (not on each other) can be revealed in
   either order with the same result — two applications of Fusion.
-- `remainingMin`/`cont1`: a canonical process that, starting from `∅`,
+- `remMin`/`cont1`: a canonical process that, starting from `∅`,
   repeatedly reveals the least-`strat`-valued remaining batch (for some
   arbitrarily fixed valid stratification, used only to make each step
   well-defined) until every label is settled.
@@ -64,11 +64,11 @@ theorem Schema.stratum_self_contained (S : Schema) (strat : Stratification S)
 /-- `S` restricted to an arbitrary label set `Ls` (not necessarily a
 stratum-checkpoint of any particular stratification), keeping the same
 definitions. Generalizes `Schema.stratRestrict`. -/
-def Schema.restrictLabels (S : Schema) (Ls : Finset ShapeLabel) : Schema where
+def Schema.restrictLabels (S : Schema) (Ls : Finset Label) : Schema where
   labels := Ls
   shapeDef := S.shapeDef
 
-theorem Typing.restrictTo_mono {t t' : Typing} {Lo : Finset ShapeLabel} (h : t ⊆ t') :
+theorem Typing.restrictTo_mono {t t' : Typing} {Lo : Finset Label} (h : t ⊆ t') :
     t.restrictTo Lo ⊆ t'.restrictTo Lo := by
   intro p hp
   obtain ⟨hp1, hp2⟩ := Typing.mem_restrictTo.mp hp
@@ -76,7 +76,7 @@ theorem Typing.restrictTo_mono {t t' : Typing} {Lo : Finset ShapeLabel} (h : t �
 
 /-- Restricting to `Lo₂ ⊆ Lo₁` and then to `Lo₂` again is the same as
 restricting to `Lo₂` directly. -/
-theorem Typing.restrictTo_restrictTo {t : Typing} {Lo₁ Lo₂ : Finset ShapeLabel}
+theorem Typing.restrictTo_restrictTo {t : Typing} {Lo₁ Lo₂ : Finset Label}
     (h : Lo₂ ⊆ Lo₁) : (t.restrictTo Lo₁).restrictTo Lo₂ = t.restrictTo Lo₂ := by
   apply Finset.ext
   rintro ⟨n, L⟩
@@ -87,7 +87,7 @@ theorem Typing.restrictTo_restrictTo {t : Typing} {Lo₁ Lo₂ : Finset ShapeLab
   · rintro ⟨htmem, hL⟩
     exact ⟨⟨htmem, h hL⟩, hL⟩
 
-theorem Schema.univTyping_mono {S : Schema} {G : Graph} {Ls Ls' : Finset ShapeLabel}
+theorem Schema.univTyping_mono {S : Schema} {G : Graph} {Ls Ls' : Finset Label}
     (h : Ls ⊆ Ls') : (S.restrictLabels Ls).univTyping G ⊆ (S.restrictLabels Ls').univTyping G := by
   intro p hp
   simp only [Schema.univTyping, Schema.restrictLabels] at hp ⊢
@@ -97,11 +97,11 @@ theorem Schema.univTyping_mono {S : Schema} {G : Graph} {Ls Ls' : Finset ShapeLa
 self-contained (both `posDeps` and `negDeps` confined within it) sub-set of
 labels — `Satisfies.agree` applies because such a label's whole dependency
 footprint is already inside the restriction. -/
-theorem restrictLabels_correct_restrictTo {S : Schema} {G : Graph} {Ls1 Ls2 : Finset ShapeLabel}
+theorem restrictLabels_correct_restrictTo {S : Schema} {G : Graph} {Ls1 Ls2 : Finset Label}
     {t : Typing}
     (hself : ∀ L ∈ Ls1, (S.shapeDef L).posDeps ∪ (S.shapeDef L).negDeps ⊆ Ls1)
-    (ht : (S.restrictLabels Ls2).CorrectTyping G t) :
-    (S.restrictLabels Ls1).CorrectTyping G (t.restrictTo Ls1) := by
+    (ht : (S.restrictLabels Ls2).CorrTyping G t) :
+    (S.restrictLabels Ls1).CorrTyping G (t.restrictTo Ls1) := by
   intro n L hmem
   obtain ⟨hmemT, hL1⟩ := Typing.mem_restrictTo.mp hmem
   have hSat : Satisfies G t n (S.shapeDef L) := ht n L hmemT
@@ -117,7 +117,7 @@ theorem restrictLabels_correct_restrictTo {S : Schema} {G : Graph} {Ls1 Ls2 : Fi
 /-- **Fusion**: revealing `Ls₂` in one shot (`Lo = Ls`) agrees with
 revealing it in two stages through the intermediate checkpoint `Ls₁`
 (`Lo = Ls` then `Lo = Ls₁`) — batching more or less finely doesn't change
-`maxTypingAgreeing`'s outcome, provided everything new in `Ls₂` only
+`maxAgree`'s outcome, provided everything new in `Ls₂` only
 negatively depends on the original `Ls`, and `Ls₁` is self-contained under
 positive dependencies (both hold automatically when `Ls ⊆ Ls₁ ⊆ Ls₂` are
 stratum-checkpoints of the same stratification, `Schema.stratum_self_contained`).
@@ -125,55 +125,55 @@ stratum-checkpoints of the same stratification, `Schema.stratum_self_contained`)
 The proof shows each side is, as a *whole object* (not by decomposing into
 individual candidate typings — an individual correct typing of `Ls₁` need
 not be *maximal* there, so a per-candidate argument does not go through),
-a valid candidate for the other's `maxTypingAgreeing` construction. -/
-theorem maxTypingAgreeing_fusion {S : Schema} {G : Graph} {Ls Ls1 Ls2 : Finset ShapeLabel}
+a valid candidate for the other's `maxAgree` construction. -/
+theorem maxAgree_fusion {S : Schema} {G : Graph} {Ls Ls1 Ls2 : Finset Label}
     {T : Typing} (hLsLs1 : Ls ⊆ Ls1) (hLs1Ls2 : Ls1 ⊆ Ls2)
     (hneg2 : ∀ L ∈ Ls2, (S.shapeDef L).negDeps ⊆ Ls)
     (hpos1 : ∀ L ∈ Ls1, (S.shapeDef L).posDeps ⊆ Ls1)
     (hTsub : T ⊆ (S.restrictLabels Ls).univTyping G)
-    (hTcorrect : (S.restrictLabels Ls).CorrectTyping G T) :
-    maxTypingAgreeing (S.restrictLabels Ls2) G Ls1
-        (maxTypingAgreeing (S.restrictLabels Ls1) G Ls T) =
-      maxTypingAgreeing (S.restrictLabels Ls2) G Ls T := by
-  set A := maxTypingAgreeing (S.restrictLabels Ls1) G Ls T with hA_def
-  set B := maxTypingAgreeing (S.restrictLabels Ls2) G Ls1 A with hB_def
-  set C := maxTypingAgreeing (S.restrictLabels Ls2) G Ls T with hC_def
+    (hTcorrect : (S.restrictLabels Ls).CorrTyping G T) :
+    maxAgree (S.restrictLabels Ls2) G Ls1
+        (maxAgree (S.restrictLabels Ls1) G Ls T) =
+      maxAgree (S.restrictLabels Ls2) G Ls T := by
+  set A := maxAgree (S.restrictLabels Ls1) G Ls T with hA_def
+  set B := maxAgree (S.restrictLabels Ls2) G Ls1 A with hB_def
+  set C := maxAgree (S.restrictLabels Ls2) G Ls T with hC_def
   have hTsub1 : T ⊆ (S.restrictLabels Ls1).univTyping G :=
     hTsub.trans (Schema.univTyping_mono hLsLs1)
-  have hTcorrect1 : (S.restrictLabels Ls1).CorrectTyping G T := hTcorrect
+  have hTcorrect1 : (S.restrictLabels Ls1).CorrTyping G T := hTcorrect
   have hTsub2 : T ⊆ (S.restrictLabels Ls2).univTyping G :=
     hTsub.trans (Schema.univTyping_mono (hLsLs1.trans hLs1Ls2))
-  have hTcorrect2 : (S.restrictLabels Ls2).CorrectTyping G T := hTcorrect
-  have hAsub1 : A ⊆ (S.restrictLabels Ls1).univTyping G := maxTypingAgreeing_subset _ G _ _
-  have hAcorrect1 : (S.restrictLabels Ls1).CorrectTyping G A :=
-    maxTypingAgreeing_correct hTsub1 hTcorrect1 (fun L hL => hneg2 L (hLs1Ls2 hL))
+  have hTcorrect2 : (S.restrictLabels Ls2).CorrTyping G T := hTcorrect
+  have hAsub1 : A ⊆ (S.restrictLabels Ls1).univTyping G := maxAgree_subset _ G _ _
+  have hAcorrect1 : (S.restrictLabels Ls1).CorrTyping G A :=
+    maxAgree_correct hTsub1 hTcorrect1 (fun L hL => hneg2 L (hLs1Ls2 hL))
   have hArestrict : A.restrictTo Ls = T.restrictTo Ls :=
-    maxTypingAgreeing_restrictTo hTsub1 hTcorrect1
+    maxAgree_restrictTo hTsub1 hTcorrect1
   have hAsub2 : A ⊆ (S.restrictLabels Ls2).univTyping G := hAsub1.trans (Schema.univTyping_mono hLs1Ls2)
-  have hAcorrect2 : (S.restrictLabels Ls2).CorrectTyping G A := hAcorrect1
+  have hAcorrect2 : (S.restrictLabels Ls2).CorrTyping G A := hAcorrect1
   -- `A` is itself a valid `C`-candidate.
-  have hAC : A ⊆ C := subset_maxTypingAgreeing hAsub2 hAcorrect2 hArestrict
-  have hBsub2 : B ⊆ (S.restrictLabels Ls2).univTyping G := maxTypingAgreeing_subset _ G _ _
-  have hBcorrect2 : (S.restrictLabels Ls2).CorrectTyping G B :=
-    maxTypingAgreeing_correct hAsub2 hAcorrect2 (fun L hL => (hneg2 L hL).trans hLsLs1)
+  have hAC : A ⊆ C := subset_maxAgree hAsub2 hAcorrect2 hArestrict
+  have hBsub2 : B ⊆ (S.restrictLabels Ls2).univTyping G := maxAgree_subset _ G _ _
+  have hBcorrect2 : (S.restrictLabels Ls2).CorrTyping G B :=
+    maxAgree_correct hAsub2 hAcorrect2 (fun L hL => (hneg2 L hL).trans hLsLs1)
   have hBrestrict1 : B.restrictTo Ls1 = A.restrictTo Ls1 :=
-    maxTypingAgreeing_restrictTo hAsub2 hAcorrect2
+    maxAgree_restrictTo hAsub2 hAcorrect2
   -- `B ⊆ C`.
   have hBC : B ⊆ C := by
-    apply subset_maxTypingAgreeing hBsub2 hBcorrect2
+    apply subset_maxAgree hBsub2 hBcorrect2
     rw [← Typing.restrictTo_restrictTo (t := B) hLsLs1, hBrestrict1,
       Typing.restrictTo_restrictTo (t := A) hLsLs1, hArestrict]
   -- `C ⊆ B`.
   have hCB : C ⊆ B := by
-    have hCsub2 : C ⊆ (S.restrictLabels Ls2).univTyping G := maxTypingAgreeing_subset _ G _ _
-    have hCcorrect2 : (S.restrictLabels Ls2).CorrectTyping G C :=
-      maxTypingAgreeing_correct hTsub2 hTcorrect2 hneg2
-    have hCrestrict : C.restrictTo Ls = T.restrictTo Ls := maxTypingAgreeing_restrictTo hTsub2 hTcorrect2
+    have hCsub2 : C ⊆ (S.restrictLabels Ls2).univTyping G := maxAgree_subset _ G _ _
+    have hCcorrect2 : (S.restrictLabels Ls2).CorrTyping G C :=
+      maxAgree_correct hTsub2 hTcorrect2 hneg2
+    have hCrestrict : C.restrictTo Ls = T.restrictTo Ls := maxAgree_restrictTo hTsub2 hTcorrect2
     have hself1 : ∀ L ∈ Ls1, (S.shapeDef L).posDeps ∪ (S.shapeDef L).negDeps ⊆ Ls1 := by
       intro L hL
       apply Finset.union_subset (hpos1 L hL)
       exact (hneg2 L (hLs1Ls2 hL)).trans hLsLs1
-    have hCL1correct : (S.restrictLabels Ls1).CorrectTyping G (C.restrictTo Ls1) :=
+    have hCL1correct : (S.restrictLabels Ls1).CorrTyping G (C.restrictTo Ls1) :=
       restrictLabels_correct_restrictTo hself1 hCcorrect2
     have hCL1sub : C.restrictTo Ls1 ⊆ (S.restrictLabels Ls1).univTyping G := by
       intro p hp
@@ -182,14 +182,14 @@ theorem maxTypingAgreeing_fusion {S : Schema} {G : Graph} {Ls Ls1 Ls2 : Finset S
       exact Finset.mem_product.mpr ⟨(Finset.mem_product.mp (hCsub2 hp1)).1, hp2⟩
     have hCL1restrict : (C.restrictTo Ls1).restrictTo Ls = T.restrictTo Ls := by
       rw [Typing.restrictTo_restrictTo hLsLs1, hCrestrict]
-    have hCL1A : C.restrictTo Ls1 ⊆ A := subset_maxTypingAgreeing hCL1sub hCL1correct hCL1restrict
+    have hCL1A : C.restrictTo Ls1 ⊆ A := subset_maxAgree hCL1sub hCL1correct hCL1restrict
     have hCL1eqA : C.restrictTo Ls1 = A.restrictTo Ls1 := by
       apply Finset.Subset.antisymm
       · intro p hp
         obtain ⟨hp1, hp2⟩ := Typing.mem_restrictTo.mp hp
         exact Typing.mem_restrictTo.mpr ⟨hCL1A (Typing.mem_restrictTo.mpr ⟨hp1, hp2⟩), hp2⟩
       · exact Typing.restrictTo_mono hAC
-    exact subset_maxTypingAgreeing hCsub2 hCcorrect2 hCL1eqA
+    exact subset_maxAgree hCsub2 hCcorrect2 hCL1eqA
   exact Finset.Subset.antisymm hBC hCB
 
 /-- Sharper than `Schema.stratum_self_contained` on the negative side: a
@@ -213,14 +213,14 @@ theorem Schema.stratum_zero (S : Schema) (strat : Stratification S) :
   have := (strat.mem_range L hL).1
   omega
 
-/-- `maxTypingAgreeing` is a no-op when asked to reveal exactly the schema
+/-- `maxAgree` is a no-op when asked to reveal exactly the schema
 `fixed` is already correct+bounded for: the only self-agreeing candidate is
 `fixed` itself. -/
-theorem maxTypingAgreeing_self {S' : Schema} {G : Graph} {T : Typing}
-    (hTsub : T ⊆ S'.univTyping G) (hTcorrect : S'.CorrectTyping G T) :
-    maxTypingAgreeing S' G S'.labels T = T := by
+theorem maxAgree_self {S' : Schema} {G : Graph} {T : Typing}
+    (hTsub : T ⊆ S'.univTyping G) (hTcorrect : S'.CorrTyping G T) :
+    maxAgree S' G S'.labels T = T := by
   apply Finset.Subset.antisymm
-  · have := Classical.decPred (fun t => S'.CorrectTyping G t ∧ t.restrictTo S'.labels = T.restrictTo S'.labels)
+  · have := Classical.decPred (fun t => S'.CorrTyping G t ∧ t.restrictTo S'.labels = T.restrictTo S'.labels)
     apply Finset.sup_le
     intro t ht
     simp only [Finset.mem_filter, Finset.mem_powerset] at ht
@@ -239,7 +239,7 @@ theorem maxTypingAgreeing_self {S' : Schema} {G : Graph} {T : Typing}
       · intro h; exact ⟨h, (Finset.mem_product.mp (hTsub h)).2⟩
     rw [ht_eq, hT_eq] at htrestrict
     exact htrestrict.le
-  · exact subset_maxTypingAgreeing hTsub hTcorrect rfl
+  · exact subset_maxAgree hTsub hTcorrect rfl
 
 /-!
 The combined ("lex-refined") stratification: `strat1` as the primary key,
@@ -288,7 +288,7 @@ private theorem lex_upper {a k1 b k2 : ℕ} (ha1 : 1 ≤ a) (ha2 : a ≤ k1) (hb
   omega
 
 /-- `strat1` as primary key, `strat2` as tiebreak. -/
-noncomputable def combineStrat {S : Schema} (hClosed : S.Closed) (strat1 strat2 : Stratification S) :
+noncomputable def combStrat {S : Schema} (hClosed : S.Closed) (strat1 strat2 : Stratification S) :
     Stratification S where
   k := strat1.k * (strat2.k + 1)
   strat := fun L => (strat1.strat L - 1) * (strat2.k + 1) + strat2.strat L
@@ -318,9 +318,9 @@ noncomputable def combineStrat {S : Schema} (hClosed : S.Closed) (strat1 strat2 
     have h2 := strat2.pos_le L1 hL1 L2 hdep
     exact h2
 
-theorem stratum_combineStrat_align {S : Schema} (hClosed : S.Closed)
+theorem stratum_combStrat_align {S : Schema} (hClosed : S.Closed)
     (strat1 strat2 : Stratification S) (i : ℕ) :
-    S.stratum strat1.strat i = S.stratum (combineStrat hClosed strat1 strat2).strat (i * (strat2.k + 1)) := by
+    S.stratum strat1.strat i = S.stratum (combStrat hClosed strat1 strat2).strat (i * (strat2.k + 1)) := by
   apply Finset.ext
   intro L
   simp only [Schema.stratum, Finset.mem_filter]
@@ -359,39 +359,39 @@ theorem stratum_combineStrat_align {S : Schema} (hClosed : S.Closed)
     omega
 
 /-- **Refinement invariance**: `Typing4` under `strat1` agrees with
-`Typing4` under `combineStrat hClosed strat1 strat2` (which refines
+`Typing4` under `combStrat hClosed strat1 strat2` (which refines
 `strat1` exactly, at multiples of `strat2.k + 1`). Proved by induction on
 `strat1`'s own strata, with an inner induction (bridging via repeated
-`maxTypingAgreeing_fusion`) over the `strat2.k + 1` finer steps
-`combineStrat` takes within each `strat1`-layer. -/
-theorem stratTypingSeq_combineStrat_align {S : Schema} (hClosed : S.Closed)
+`maxAgree_fusion`) over the `strat2.k + 1` finer steps
+`combStrat` takes within each `strat1`-layer. -/
+theorem stratSeq_combStrat_align {S : Schema} (hClosed : S.Closed)
     (strat1 strat2 : Stratification S) (G : Graph) :
     ∀ i ≤ strat1.k,
-      stratTypingSeq S (combineStrat hClosed strat1 strat2).strat G (i * (strat2.k + 1)) =
-        stratTypingSeq S strat1.strat G i
-  | 0, _ => by simp [stratTypingSeq]
+      stratSeq S (combStrat hClosed strat1 strat2).strat G (i * (strat2.k + 1)) =
+        stratSeq S strat1.strat G i
+  | 0, _ => by simp [stratSeq]
   | (i + 1), hi1 => by
       have hi : i ≤ strat1.k := by omega
-      have houter := stratTypingSeq_combineStrat_align hClosed strat1 strat2 G i hi
-      have hT1 := stratTypingSeq_correct S strat1 hClosed G i
+      have houter := stratSeq_combStrat_align hClosed strat1 strat2 G i hi
+      have hT1 := stratSeq_correct S strat1 hClosed G i
       have halign : ∀ i' : ℕ, S.stratum strat1.strat i' =
-          S.stratum (combineStrat hClosed strat1 strat2).strat (i' * (strat2.k + 1)) :=
-        stratum_combineStrat_align hClosed strat1 strat2
-      set combined := combineStrat hClosed strat1 strat2 with hcombined_def
+          S.stratum (combStrat hClosed strat1 strat2).strat (i' * (strat2.k + 1)) :=
+        stratum_combStrat_align hClosed strat1 strat2
+      set combined := combStrat hClosed strat1 strat2 with hcombined_def
       set Ls := S.stratum strat1.strat i with hLs_def
-      set T := stratTypingSeq S strat1.strat G i with hT_def
+      set T := stratSeq S strat1.strat G i with hT_def
       have hTsub : T ⊆ (S.restrictLabels Ls).univTyping G := hT1.1
-      have hTcorrect : (S.restrictLabels Ls).CorrectTyping G T := hT1.2
+      have hTcorrect : (S.restrictLabels Ls).CorrTyping G T := hT1.2
       have inner : ∀ j, j ≤ strat2.k →
-          stratTypingSeq S combined.strat G (i * (strat2.k + 1) + j) =
-            maxTypingAgreeing (S.restrictLabels (S.stratum combined.strat (i * (strat2.k + 1) + j)))
+          stratSeq S combined.strat G (i * (strat2.k + 1) + j) =
+            maxAgree (S.restrictLabels (S.stratum combined.strat (i * (strat2.k + 1) + j)))
               G Ls T := by
         intro j
         induction j with
         | zero =>
             intro _
             rw [Nat.add_zero, ← halign i, houter]
-            exact (maxTypingAgreeing_self hTsub hTcorrect).symm
+            exact (maxAgree_self hTsub hTcorrect).symm
         | succ j ihj =>
             intro hj1
             have hj : j ≤ strat2.k := by omega
@@ -417,19 +417,19 @@ theorem stratTypingSeq_combineStrat_align {S : Schema} (hClosed : S.Closed)
               exact Finset.subset_union_left.trans
                 (Schema.stratum_self_contained S combined hClosed
                   (i * (strat2.k + 1) + j) L hL)
-            have hfusion := maxTypingAgreeing_fusion (S := S) (G := G) hLsLs1 hLs1Ls2
+            have hfusion := maxAgree_fusion (S := S) (G := G) hLsLs1 hLs1Ls2
               hneg2 hpos1 hTsub hTcorrect
-            have hstep : stratTypingSeq S combined.strat G (i * (strat2.k + 1) + (j + 1)) =
-                maxTypingAgreeing (S.restrictLabels Ls2) G Ls1
-                  (stratTypingSeq S combined.strat G (i * (strat2.k + 1) + j)) := by
+            have hstep : stratSeq S combined.strat G (i * (strat2.k + 1) + (j + 1)) =
+                maxAgree (S.restrictLabels Ls2) G Ls1
+                  (stratSeq S combined.strat G (i * (strat2.k + 1) + j)) := by
               have heq : i * (strat2.k + 1) + (j + 1) = (i * (strat2.k + 1) + j) + 1 := by omega
               rw [heq]; rfl
-            calc stratTypingSeq S combined.strat G (i * (strat2.k + 1) + (j + 1))
-                = maxTypingAgreeing (S.restrictLabels Ls2) G Ls1
-                    (stratTypingSeq S combined.strat G (i * (strat2.k + 1) + j)) := hstep
-              _ = maxTypingAgreeing (S.restrictLabels Ls2) G Ls1
-                    (maxTypingAgreeing (S.restrictLabels Ls1) G Ls T) := by rw [hj']
-              _ = maxTypingAgreeing (S.restrictLabels Ls2) G Ls T := hfusion
+            calc stratSeq S combined.strat G (i * (strat2.k + 1) + (j + 1))
+                = maxAgree (S.restrictLabels Ls2) G Ls1
+                    (stratSeq S combined.strat G (i * (strat2.k + 1) + j)) := hstep
+              _ = maxAgree (S.restrictLabels Ls2) G Ls1
+                    (maxAgree (S.restrictLabels Ls1) G Ls T) := by rw [hj']
+              _ = maxAgree (S.restrictLabels Ls2) G Ls T := hfusion
       have hk2 := inner strat2.k (le_refl _)
       have hLs1last : S.stratum combined.strat (i * (strat2.k + 1) + strat2.k) ⊆
           S.stratum strat1.strat (i + 1) := by
@@ -450,42 +450,42 @@ theorem stratTypingSeq_combineStrat_align {S : Schema} (hClosed : S.Closed)
         intro L hL
         exact Finset.subset_union_left.trans
           (Schema.stratum_self_contained S combined hClosed (i * (strat2.k + 1) + strat2.k) L hL)
-      have hfusionlast := maxTypingAgreeing_fusion (S := S) (G := G) hLsLs1last
+      have hfusionlast := maxAgree_fusion (S := S) (G := G) hLsLs1last
         (halign (i + 1) ▸ hLs1last) (halign (i + 1) ▸ hneg2last) hpos1last hTsub hTcorrect
-      have hstep : stratTypingSeq S combined.strat G ((i + 1) * (strat2.k + 1)) =
-          maxTypingAgreeing (S.restrictLabels (S.stratum combined.strat ((i + 1) * (strat2.k + 1)))) G
+      have hstep : stratSeq S combined.strat G ((i + 1) * (strat2.k + 1)) =
+          maxAgree (S.restrictLabels (S.stratum combined.strat ((i + 1) * (strat2.k + 1)))) G
             (S.stratum combined.strat (i * (strat2.k + 1) + strat2.k))
-            (stratTypingSeq S combined.strat G (i * (strat2.k + 1) + strat2.k)) := by
+            (stratSeq S combined.strat G (i * (strat2.k + 1) + strat2.k)) := by
         have heq : (i + 1) * (strat2.k + 1) = (i * (strat2.k + 1) + strat2.k) + 1 := by ring
         rw [heq]; rfl
-      calc stratTypingSeq S combined.strat G ((i + 1) * (strat2.k + 1))
-          = maxTypingAgreeing (S.restrictLabels (S.stratum combined.strat ((i + 1) * (strat2.k + 1)))) G
+      calc stratSeq S combined.strat G ((i + 1) * (strat2.k + 1))
+          = maxAgree (S.restrictLabels (S.stratum combined.strat ((i + 1) * (strat2.k + 1)))) G
               (S.stratum combined.strat (i * (strat2.k + 1) + strat2.k))
-              (stratTypingSeq S combined.strat G (i * (strat2.k + 1) + strat2.k)) := hstep
-        _ = maxTypingAgreeing (S.restrictLabels (S.stratum combined.strat ((i + 1) * (strat2.k + 1)))) G
+              (stratSeq S combined.strat G (i * (strat2.k + 1) + strat2.k)) := hstep
+        _ = maxAgree (S.restrictLabels (S.stratum combined.strat ((i + 1) * (strat2.k + 1)))) G
               (S.stratum combined.strat (i * (strat2.k + 1) + strat2.k))
-              (maxTypingAgreeing (S.restrictLabels (S.stratum combined.strat
+              (maxAgree (S.restrictLabels (S.stratum combined.strat
                 (i * (strat2.k + 1) + strat2.k))) G Ls T) := by rw [hk2]
-        _ = maxTypingAgreeing (S.restrictLabels (S.stratum combined.strat ((i + 1) * (strat2.k + 1)))) G
+        _ = maxAgree (S.restrictLabels (S.stratum combined.strat ((i + 1) * (strat2.k + 1)))) G
               Ls T := hfusionlast
-        _ = maxTypingAgreeing (S.restrictLabels (S.stratum strat1.strat (i + 1))) G Ls T := by
+        _ = maxAgree (S.restrictLabels (S.stratum strat1.strat (i + 1))) G Ls T := by
               rw [halign (i + 1)]
-        _ = stratTypingSeq S strat1.strat G (i + 1) := rfl
+        _ = stratSeq S strat1.strat G (i + 1) := rfl
 
-/-- `combineStrat hClosed strat1 strat2` reduces to `Typing4 G S strat1` — the
-`i = strat1.k` instance of `stratTypingSeq_combineStrat_align`, phrased via
+/-- `combStrat hClosed strat1 strat2` reduces to `Typing4 G S strat1` — the
+`i = strat1.k` instance of `stratSeq_combStrat_align`, phrased via
 `Typing4`. -/
-theorem Typing4_combineStrat (S : Schema) (hClosed : S.Closed)
+theorem Typing4_combStrat (S : Schema) (hClosed : S.Closed)
     (strat1 strat2 : Stratification S) (G : Graph) :
-    Typing4 G S (combineStrat hClosed strat1 strat2) = Typing4 G S strat1 := by
-  show stratTypingSeq S (combineStrat hClosed strat1 strat2).strat G
-      (strat1.k * (strat2.k + 1)) = stratTypingSeq S strat1.strat G strat1.k
-  exact stratTypingSeq_combineStrat_align hClosed strat1 strat2 G strat1.k (le_refl _)
+    Typing4 G S (combStrat hClosed strat1 strat2) = Typing4 G S strat1 := by
+  show stratSeq S (combStrat hClosed strat1 strat2).strat G
+      (strat1.k * (strat2.k + 1)) = stratSeq S strat1.strat G strat1.k
+  exact stratSeq_combStrat_align hClosed strat1 strat2 G strat1.k (le_refl _)
 
 /-!
 **Lemma 2, general statement.**
 
-`combineStrat hClosed strat1 strat2` aligns with `strat1`'s checkpoints but
+`combStrat hClosed strat1 strat2` aligns with `strat1`'s checkpoints but
 not `strat2`'s in general: two mutually-independent labels (no dependency
 edge either way) can be freely ordered differently by different valid
 stratifications, so no single fixed combination aligns with an *arbitrary*
@@ -493,7 +493,7 @@ second stratification. The fix is to stop trying to align with a
 *specific* schedule at all: define one canonical process that, at each
 step, reveals *some* valid next batch (not tied to either `strat1` or
 `strat2`), and show its final result doesn't depend on which valid batch
-was chosen at each step (`indep` below, via `maxTypingAgreeing_swap`).
+was chosen at each step (`indep` below, via `maxAgree_swap`).
 Then that process's final value can be shown to equal `Typing4 strat1` by
 walking it through `strat1`'s own checkpoints one at a time (each such step
 *is* a valid batch choice), and likewise for `strat2` — giving `Typing4
@@ -504,24 +504,24 @@ agree on any intermediate checkpoint.
 /-- The labels of least `strat`-value among those not yet in `Fixed` — a
 canonical (but not the only valid) choice of "next batch": nonempty
 whenever there is anything left, and (shown below) confined the way
-`maxTypingAgreeing`'s construction needs. -/
-def remainingMin (S : Schema) (strat : ShapeLabel → ℕ) (Fixed : Finset ShapeLabel) :
-    Finset ShapeLabel :=
+`maxAgree`'s construction needs. -/
+def remMin (S : Schema) (strat : Label → ℕ) (Fixed : Finset Label) :
+    Finset Label :=
   (S.labels \ Fixed).filter (fun L => ∀ L' ∈ S.labels \ Fixed, strat L ≤ strat L')
 
-theorem remainingMin_subset {S : Schema} {strat : ShapeLabel → ℕ} {Fixed : Finset ShapeLabel} :
-    remainingMin S strat Fixed ⊆ S.labels \ Fixed := Finset.filter_subset _ _
+theorem remMin_subset {S : Schema} {strat : Label → ℕ} {Fixed : Finset Label} :
+    remMin S strat Fixed ⊆ S.labels \ Fixed := Finset.filter_subset _ _
 
-theorem remainingMin_nonempty {S : Schema} {strat : ShapeLabel → ℕ} {Fixed : Finset ShapeLabel}
-    (h : (S.labels \ Fixed).Nonempty) : (remainingMin S strat Fixed).Nonempty := by
+theorem remMin_nonempty {S : Schema} {strat : Label → ℕ} {Fixed : Finset Label}
+    (h : (S.labels \ Fixed).Nonempty) : (remMin S strat Fixed).Nonempty := by
   obtain ⟨L₀, hL₀, hmin⟩ := Finset.exists_min_image (S.labels \ Fixed) strat h
   exact ⟨L₀, Finset.mem_filter.mpr ⟨hL₀, hmin⟩⟩
 
-/-- `remainingMin`'s batch (for any valid stratification `strat`) only
+/-- `remMin`'s batch (for any valid stratification `strat`) only
 negatively depends on `Fixed`. -/
-theorem remainingMin_neg {S : Schema} (strat : Stratification S) (hClosed : S.Closed)
-    (Fixed : Finset ShapeLabel) :
-    ∀ L ∈ remainingMin S strat.strat Fixed, (S.shapeDef L).negDeps ⊆ Fixed := by
+theorem remMin_neg {S : Schema} (strat : Stratification S) (hClosed : S.Closed)
+    (Fixed : Finset Label) :
+    ∀ L ∈ remMin S strat.strat Fixed, (S.shapeDef L).negDeps ⊆ Fixed := by
   intro L hL L2 hL2
   obtain ⟨hLrem, hLmin⟩ := Finset.mem_filter.mp hL
   obtain ⟨hLlabels, hLnotFixed⟩ := Finset.mem_sdiff.mp hLrem
@@ -532,12 +532,12 @@ theorem remainingMin_neg {S : Schema} (strat : Stratification S) (hClosed : S.Cl
   have h2 := hLmin L2 hL2rem
   omega
 
-/-- `Fixed ∪ remainingMin strat Fixed` is self-contained under positive
+/-- `Fixed ∪ remMin strat Fixed` is self-contained under positive
 dependencies. -/
-theorem remainingMin_pos {S : Schema} (strat : Stratification S) (hClosed : S.Closed)
-    (Fixed : Finset ShapeLabel) :
-    ∀ L ∈ remainingMin S strat.strat Fixed,
-      (S.shapeDef L).posDeps ⊆ Fixed ∪ remainingMin S strat.strat Fixed := by
+theorem remMin_pos {S : Schema} (strat : Stratification S) (hClosed : S.Closed)
+    (Fixed : Finset Label) :
+    ∀ L ∈ remMin S strat.strat Fixed,
+      (S.shapeDef L).posDeps ⊆ Fixed ∪ remMin S strat.strat Fixed := by
   intro L hL L2 hL2
   obtain ⟨hLrem, hLmin⟩ := Finset.mem_filter.mp hL
   obtain ⟨hLlabels, hLnotFixed⟩ := Finset.mem_sdiff.mp hLrem
@@ -552,24 +552,24 @@ theorem remainingMin_pos {S : Schema} (strat : Stratification S) (hClosed : S.Cl
     have h3 := hLmin L' hL'
     omega
 
-/-- Repeatedly reveal `strat`'s `remainingMin` batch, `n` times (or until
+/-- Repeatedly reveal `strat`'s `remMin` batch, `n` times (or until
 nothing is left — `n` is fuel, not meant to be tight). -/
 noncomputable def cont1Fuel (S : Schema) (strat : Stratification S) (G : Graph) :
-    ℕ → Finset ShapeLabel → Typing → Typing
+    ℕ → Finset Label → Typing → Typing
   | 0, _, T => T
   | (n + 1), Fixed, T =>
       if (S.labels \ Fixed).Nonempty then
-        cont1Fuel S strat G n (Fixed ∪ remainingMin S strat.strat Fixed)
-          (maxTypingAgreeing (S.restrictLabels (Fixed ∪ remainingMin S strat.strat Fixed)) G
+        cont1Fuel S strat G n (Fixed ∪ remMin S strat.strat Fixed)
+          (maxAgree (S.restrictLabels (Fixed ∪ remMin S strat.strat Fixed)) G
             Fixed T)
       else T
 
-/-- `S.labels \ (Fixed ∪ remainingMin ...)` is strictly smaller than
+/-- `S.labels \ (Fixed ∪ remMin ...)` is strictly smaller than
 `S.labels \ Fixed`. -/
-private theorem remainingMin_card_lt (S : Schema) (strat : ShapeLabel → ℕ)
-    {Fixed : Finset ShapeLabel} (h : (S.labels \ Fixed).Nonempty) :
-    (S.labels \ (Fixed ∪ remainingMin S strat Fixed)).card < (S.labels \ Fixed).card := by
-  have hBnonempty := remainingMin_nonempty (S := S) (strat := strat) h
+private theorem remMin_card_lt (S : Schema) (strat : Label → ℕ)
+    {Fixed : Finset Label} (h : (S.labels \ Fixed).Nonempty) :
+    (S.labels \ (Fixed ∪ remMin S strat Fixed)).card < (S.labels \ Fixed).card := by
+  have hBnonempty := remMin_nonempty (S := S) (strat := strat) h
   apply Finset.card_lt_card
   constructor
   · intro x hx
@@ -577,13 +577,13 @@ private theorem remainingMin_card_lt (S : Schema) (strat : ShapeLabel → ℕ)
     tauto
   · intro hsub
     obtain ⟨L₀, hL₀⟩ := hBnonempty
-    have hL₀rem := remainingMin_subset (S := S) (strat := strat) hL₀
+    have hL₀rem := remMin_subset (S := S) (strat := strat) hL₀
     have := hsub hL₀rem
     simp only [Finset.mem_sdiff, Finset.mem_union] at this
     exact this.2 (Or.inr hL₀)
 
 private theorem cont1Fuel_of_not_nonempty (S : Schema) (strat : Stratification S) (G : Graph)
-    {Fixed : Finset ShapeLabel} (h : ¬ (S.labels \ Fixed).Nonempty) (T : Typing) :
+    {Fixed : Finset Label} (h : ¬ (S.labels \ Fixed).Nonempty) (T : Typing) :
     ∀ n, cont1Fuel S strat G n Fixed T = T
   | 0 => rfl
   | (n + 1) => by simp only [cont1Fuel, ite_eq_right h]
@@ -591,7 +591,7 @@ private theorem cont1Fuel_of_not_nonempty (S : Schema) (strat : Stratification S
 /-- Once fuel is enough to exhaust the remaining labels, more fuel doesn't
 change the result. -/
 theorem cont1Fuel_stable (S : Schema) (strat : Stratification S) (G : Graph) :
-    ∀ Fixed : Finset ShapeLabel, ∀ T : Typing, ∀ n n' : ℕ, (S.labels \ Fixed).card ≤ n →
+    ∀ Fixed : Finset Label, ∀ T : Typing, ∀ n n' : ℕ, (S.labels \ Fixed).card ≤ n →
       (S.labels \ Fixed).card ≤ n' → cont1Fuel S strat G n Fixed T = cont1Fuel S strat G n' Fixed T := by
   intro Fixed
   induction hcard : (S.labels \ Fixed).card using Nat.strong_induction_on generalizing Fixed with
@@ -602,29 +602,29 @@ theorem cont1Fuel_stable (S : Schema) (strat : Stratification S) (G : Graph) :
       obtain ⟨m, rfl⟩ : ∃ m, n = m + 1 := ⟨n - 1, by omega⟩
       obtain ⟨m', rfl⟩ : ∃ m', n' = m' + 1 := ⟨n' - 1, by omega⟩
       simp only [cont1Fuel, ite_eq_left hne]
-      have hcard' : (S.labels \ (Fixed ∪ remainingMin S strat.strat Fixed)).card < card :=
-        hcard ▸ remainingMin_card_lt S strat.strat hne
+      have hcard' : (S.labels \ (Fixed ∪ remMin S strat.strat Fixed)).card < card :=
+        hcard ▸ remMin_card_lt S strat.strat hne
       exact ih _ hcard' _ rfl
-        (maxTypingAgreeing (S.restrictLabels (Fixed ∪ remainingMin S strat.strat Fixed)) G Fixed T)
+        (maxAgree (S.restrictLabels (Fixed ∪ remMin S strat.strat Fixed)) G Fixed T)
         m m' (by omega) (by omega)
     · rw [cont1Fuel_of_not_nonempty S strat G hne T n, cont1Fuel_of_not_nonempty S strat G hne T n']
 
-/-- `cont1 S strat G Fixed T`: continue the `remainingMin` process from
+/-- `cont1 S strat G Fixed T`: continue the `remMin` process from
 `(Fixed, T)` all the way to `S.labels`, using `strat` throughout to choose
 each batch (a fixed, concrete choice — but `indep` below shows *any* valid
 first step gives the same final answer, so this concrete choice is not
 actually load-bearing). -/
 noncomputable def cont1 (S : Schema) (strat : Stratification S) (G : Graph)
-    (Fixed : Finset ShapeLabel) (T : Typing) : Typing :=
+    (Fixed : Finset Label) (T : Typing) : Typing :=
   cont1Fuel S strat G S.labels.card Fixed T
 
 theorem cont1_eq_fuel (S : Schema) (strat : Stratification S) (G : Graph)
-    (Fixed : Finset ShapeLabel) (T : Typing) (n : ℕ) (hn : (S.labels \ Fixed).card ≤ n) :
+    (Fixed : Finset Label) (T : Typing) (n : ℕ) (hn : (S.labels \ Fixed).card ≤ n) :
     cont1 S strat G Fixed T = cont1Fuel S strat G n Fixed T :=
   cont1Fuel_stable S strat G Fixed T S.labels.card n (Finset.card_le_card (Finset.sdiff_subset)) hn
 
 theorem cont1_done (S : Schema) (strat : Stratification S) (G : Graph)
-    {Fixed : Finset ShapeLabel} (h : ¬ (S.labels \ Fixed).Nonempty) (T : Typing) :
+    {Fixed : Finset Label} (h : ¬ (S.labels \ Fixed).Nonempty) (T : Typing) :
     cont1 S strat G Fixed T = T := by
   have hcardzero : (S.labels \ Fixed).card = 0 := by
     rw [Finset.card_eq_zero, ← Finset.not_nonempty_iff_eq_empty]; exact h
@@ -632,26 +632,26 @@ theorem cont1_done (S : Schema) (strat : Stratification S) (G : Graph)
   simp only [cont1Fuel, ite_eq_right h]
 
 theorem cont1_step (S : Schema) (strat : Stratification S) (G : Graph)
-    {Fixed : Finset ShapeLabel} (h : (S.labels \ Fixed).Nonempty) (T : Typing) :
-    cont1 S strat G Fixed T = cont1 S strat G (Fixed ∪ remainingMin S strat.strat Fixed)
-      (maxTypingAgreeing (S.restrictLabels (Fixed ∪ remainingMin S strat.strat Fixed)) G Fixed T) := by
+    {Fixed : Finset Label} (h : (S.labels \ Fixed).Nonempty) (T : Typing) :
+    cont1 S strat G Fixed T = cont1 S strat G (Fixed ∪ remMin S strat.strat Fixed)
+      (maxAgree (S.restrictLabels (Fixed ∪ remMin S strat.strat Fixed)) G Fixed T) := by
   obtain ⟨m, hm⟩ : ∃ m, (S.labels \ Fixed).card = m + 1 :=
     ⟨(S.labels \ Fixed).card - 1, by have := Finset.card_pos.mpr h; omega⟩
   rw [cont1_eq_fuel S strat G Fixed T (m + 1) (le_of_eq hm)]
   simp only [cont1Fuel, ite_eq_left h]
   refine (cont1_eq_fuel S strat G _ _ m ?_).symm
-  have := remainingMin_card_lt S strat.strat h
+  have := remMin_card_lt S strat.strat h
   omega
 
 /-- **Swap**: two disjoint batches `A`, `B` that *each individually* only
 depend (negatively) on the common base `Ls0` and (positively) on `Ls0`
 plus themselves — i.e. neither needs the other at all — can be revealed in
 either order with the same result. Both sides reduce, via
-`maxTypingAgreeing_fusion`, to the one-shot construction over `Ls0 ∪ A ∪
+`maxAgree_fusion`, to the one-shot construction over `Ls0 ∪ A ∪
 B`; this is the formal content of "reordering independent material doesn't
 change the final typing", used below (`indep`) to show `cont1`'s first
 step doesn't matter. -/
-theorem maxTypingAgreeing_swap {S : Schema} {G : Graph} {Ls0 A B : Finset ShapeLabel}
+theorem maxAgree_swap {S : Schema} {G : Graph} {Ls0 A B : Finset Label}
     {T : Typing}
     (hLs0self : ∀ L ∈ Ls0, (S.shapeDef L).posDeps ∪ (S.shapeDef L).negDeps ⊆ Ls0)
     (hAneg : ∀ L ∈ A, (S.shapeDef L).negDeps ⊆ Ls0)
@@ -659,11 +659,11 @@ theorem maxTypingAgreeing_swap {S : Schema} {G : Graph} {Ls0 A B : Finset ShapeL
     (hBneg : ∀ L ∈ B, (S.shapeDef L).negDeps ⊆ Ls0)
     (hBpos : ∀ L ∈ B, (S.shapeDef L).posDeps ⊆ Ls0 ∪ B)
     (hTsub : T ⊆ (S.restrictLabels Ls0).univTyping G)
-    (hTcorrect : (S.restrictLabels Ls0).CorrectTyping G T) :
-    maxTypingAgreeing (S.restrictLabels (Ls0 ∪ A ∪ B)) G (Ls0 ∪ A)
-        (maxTypingAgreeing (S.restrictLabels (Ls0 ∪ A)) G Ls0 T) =
-      maxTypingAgreeing (S.restrictLabels (Ls0 ∪ A ∪ B)) G (Ls0 ∪ B)
-        (maxTypingAgreeing (S.restrictLabels (Ls0 ∪ B)) G Ls0 T) := by
+    (hTcorrect : (S.restrictLabels Ls0).CorrTyping G T) :
+    maxAgree (S.restrictLabels (Ls0 ∪ A ∪ B)) G (Ls0 ∪ A)
+        (maxAgree (S.restrictLabels (Ls0 ∪ A)) G Ls0 T) =
+      maxAgree (S.restrictLabels (Ls0 ∪ A ∪ B)) G (Ls0 ∪ B)
+        (maxAgree (S.restrictLabels (Ls0 ∪ B)) G Ls0 T) := by
   have hLs0negA : ∀ L ∈ Ls0, (S.shapeDef L).negDeps ⊆ Ls0 := fun L hL =>
     (Finset.subset_union_right (s₁ := (S.shapeDef L).posDeps)).trans (hLs0self L hL)
   have hLs0posA : ∀ L ∈ Ls0, (S.shapeDef L).posDeps ⊆ Ls0 :=
@@ -694,27 +694,27 @@ theorem maxTypingAgreeing_swap {S : Schema} {G : Graph} {Ls0 A B : Finset ShapeL
     intro x hx
     simp only [Finset.mem_union] at hx ⊢
     tauto
-  have hLHS := maxTypingAgreeing_fusion (S := S) (G := G) hLs0LsA hLsA2 hneg2' hpos1
+  have hLHS := maxAgree_fusion (S := S) (G := G) hLs0LsA hLsA2 hneg2' hpos1
     hTsub hTcorrect
-  have hRHS := maxTypingAgreeing_fusion (S := S) (G := G) hLs0LsB hLsB2 hneg2' hpos1'
+  have hRHS := maxAgree_fusion (S := S) (G := G) hLs0LsB hLsB2 hneg2' hpos1'
     hTsub hTcorrect
   rw [hLHS, hRHS]
 
 /-- **Independence**: `cont1`'s final answer, starting from a self-contained
 `(Fixed, T)`, doesn't change if we first jump ahead by revealing *any*
-other valid batch `C` (not necessarily `remainingMin`'s own choice, and not
+other valid batch `C` (not necessarily `remMin`'s own choice, and not
 necessarily disjoint from `Fixed`) — i.e. `cont1` doesn't actually care
 which valid batch its underlying `strat` happens to pick at each step. -/
 theorem cont1_indep (S : Schema) (strat : Stratification S) (hClosed : S.Closed) (G : Graph) :
-    ∀ Fixed : Finset ShapeLabel, ∀ T : Typing,
+    ∀ Fixed : Finset Label, ∀ T : Typing,
       (∀ L ∈ Fixed, (S.shapeDef L).posDeps ∪ (S.shapeDef L).negDeps ⊆ Fixed) →
       T ⊆ (S.restrictLabels Fixed).univTyping G →
-      (S.restrictLabels Fixed).CorrectTyping G T →
-      ∀ C : Finset ShapeLabel, C ⊆ S.labels →
+      (S.restrictLabels Fixed).CorrTyping G T →
+      ∀ C : Finset Label, C ⊆ S.labels →
         (∀ L ∈ C, (S.shapeDef L).negDeps ⊆ Fixed) →
         (∀ L ∈ C, (S.shapeDef L).posDeps ⊆ Fixed ∪ C) →
         cont1 S strat G Fixed T =
-          cont1 S strat G (Fixed ∪ C) (maxTypingAgreeing (S.restrictLabels (Fixed ∪ C)) G Fixed T) := by
+          cont1 S strat G (Fixed ∪ C) (maxAgree (S.restrictLabels (Fixed ∪ C)) G Fixed T) := by
   intro Fixed
   induction hcard : (S.labels \ Fixed).card using Nat.strong_induction_on generalizing Fixed with
   | _ card ih =>
@@ -727,18 +727,18 @@ theorem cont1_indep (S : Schema) (strat : Stratification S) (hClosed : S.Closed)
         have hxCF : x ∈ C \ Fixed := Finset.mem_sdiff.mpr ⟨hx, hxFixed⟩
         rw [hCempty] at hxCF
         exact absurd hxCF (Finset.notMem_empty x)
-      have hMTA : maxTypingAgreeing (S.restrictLabels Fixed) G Fixed T = T :=
-        maxTypingAgreeing_self (S' := S.restrictLabels Fixed) hTsub hTcorrect
+      have hMTA : maxAgree (S.restrictLabels Fixed) G Fixed T = T :=
+        maxAgree_self (S' := S.restrictLabels Fixed) hTsub hTcorrect
       rw [hFixedC, hMTA]
     · by_cases hne : (S.labels \ Fixed).Nonempty
-      · have hA₁neg := remainingMin_neg strat hClosed Fixed
-        have hA₁pos := remainingMin_pos strat hClosed Fixed
-        have hA₁ne := remainingMin_nonempty (S := S) (strat := strat.strat) hne
-        have hA₁sub : remainingMin S strat.strat Fixed ⊆ S.labels :=
-          remainingMin_subset.trans Finset.sdiff_subset
-        have hcardA₁ : (S.labels \ (Fixed ∪ remainingMin S strat.strat Fixed)).card < card :=
-          hcard ▸ remainingMin_card_lt S strat.strat hne
-        set A₁ := remainingMin S strat.strat Fixed with hA₁_def
+      · have hA₁neg := remMin_neg strat hClosed Fixed
+        have hA₁pos := remMin_pos strat hClosed Fixed
+        have hA₁ne := remMin_nonempty (S := S) (strat := strat.strat) hne
+        have hA₁sub : remMin S strat.strat Fixed ⊆ S.labels :=
+          remMin_subset.trans Finset.sdiff_subset
+        have hcardA₁ : (S.labels \ (Fixed ∪ remMin S strat.strat Fixed)).card < card :=
+          hcard ▸ remMin_card_lt S strat.strat hne
+        set A₁ := remMin S strat.strat Fixed with hA₁_def
         -- `Fixed ∪ A₁` is self-contained, and `T_{A₁}` is correct+bounded for it.
         have hFA₁self : ∀ L ∈ Fixed ∪ A₁, (S.shapeDef L).posDeps ∪ (S.shapeDef L).negDeps ⊆ Fixed ∪ A₁ := by
           intro L hL
@@ -754,14 +754,14 @@ theorem cont1_indep (S : Schema) (strat : Stratification S) (hClosed : S.Closed)
           · exact hA₁neg L hL
         have hTsubA₁ : T ⊆ (S.restrictLabels (Fixed ∪ A₁)).univTyping G :=
           hTsub.trans (Schema.univTyping_mono Finset.subset_union_left)
-        have hTA₁sub : maxTypingAgreeing (S.restrictLabels (Fixed ∪ A₁)) G Fixed T ⊆
-            (S.restrictLabels (Fixed ∪ A₁)).univTyping G := maxTypingAgreeing_subset _ G _ _
-        have hTA₁correct : (S.restrictLabels (Fixed ∪ A₁)).CorrectTyping G
-            (maxTypingAgreeing (S.restrictLabels (Fixed ∪ A₁)) G Fixed T) :=
-          maxTypingAgreeing_correct hTsubA₁ hTcorrect hFA₁neg
+        have hTA₁sub : maxAgree (S.restrictLabels (Fixed ∪ A₁)) G Fixed T ⊆
+            (S.restrictLabels (Fixed ∪ A₁)).univTyping G := maxAgree_subset _ G _ _
+        have hTA₁correct : (S.restrictLabels (Fixed ∪ A₁)).CorrTyping G
+            (maxAgree (S.restrictLabels (Fixed ∪ A₁)) G Fixed T) :=
+          maxAgree_correct hTsubA₁ hTcorrect hFA₁neg
         -- First `ih` application: base `Fixed ∪ A₁`, jump `C`.
         have hstep1 := ih _ hcardA₁ (Fixed ∪ A₁) rfl
-          (maxTypingAgreeing (S.restrictLabels (Fixed ∪ A₁)) G Fixed T) hFA₁self hTA₁sub hTA₁correct
+          (maxAgree (S.restrictLabels (Fixed ∪ A₁)) G Fixed T) hFA₁self hTA₁sub hTA₁correct
           C hCsub (fun L hL => (hCneg L hL).trans Finset.subset_union_left)
           (fun L hL => (hCpos L hL).trans (Finset.union_subset_union_left Finset.subset_union_left))
         -- `Fixed ∪ C` is self-contained, and `T''` is correct+bounded for it.
@@ -779,10 +779,10 @@ theorem cont1_indep (S : Schema) (strat : Stratification S) (hClosed : S.Closed)
           · exact hCneg L hL
         have hTsubC : T ⊆ (S.restrictLabels (Fixed ∪ C)).univTyping G :=
           hTsub.trans (Schema.univTyping_mono Finset.subset_union_left)
-        set T'' := maxTypingAgreeing (S.restrictLabels (Fixed ∪ C)) G Fixed T with hT''_def
-        have hT''sub : T'' ⊆ (S.restrictLabels (Fixed ∪ C)).univTyping G := maxTypingAgreeing_subset _ G _ _
-        have hT''correct : (S.restrictLabels (Fixed ∪ C)).CorrectTyping G T'' :=
-          maxTypingAgreeing_correct hTsubC hTcorrect hFCneg
+        set T'' := maxAgree (S.restrictLabels (Fixed ∪ C)) G Fixed T with hT''_def
+        have hT''sub : T'' ⊆ (S.restrictLabels (Fixed ∪ C)).univTyping G := maxAgree_subset _ G _ _
+        have hT''correct : (S.restrictLabels (Fixed ∪ C)).CorrTyping G T'' :=
+          maxAgree_correct hTsubC hTcorrect hFCneg
         have hcardC : (S.labels \ (Fixed ∪ C)).card < card := by
           rw [← hcard]
           apply Finset.card_lt_card
@@ -801,18 +801,18 @@ theorem cont1_indep (S : Schema) (strat : Stratification S) (hClosed : S.Closed)
         have hstep2 := ih _ hcardC (Fixed ∪ C) rfl T'' hFCself hT''sub hT''correct
           A₁ hA₁sub (fun L hL => (hA₁neg L hL).trans Finset.subset_union_left)
           (fun L hL => (hA₁pos L hL).trans (Finset.union_subset_union_left Finset.subset_union_left))
-        -- Combine via `cont1_step` and `maxTypingAgreeing_swap`.
-        have hswap := maxTypingAgreeing_swap (S := S) (G := G) (Ls0 := Fixed) (A := A₁) (B := C)
+        -- Combine via `cont1_step` and `maxAgree_swap`.
+        have hswap := maxAgree_swap (S := S) (G := G) (Ls0 := Fixed) (A := A₁) (B := C)
           hFixedSelf hA₁neg hA₁pos hCneg hCpos hTsub hTcorrect
         have hcomm : Fixed ∪ A₁ ∪ C = Fixed ∪ C ∪ A₁ := by
           apply Finset.ext; intro x; simp only [Finset.mem_union]; tauto
         rw [cont1_step S strat G hne T]
-        calc cont1 S strat G (Fixed ∪ A₁) (maxTypingAgreeing (S.restrictLabels (Fixed ∪ A₁)) G Fixed T)
+        calc cont1 S strat G (Fixed ∪ A₁) (maxAgree (S.restrictLabels (Fixed ∪ A₁)) G Fixed T)
             = cont1 S strat G ((Fixed ∪ A₁) ∪ C)
-                (maxTypingAgreeing (S.restrictLabels ((Fixed ∪ A₁) ∪ C)) G (Fixed ∪ A₁)
-                  (maxTypingAgreeing (S.restrictLabels (Fixed ∪ A₁)) G Fixed T)) := hstep1
+                (maxAgree (S.restrictLabels ((Fixed ∪ A₁) ∪ C)) G (Fixed ∪ A₁)
+                  (maxAgree (S.restrictLabels (Fixed ∪ A₁)) G Fixed T)) := hstep1
           _ = cont1 S strat G ((Fixed ∪ A₁) ∪ C)
-                (maxTypingAgreeing (S.restrictLabels ((Fixed ∪ A₁) ∪ C)) G (Fixed ∪ C) T'') := by
+                (maxAgree (S.restrictLabels ((Fixed ∪ A₁) ∪ C)) G (Fixed ∪ C) T'') := by
                 rw [hswap]
           _ = cont1 S strat G (Fixed ∪ C) T'' := hcomm ▸ hstep2.symm
       · -- Nothing left at all: `Fixed ⊇ S.labels`, so `C ⊆ Fixed` too, contradicting `hCnew`.
@@ -828,12 +828,12 @@ theorem cont1_chain (S : Schema) (strat0 : Stratification S) (hClosed : S.Closed
     (strat' : Stratification S) :
     ∀ i ≤ strat'.k,
       cont1 S strat0 G ∅ ∅ = cont1 S strat0 G (S.stratum strat'.strat i)
-        (stratTypingSeq S strat'.strat G i)
-  | 0, _ => by simp [Schema.stratum_zero, stratTypingSeq]
+        (stratSeq S strat'.strat G i)
+  | 0, _ => by simp [Schema.stratum_zero, stratSeq]
   | (i + 1), hi1 => by
       have hi : i ≤ strat'.k := by omega
       have hIH := cont1_chain S strat0 hClosed G strat' i hi
-      have hT' := stratTypingSeq_correct S strat' hClosed G i
+      have hT' := stratSeq_correct S strat' hClosed G i
       have hself : ∀ L ∈ S.stratum strat'.strat i,
           (S.shapeDef L).posDeps ∪ (S.shapeDef L).negDeps ⊆ S.stratum strat'.strat i :=
         Schema.stratum_self_contained S strat' hClosed i
@@ -854,7 +854,7 @@ theorem cont1_chain (S : Schema) (strat0 : Stratification S) (hClosed : S.Closed
         exact Finset.subset_union_left.trans
           (Schema.stratum_self_contained S strat' hClosed (i + 1) L hL')
       have hindep := cont1_indep S strat0 hClosed G (S.stratum strat'.strat i)
-        (stratTypingSeq S strat'.strat G i) hself hT'.1 hT'.2 C hCsub hCneg hCpos
+        (stratSeq S strat'.strat G i) hself hT'.1 hT'.2 C hCsub hCneg hCpos
       rw [hIH, hindep, hUnion]
       congr 1
 
@@ -873,7 +873,7 @@ theorem cont1_eq_Typing4 (S : Schema) (strat0 : Stratification S) (hClosed : S.C
 /-- Lemma 2. `Typing(G, S, strat)` (Definition 4) does not depend on which
 stratification of `S` is chosen: both sides equal `cont1 S strat1 G ∅ ∅`,
 a canonical process built by always revealing every "ready" label
-(`remainingMin`) — independent of which valid stratification is used to
+(`remMin`) — independent of which valid stratification is used to
 justify each step (`cont1_indep`). -/
 theorem lemma2 (S : Schema) (hClosed : S.Closed) (strat1 strat2 : Stratification S) (G : Graph) :
     Typing4 G S strat1 = Typing4 G S strat2 := by

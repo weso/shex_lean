@@ -124,14 +124,14 @@ theorem hColouredFigureEdge : ∀ c, S_disj.extEdge "ColouredFigure" c ↔ c = "
   intro c; unfold Schema.extEdge; rw [hshape]
   simp [ShapeExpr.extendsTargets]
 
-theorem reach_root {S : Schema} {p : ShapeLabel} (hparent : ∀ c, ¬ S.extEdge p c) :
+theorem reach_root {S : Schema} {p : Label} (hparent : ∀ c, ¬ S.extEdge p c) :
     ∀ x', Relation.ReflTransGen S.extEdge p x' → x' = p := by
   intro x' h
   rcases Relation.ReflTransGen.cases_head h with heq | ⟨c, hc, _⟩
   · exact heq.symm
   · exact absurd hc (hparent c)
 
-theorem anc_root {S : Schema} {x : ShapeLabel} (hx : x ∈ S.X)
+theorem anc_root {S : Schema} {x : Label} (hx : x ∈ S.X)
     (hedge : ∀ c, ¬ S.extEdge x c) : S.anc x = {x} := by
   apply Finset.ext; intro x'
   unfold Schema.anc
@@ -140,7 +140,7 @@ theorem anc_root {S : Schema} {x : ShapeLabel} (hx : x ∈ S.X)
   · rintro ⟨_, h⟩; exact reach_root hedge x' h
   · rintro rfl; exact ⟨hx, Relation.ReflTransGen.refl⟩
 
-theorem anc_one_parent {S : Schema} {x p : ShapeLabel} (hx : x ∈ S.X) (hp : p ∈ S.X)
+theorem anc_one_parent {S : Schema} {x p : Label} (hx : x ∈ S.X) (hp : p ∈ S.X)
     (hedge : ∀ c, S.extEdge x c ↔ c = p) (hparent : ∀ c, ¬ S.extEdge p c) :
     S.anc x = {x, p} := by
   apply Finset.ext; intro x'
@@ -165,7 +165,7 @@ theorem hancColouredFigure : S_disj.anc "ColouredFigure" = {"ColouredFigure", "F
 theorem hancSetCircleColouredFigure :
     S_disj.ancSet {"Circle", "ColouredFigure"} = {"Circle", "Figure", "ColouredFigure"} := by
   unfold Schema.ancSet
-  rw [show ({"Circle", "ColouredFigure"} : Finset ShapeLabel) = insert "Circle" {"ColouredFigure"}
+  rw [show ({"Circle", "ColouredFigure"} : Finset Label) = insert "Circle" {"ColouredFigure"}
       from rfl, Finset.biUnion_insert, Finset.singleton_biUnion, hancCircle, hancColouredFigure]
   decide
 
@@ -343,7 +343,7 @@ def colouredCircleFOk : (S_disj.shapeDef "ColouredCircle").FOk S_disj := PLift.u
 
 /-- `renderDecide`'s `native_decide`-computed verdict for `n ⊨
 S_disj.shapeDef L`, one line per headline claim below. -/
-def satDisj (n : RDFNode) (L : ShapeLabel) (hOk : (S_disj.shapeDef L).FOk S_disj) : String :=
+def satDisj (n : RDFNode) (L : Label) (hOk : (S_disj.shapeDef L).FOk S_disj) : String :=
   renderDecide (satisfiesFuel_decidable S_disj G_disj τ_disj S_disj_XClosed S_disj_RestrOk
     bigFuelDisj n (S_disj.shapeDef L) hOk)
 

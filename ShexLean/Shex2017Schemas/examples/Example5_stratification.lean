@@ -6,7 +6,7 @@ import Example
 /-!
 Example 5 from Boneva, Labra Gayo, Prud'hommeaux (2017), illustrating
 Definition 3 ("schema with stratified negation",
-`ShexLean.Stratification.Schema.StratifiedNegation`) on a schema that mixes
+`ShexLean.Stratification.Schema.StratNeg`) on a schema that mixes
 `NOT` and recursion, but *is* stratified (unlike `S₂` from Example 4,
 `Examples.NegationRecursion`).
 
@@ -30,29 +30,29 @@ namespace Examples.StratificationExample
 
 open ShexLean
 
-private abbrev L1  : ShapeLabel := "L1"
-private abbrev L2  : ShapeLabel := "L2"
-private abbrev L3  : ShapeLabel := "L3"
-private abbrev Str : ShapeLabel := "Str"
+private abbrev L1  : Label := "L1"
+private abbrev L2  : Label := "L2"
+private abbrev L3  : Label := "L3"
+private abbrev Str : Label := "Str"
 
 private abbrev a : IRI := "ex:a"
 private abbrev b : IRI := "ex:b"
 private abbrev c : IRI := "ex:c"
 
 /-- `<L1> → NOT(ex:a @<L2> ; ex:b @<Str>)`. -/
-private abbrev L1Def : ShapeExpr :=
+private abbrev L1Def : ShExpr :=
   .not (.neigDescr (.eachOf (.tPattern {a} L2) (.tPattern {b} Str)))
 
 /-- `<L2> → ex:c @<L3>`. -/
-private abbrev L2Def : ShapeExpr := .neigDescr (.tPattern {c} L3)
+private abbrev L2Def : ShExpr := .neigDescr (.tPattern {c} L3)
 
 /-- `<L3> → ex:c @<L2>`. -/
-private abbrev L3Def : ShapeExpr := .neigDescr (.tPattern {c} L2)
+private abbrev L3Def : ShExpr := .neigDescr (.tPattern {c} L2)
 
 /-- `<Str> → xsd:string`, stood in (as elsewhere, e.g. `ShexLean.Examples`)
 by a placeholder literal, since Example 5 has no accompanying graph to
 size the set against. -/
-private abbrev StrDef : ShapeExpr := .valueDescr {.lit (.str "placeholder")}
+private abbrev StrDef : ShExpr := .valueDescr {.lit (.str "placeholder")}
 
 /-- The schema `S₃` from Example 5. Written with an explicit `if`-chain
 (rather than the `|`-pattern style used elsewhere) so that `S₃.shapeDef`'s
@@ -71,7 +71,7 @@ private theorem shapeDef_L2 : S₃.shapeDef L2 = L2Def := by simp [L1, L2]
 
 private theorem shapeDef_L3 : S₃.shapeDef L3 = L3Def := by simp [L1, L2, L3]
 
-private theorem shapeDef_other (L : ShapeLabel) (h1 : L ≠ L1) (h2 : L ≠ L2) (h3 : L ≠ L3) :
+private theorem shapeDef_other (L : Label) (h1 : L ≠ L1) (h2 : L ≠ L2) (h3 : L ≠ L3) :
     S₃.shapeDef L = StrDef := by simp [h1, h2, h3]
 
 /-- `dep⁻(<L1>, <L2>)`. -/
@@ -88,10 +88,10 @@ theorem depPos_L3_L2 : DepPos S₃ L3 L2 := by rw [DepPos, shapeDef_L3]; decide
 
 /-- The stratification from the paper: `<L1>` on stratum 2, the other three
 labels on stratum 1. -/
-private def strat1 : ShapeLabel → ℕ := fun L => if L = L1 then 2 else 1
+private def strat1 : Label → ℕ := fun L => if L = L1 then 2 else 1
 
 /-- `S₃` is with stratified negation (Definition 3), witnessed by `strat1`. -/
-theorem S₃_stratified : S₃.StratifiedNegation := by
+theorem S₃_stratified : S₃.StratNeg := by
   refine ⟨2, strat1, ?_, ?_, ?_⟩
   · intro L hL
     simp only [Finset.mem_insert, Finset.mem_singleton] at hL
@@ -100,35 +100,35 @@ theorem S₃_stratified : S₃.StratifiedNegation := by
     by_cases h1 : L1' = L1
     · subst h1
       rw [DepNeg, shapeDef_L1] at hdep
-      simp [ShapeExpr.negDeps, TripleExpr.depsAux] at hdep
+      simp [ShExpr.negDeps, TExpr.depsAux] at hdep
       rcases hdep with hdep | hdep <;> subst hdep <;> simp [strat1, L1, L2, Str]
     · by_cases h2 : L1' = L2
       · subst h2
         rw [DepNeg, shapeDef_L2] at hdep
-        simp [ShapeExpr.negDeps, ShapeExpr.depsAux, TripleExpr.depsAux] at hdep
+        simp [ShExpr.negDeps, ShExpr.depsAux, TExpr.depsAux] at hdep
       · by_cases h3 : L1' = L3
         · subst h3
           rw [DepNeg, shapeDef_L3] at hdep
-          simp [ShapeExpr.negDeps, ShapeExpr.depsAux, TripleExpr.depsAux] at hdep
+          simp [ShExpr.negDeps, ShExpr.depsAux, TExpr.depsAux] at hdep
         · rw [DepNeg, shapeDef_other L1' h1 h2 h3] at hdep
-          simp [ShapeExpr.negDeps] at hdep
+          simp [ShExpr.negDeps] at hdep
   · intro L1' _ L2' hdep
     by_cases h1 : L1' = L1
     · subst h1
       rw [DepPos, shapeDef_L1] at hdep
-      simp [ShapeExpr.posDeps, TripleExpr.depsAux] at hdep
+      simp [ShExpr.posDeps, TExpr.depsAux] at hdep
     · by_cases h2 : L1' = L2
       · subst h2
         rw [DepPos, shapeDef_L2] at hdep
-        simp [ShapeExpr.posDeps, ShapeExpr.depsAux, TripleExpr.depsAux] at hdep
+        simp [ShExpr.posDeps, ShExpr.depsAux, TExpr.depsAux] at hdep
         subst hdep; simp [strat1, L1, L2, L3]
       · by_cases h3 : L1' = L3
         · subst h3
           rw [DepPos, shapeDef_L3] at hdep
-          simp [ShapeExpr.posDeps, ShapeExpr.depsAux, TripleExpr.depsAux] at hdep
+          simp [ShExpr.posDeps, ShExpr.depsAux, TExpr.depsAux] at hdep
           subst hdep; simp [strat1, L1, L2, L3]
         · rw [DepPos, shapeDef_other L1' h1 h2 h3] at hdep
-          simp [ShapeExpr.posDeps] at hdep
+          simp [ShExpr.posDeps] at hdep
 
 end Examples.StratificationExample
 
@@ -140,7 +140,7 @@ open ShexLean (Schema.render renderDecide DepNeg DepPos)
 /-- Example 5: `S₃` mixes `NOT` and recursion but is with stratified
 negation. `schemaText` generated from the real `S₃`; the four dependency
 edges are each a genuine `Decidable` (`DepNeg`/`DepPos`) computation.
-`S₃.StratifiedNegation` itself (`Nonempty (Stratification S₃)`) isn't
+`S₃.StratNeg` itself (`Nonempty (Stratification S₃)`) isn't
 decidable — same reason as Example 4 — so that claim still names the
 witnessing theorem/stratification. -/
 def stratificationExample : Example where

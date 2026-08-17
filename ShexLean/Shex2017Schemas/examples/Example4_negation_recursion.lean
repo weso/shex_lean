@@ -15,8 +15,8 @@ is (as claimed right after Ex. 4) *not* with stratified negation
 <L2> → NOT(ex:p @<L1>)      <n2> ex:p <n1> .
 ```
 
-> These two typings of `G₂` by `S₂` are both correct: `typing₅ =
-> {(<n1>, <L1>)}` and `typing₆ = {(<n2>, <L2>)}`.
+> These two typings of `G₂` by `S₂` are both correct: `t₅ =
+> {(<n1>, <L1>)}` and `t₆ = {(<n2>, <L2>)}`.
 > [...] `S₂` from Ex. 4 is not with stratified negation because
 > `dep⁻(<L1>, <L2>)` and `dep⁻(<L2>, <L1>)`.
 -/
@@ -36,14 +36,14 @@ private def t2 : Triple := ⟨n2, p, n1⟩
 /-- The graph `G₂` from Example 4. -/
 def G₂ : Graph := {t1, t2}
 
-private def L1 : ShapeLabel := "L1"
-private def L2 : ShapeLabel := "L2"
+private def L1 : Label := "L1"
+private def L2 : Label := "L2"
 
 /-- `<L1> → NOT(ex:p @<L2>)`. -/
-private def L1Def : ShapeExpr := .not (.neigDescr (.tPattern {p} L2))
+private def L1Def : ShExpr := .not (.neigDescr (.tPattern {p} L2))
 
 /-- `<L2> → NOT(ex:p @<L1>)`. -/
-private def L2Def : ShapeExpr := .not (.neigDescr (.tPattern {p} L1))
+private def L2Def : ShExpr := .not (.neigDescr (.tPattern {p} L1))
 
 /-- The schema `S₂` from Example 4. -/
 def S₂ : Schema where
@@ -52,18 +52,18 @@ def S₂ : Schema where
     | "L1" => L1Def
     | _ => L2Def
 
-/-- `typing₅` from Example 4. -/
+/-- `t₅` from Example 4. -/
 def typing5 : Typing := {((n1 : RDFNode), L1)}
 
-/-- `typing₆` from Example 4. -/
+/-- `t₆` from Example 4. -/
 def typing6 : Typing := {((n2 : RDFNode), L2)}
 
 private theorem neigh_n1 : neigh G₂ n1 = {t1} := by decide
 private theorem neigh_n2 : neigh G₂ n2 = {t2} := by decide
 
-/-- `typing₅` is a correct typing of `G₂` by `S₂` (Definition 2): `<n1>`
+/-- `t₅` is a correct typing of `G₂` by `S₂` (Definition 2): `<n1>`
 satisfies `<L1>` because the only way it could fail to (having a `<L2>`
-neighbour via `ex:p`) is not witnessed by `typing₅`. -/
+neighbour via `ex:p`) is not witnessed by `t₅`. -/
 theorem typing5_correct :
     ∀ n L, (n, L) ∈ typing5 → Satisfies G₂ typing5 n (S₂.shapeDef L) := by
   intro n L hmem
@@ -77,7 +77,7 @@ theorem typing5_correct :
   injection ht with hsubj hpred hobj
   exact absurd (hobj ▸ htyp) (by decide)
 
-/-- `typing₆` is a correct typing of `G₂` by `S₂` (Definition 2), symmetric
+/-- `t₆` is a correct typing of `G₂` by `S₂` (Definition 2), symmetric
 to `typing5_correct`. -/
 theorem typing6_correct :
     ∀ n L, (n, L) ∈ typing6 → Satisfies G₂ typing6 n (S₂.shapeDef L) := by
@@ -95,7 +95,7 @@ theorem typing6_correct :
 /-- `S₂` is not with stratified negation (Definition 3): `dep⁻(<L1>, <L2>)`
 and `dep⁻(<L2>, <L1>)` would force `strat(<L1>) > strat(<L2>) > strat(<L1>)`,
 which is impossible. -/
-theorem S₂_not_stratified : ¬ S₂.StratifiedNegation := by
+theorem S₂_not_stratified : ¬ S₂.StratNeg := by
   rintro ⟨strat⟩
   have hdepL1L2 : DepNeg S₂ L1 L2 := by decide
   have hdepL2L1 : DepNeg S₂ L2 L1 := by decide
@@ -108,14 +108,14 @@ end Examples.NegationRecursion
 namespace Examples
 
 open Examples.NegationRecursion (S₂ G₂ typing5 typing6 L1 L2)
-open ShexLean (Schema.render Graph.render Typing.render renderDecide correctTyping_decidable
+open ShexLean (Schema.render Graph.render Typing.render renderDecide corrTyping_decidable
   DepNeg)
 
 /-- Example 4: negation mixed with recursion, showing correct typings are
 not enough for a sound semantics, and `S₂` is not with stratified negation.
 `schemaText`/`graphText`/the two correctness verdicts are generated from
 the real `S₂`/`G₂`/`typing5`/`typing6` values; `DepNeg`'s two edges are
-likewise computed (it *is* `Decidable`). `S₂.StratifiedNegation` itself
+likewise computed (it *is* `Decidable`). `S₂.StratNeg` itself
 (`Nonempty (Stratification S₂)`, an existential over stratification
 *functions*) genuinely isn't decidable, so that one claim still just names
 the theorem proving it. -/
@@ -125,11 +125,11 @@ def negationRecursion : Example where
   schemaText := Schema.render S₂
   graphText := Graph.render G₂
   typingText :=
-    s!"typing₅ = {Typing.render typing5}    " ++
-      s!"(correct = {renderDecide (correctTyping_decidable S₂ G₂ typing5)})\n" ++
-    s!"typing₆ = {Typing.render typing6}    " ++
-      s!"(correct = {renderDecide (correctTyping_decidable S₂ G₂ typing6)}, " ++
-      "and contradicts typing₅)\n" ++
+    s!"t₅ = {Typing.render typing5}    " ++
+      s!"(correct = {renderDecide (corrTyping_decidable S₂ G₂ typing5)})\n" ++
+    s!"t₆ = {Typing.render typing6}    " ++
+      s!"(correct = {renderDecide (corrTyping_decidable S₂ G₂ typing6)}, " ++
+      "and contradicts t₅)\n" ++
     s!"dep⁻(<L1>,<L2>) = {renderDecide (inferInstance : Decidable (DepNeg S₂ L1 L2))}, " ++
       s!"dep⁻(<L2>,<L1>) = {renderDecide (inferInstance : Decidable (DepNeg S₂ L2 L1))}\n" ++
     "⇒ S₂ is NOT with stratified negation (`S₂_not_stratified`)."

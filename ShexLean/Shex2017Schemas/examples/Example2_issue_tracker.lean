@@ -51,17 +51,17 @@ def t4 : Triple := ⟨i2, relatedTo, i1⟩
 /-- The graph `G₂` from Example 2. -/
 def G₂ : Graph := {t1, t2, t3, t4}
 
-def IssueSh : ShapeLabel := "IssueSh"
-def Str : ShapeLabel := "Str"
+def IssueSh : Label := "IssueSh"
+def Str : Label := "Str"
 
 /-- `<IssueSh> → is:reportedBy @<Str> ; is:relatedTo @<IssueSh> [0;*]`. -/
-def issueShDef : ShapeExpr :=
+def issueShDef : ShExpr :=
   .neigDescr (.eachOf
     (.tPattern {reportedBy} Str)
     (.rep (.tPattern {relatedTo} IssueSh) 0 none))
 
 /-- `<Str> → xsd:string`, stood in for by the two string literals of `G₂`. -/
-def strDef : ShapeExpr :=
+def strDef : ShExpr :=
   .valueDescr {.lit (.str "Ren"), .lit (.str "Bob")}
 
 /-- The schema `S₁` from Example 2. -/
@@ -98,7 +98,7 @@ theorem satisfies_issueSh_i2 : Satisfies G₂ typing1 i2 issueShDef := by
 
 /-- `typing1` is a correct typing of `G₂` by `S₁` (Definition 2): every
 node-type association it contains is backed by a `⊢` derivation. -/
-theorem typing1_correct : S₁.CorrectTyping G₂ typing1 := by
+theorem typing1_correct : S₁.CorrTyping G₂ typing1 := by
   intro n L hmem
   simp only [typing1, Finset.mem_insert, Finset.mem_singleton, Prod.mk.injEq] at hmem
   rcases hmem with ⟨hn, hL⟩ | ⟨hn, hL⟩ | ⟨hn, hL⟩ | ⟨hn, hL⟩ <;> subst hn <;> subst hL
@@ -124,6 +124,6 @@ def issueTracker : Example where
   graphText := ShexLean.Graph.render G₂
   typingText :=
     ShexLean.Typing.render typing1 ++
-    s!"   (correct = {ShexLean.renderDecide (ShexLean.correctTyping_decidable S₁ G₂ typing1)})"
+    s!"   (correct = {ShexLean.renderDecide (ShexLean.corrTyping_decidable S₁ G₂ typing1)})"
 
 end Examples

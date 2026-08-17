@@ -71,7 +71,7 @@ with the edge `x → y` — close a cycle through `x`). This is the standard
 whole reason `Schema.ExtAcyclic` is enough to guarantee termination: it
 turns "no cycle" into a genuine well-founded measure. -/
 theorem Schema.anc_ssubset_of_extEdge {S : Schema} (hAcyclic : S.ExtAcyclic)
-    {x y : ShapeLabel} (hxX : x ∈ S.X) (hxy : S.extEdge x y) :
+    {x y : Label} (hxX : x ∈ S.X) (hxy : S.extEdge x y) :
     S.anc y ⊂ S.anc x := by
   have hsub : S.anc y ⊆ S.anc x := by
     intro z hz
@@ -100,12 +100,12 @@ theorem Schema.anc_ssubset_of_extEdge {S : Schema} (hAcyclic : S.ExtAcyclic)
 `H_S`'s acyclicity, strictly decreasing along every edge
 (`extRank_lt_of_extEdge` below) — the well-founded measure the rest of
 this file's termination argument is built on. -/
-noncomputable def Schema.extRank (S : Schema) (x : ShapeLabel) : ℕ := (S.anc x).card
+noncomputable def Schema.extRank (S : Schema) (x : Label) : ℕ := (S.anc x).card
 
 /-- The rank form of `anc_ssubset_of_extEdge`: `extRank` strictly decreases
 along every `H_S` edge out of a label of `S`. -/
 theorem Schema.extRank_lt_of_extEdge {S : Schema} (hAcyclic : S.ExtAcyclic)
-    {x y : ShapeLabel} (hxX : x ∈ S.X) (hxy : S.extEdge x y) :
+    {x y : Label} (hxX : x ∈ S.X) (hxy : S.extEdge x y) :
     S.extRank y < S.extRank x :=
   Finset.card_lt_card (S.anc_ssubset_of_extEdge hAcyclic hxX hxy)
 
@@ -113,7 +113,7 @@ theorem Schema.extRank_lt_of_extEdge {S : Schema} (hAcyclic : S.ExtAcyclic)
 has `extRank x' ≤ extRank x` (not strict — `x ∈ S.anc x` reflexively, the
 `= x'` case). Used to bound the rank of *every* label reached by a rule-18
 partition (`x' ∈ S.ancSet xs`), not just the direct targets `xs`. -/
-theorem Schema.extRank_le_of_mem_anc {S : Schema} {x x' : ShapeLabel} (hx' : x' ∈ S.anc x) :
+theorem Schema.extRank_le_of_mem_anc {S : Schema} {x x' : Label} (hx' : x' ∈ S.anc x) :
     S.extRank x' ≤ S.extRank x := by
   apply Finset.card_le_card
   intro z hz
@@ -296,7 +296,7 @@ def ShapeExpr.size : ShapeExpr → ℕ
 
 /-- The `.triples.size` of every element of `(.extends xs hs).extTeList`
 (`= hs.map Shape.triples`) is bounded by `hs.listSize`. -/
-theorem TripleExpr.size_le_listSize_of_mem_extends {xs : Finset ShapeLabel} {hs : List Shape}
+theorem TripleExpr.size_le_listSize_of_mem_extends {xs : Finset Label} {hs : List Shape}
     {e : TripleExpr} (hmem : e ∈ (ShapeExpr.extends xs hs).extTeList) : e.size ≤ Shape.listSize hs := by
   unfold ShapeExpr.extTeList at hmem
   obtain ⟨h, hh, rfl⟩ := List.mem_map.mp hmem
@@ -305,7 +305,7 @@ theorem TripleExpr.size_le_listSize_of_mem_extends {xs : Finset ShapeLabel} {hs 
 /-- Same as `TripleExpr.size_le_listSize_of_mem_extends`, for the `.and
 (.extends xs hs) u` shape (a well-formed `X`-label's `extends X hs and u`
 form). -/
-theorem TripleExpr.size_le_listSize_of_mem_and_extends {xs : Finset ShapeLabel} {hs : List Shape}
+theorem TripleExpr.size_le_listSize_of_mem_and_extends {xs : Finset Label} {hs : List Shape}
     {u : ShapeExpr} {e : TripleExpr} (hmem : e ∈ (ShapeExpr.and (.extends xs hs) u).extTeList) :
     e.size ≤ Shape.listSize hs := by
   unfold ShapeExpr.extTeList at hmem
@@ -316,7 +316,7 @@ theorem TripleExpr.size_le_listSize_of_mem_and_extends {xs : Finset ShapeLabel} 
 own well-formed definition — `s.size` already accounts for `hs.listSize`
 (`ShapeExpr.size`'s `.extends` case above), regardless of which disjunct
 `pick` selects. -/
-theorem extTeAt_size_le {S : Schema} (hWFX : S.WellFormedX) {x : ShapeLabel} (hx : x ∈ S.X)
+theorem extTeAt_size_le {S : Schema} (hWFX : S.WellFormedX) {x : Label} (hx : x ∈ S.X)
     (i : ℕ) : ((S.shapeDef x).extTeAt i).size ≤ (S.shapeDef x).size := by
   obtain ⟨xs', hs', -, hcase⟩ := hWFX x hx
   rcases ShapeExpr.extTeAt_mem_or_empty (S.shapeDef x) i with hempty | ⟨e, hmem, heq⟩
@@ -404,7 +404,7 @@ theorem stableM_noExtends (u : ShapeExpr) (hu : u.NoExtends) :
 `Schema.WellFormedExtends` hypothesis) and strictly smaller than `def(x)`
 itself, for the same reason `extTeAt_size_le` bounds `ext-te(x)`. -/
 theorem restrOf_noExtends_and_size_le {S : Schema} (hWFExt : S.WellFormedExtends)
-    {x : ShapeLabel} {u : ShapeExpr} (hu : (S.shapeDef x).restrOf = some u) :
+    {x : Label} {u : ShapeExpr} (hu : (S.shapeDef x).restrOf = some u) :
     u.NoExtends ∧ u.size ≤ (S.shapeDef x).size := by
   have hWFx := hWFExt x
   generalize hg : S.shapeDef x = e at hu hWFx
@@ -491,12 +491,12 @@ theorem stableM {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.WellFormedExtend
         intro x hx; have := hboundDef x hx; omega
       have hbound2 : ∀ x ∈ S.ancSet xs, (S.shapeDef x).size ≤ f2 := by
         intro x hx; have := hboundDef x hx; omega
-      show (∃ M' Mx, ∃ pick : ShapeLabel → ℕ, DisjointUnionOn M M' (S.ancSet xs) Mx ∧
+      show (∃ M' Mx, ∃ pick : Label → ℕ, DisjointUnionOn M M' (S.ancSet xs) Mx ∧
             (∃ h ∈ hs, SatisfiesMFuel f1 S G τ M' (.ofShape h)) ∧
             (∀ x ∈ S.ancSet xs, SatisfiesEFuel f1 S G τ (Mx x) ((S.shapeDef x).extTeAt (pick x))) ∧
             (∀ x ∈ S.ancSet xs, ∀ u, (S.shapeDef x).restrOf = some u →
               SatisfiesMFuel f1 S G τ ((S.anc x).biUnion Mx) u)) ↔
-          (∃ M' Mx, ∃ pick : ShapeLabel → ℕ, DisjointUnionOn M M' (S.ancSet xs) Mx ∧
+          (∃ M' Mx, ∃ pick : Label → ℕ, DisjointUnionOn M M' (S.ancSet xs) Mx ∧
             (∃ h ∈ hs, SatisfiesMFuel f2 S G τ M' (.ofShape h)) ∧
             (∀ x ∈ S.ancSet xs, SatisfiesEFuel f2 S G τ (Mx x) ((S.shapeDef x).extTeAt (pick x))) ∧
             (∀ x ∈ S.ancSet xs, ∀ u, (S.shapeDef x).restrOf = some u →
@@ -648,7 +648,7 @@ sufficiently large `Fuel` computes the same, `Fuel`-independent answer that
 well-defined limit, for every node `n`, typing `τ`, and label
 `z ∈ Y ∪ X` (`def(z) := S.shapeDef z`, any `ShapeExpr`). -/
 theorem lemma1 {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.WellFormedExtends)
-    (G : Graph) (τ : Typing) (n : RDFNode) (z : ShapeLabel) (fuel : ℕ)
+    (G : Graph) (τ : Typing) (n : RDFNode) (z : Label) (fuel : ℕ)
     (hfuel : ShapeExpr.reqFuel S (S.shapeDef z) + 1 ≤ fuel) :
     SatisfiesFuel fuel S G τ n (S.shapeDef z) ↔ Satisfies S G τ n (S.shapeDef z) :=
   stableFuel hWFX hWFExt (S.shapeDef z) fuel (ShapeExpr.reqFuel S (S.shapeDef z) + 1) hfuel

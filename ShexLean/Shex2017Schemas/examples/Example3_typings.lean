@@ -24,8 +24,8 @@ open ShexLean
 def typing2 : Typing := {(ren, Str), (bob, Str)}
 
 /-- `typing_2` is correct: it only ever asserts `<Str>`, and `strDef`'s
-satisfaction (`se-value-descr1`) doesn't depend on `typing` at all. -/
-theorem typing2_correct : S₁.CorrectTyping G₂ typing2 := by
+satisfaction (`se-value-descr1`) doesn't depend on `t` at all. -/
+theorem typing2_correct : S₁.CorrTyping G₂ typing2 := by
   intro n L hmem
   simp only [typing2, Finset.mem_insert, Finset.mem_singleton, Prod.mk.injEq] at hmem
   rcases hmem with ⟨hn, hL⟩ | ⟨hn, hL⟩ <;> subst hn <;> subst hL
@@ -40,7 +40,7 @@ def typing3 : Typing := {((i1 : RDFNode), IssueSh), ((i2 : RDFNode), IssueSh)}
 <IssueSh>) ∈ typing_3`, but `<i1>`'s unique `is:reportedBy` neighbour
 `"Ren"` is not typed `<Str>` in `typing_3`, so the `is:reportedBy @<Str>`
 half of `issueShDef`'s each-of can never be matched. -/
-theorem typing3_not_correct : ¬ S₁.CorrectTyping G₂ typing3 := by
+theorem typing3_not_correct : ¬ S₁.CorrTyping G₂ typing3 := by
   intro hcorrect
   have hsat : Satisfies G₂ typing3 i1 issueShDef :=
     hcorrect i1 IssueSh (by decide)
@@ -71,7 +71,7 @@ theorem typing3_not_correct : ¬ S₁.CorrectTyping G₂ typing3 := by
 /-- `typing_4` from Example 3: the empty typing, trivially correct. -/
 def typing4 : Typing := ∅
 
-theorem typing4_correct : S₁.CorrectTyping G₂ typing4 := by
+theorem typing4_correct : S₁.CorrTyping G₂ typing4 := by
   intro n L hmem
   exact absurd hmem (Finset.notMem_empty _)
 
@@ -80,7 +80,7 @@ end ShexLean.Examples
 namespace Examples
 
 open ShexLean.Examples (S₁ G₂ typing1 typing2 typing3 typing4)
-open ShexLean (Schema.render Graph.render Typing.render renderDecide correctTyping_decidable)
+open ShexLean (Schema.render Graph.render Typing.render renderDecide corrTyping_decidable)
 
 /-- Example 3's four typings of `G₂` by `S₁`, and their correctness —
 `schemaText`/`graphText` generated from `S₁`/`G₂`, `typingText`'s four
@@ -92,7 +92,7 @@ def exampleTypings : Example where
   schemaText := Schema.render S₁
   graphText := Graph.render G₂
   typingText :=
-    let verdict (t : ShexLean.Typing) := renderDecide (correctTyping_decidable S₁ G₂ t)
+    let verdict (t : ShexLean.Typing) := renderDecide (corrTyping_decidable S₁ G₂ t)
     s!"typing_1 = {Typing.render typing1}   (correct = {verdict typing1})\n" ++
     s!"typing_2 = {Typing.render typing2}   (correct = {verdict typing2})\n" ++
     s!"typing_3 = {Typing.render typing3}   (correct = {verdict typing3})\n" ++

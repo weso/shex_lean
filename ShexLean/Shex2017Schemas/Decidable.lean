@@ -5,7 +5,7 @@ import Mathlib.Data.Finset.Powerset
 /-!
 Makes `Satisfies`/`Matches` (`ShexLean.Shex2017Schemas.Semantics`, Fig. 2 of
 Boneva, Labra Gayo, Prud'hommeaux 2017) genuinely `Decidable` — for every
-`ShapeExpr`/`TripleExpr`, no restricted fragment needed — so they can
+`ShExpr`/`TExpr`, no restricted fragment needed — so they can
 actually be *run* (`decide`/`native_decide`), not just reasoned about.
 
 **How.** As stated, a few cases quantify over infinite types (`∃ subj pred
@@ -53,22 +53,22 @@ namespace ShexLean
 /-! ### Bounded reformulations -/
 
 /-- `te-tpattern`, restated as a search bounded to `N` itself. -/
-theorem matches_tPattern_iff (G : Graph) (typing : Typing) (N : Finset Triple)
-    (P : PropSet) (L : ShapeLabel) :
-    Matches G typing N (.tPattern P L) ↔
-      ∃ t ∈ N, N = {t} ∧ t.pred ∈ P ∧ typing.has t.obj L := by
+theorem matches_tPattern_iff (G : Graph) (t : Typing) (N : Finset Triple)
+    (P : PropSet) (L : Label) :
+    Matches G t N (.tPattern P L) ↔
+      ∃ tr ∈ N, N = {tr} ∧ tr.pred ∈ P ∧ t.has tr.obj L := by
   constructor
   · rintro ⟨subj, pred, obj, hNeq, hpred, hty⟩
     exact ⟨⟨subj, pred, obj⟩, hNeq ▸ Finset.mem_singleton_self _, hNeq, hpred, hty⟩
-  · rintro ⟨t, -, hNeq, hpred, hty⟩
-    exact ⟨t.subj, t.pred, t.obj, hNeq, hpred, hty⟩
+  · rintro ⟨tr, -, hNeq, hpred, hty⟩
+    exact ⟨tr.subj, tr.pred, tr.obj, hNeq, hpred, hty⟩
 
 /-- `te-each-of`, restated as a search bounded to `N.powerset`. -/
-theorem matches_eachOf_iff (G : Graph) (typing : Typing) (N : Finset Triple)
-    (E1 E2 : TripleExpr) :
-    Matches G typing N (.eachOf E1 E2) ↔
+theorem matches_eachOf_iff (G : Graph) (t : Typing) (N : Finset Triple)
+    (E1 E2 : TExpr) :
+    Matches G t N (.eachOf E1 E2) ↔
       ∃ N1 ∈ N.powerset, ∃ N2 ∈ N.powerset,
-        DisjointUnion N N1 N2 ∧ Matches G typing N1 E1 ∧ Matches G typing N2 E2 := by
+        DisjointUnion N N1 N2 ∧ Matches G t N1 E1 ∧ Matches G t N2 E2 := by
   constructor
   · rintro ⟨N1, N2, hdisj, hm1, hm2⟩
     have hN1 : N1 ⊆ N := hdisj.2 ▸ Finset.subset_union_left
@@ -93,42 +93,42 @@ unfolding at each step of the chain needs it at a *new* Finset each time),
 by structural recursion on `k` alone: `repExact E (k+1) = .eachOf E
 (repExact E k)` routes through the exact same bounded-`N.powerset` search
 as `.eachOf`'s own case below. -/
-def repExactDecidableAux (G : Graph) (typing : Typing) (E : TripleExpr)
-    (hE : ∀ N' : Finset Triple, Decidable (Matches G typing N' E)) :
-    ∀ (k : ℕ) (N : Finset Triple), Decidable (Matches G typing N (repExact E k))
+def repExactDecidableAux (G : Graph) (t : Typing) (E : TExpr)
+    (hE : ∀ N' : Finset Triple, Decidable (Matches G t N' E)) :
+    ∀ (k : ℕ) (N : Finset Triple), Decidable (Matches G t N (repExact E k))
   | 0, N => by show Decidable (N = ∅); infer_instance
   | k + 1, N =>
       have hd2 : ∀ N1 N2 : Finset Triple, Decidable
-          (DisjointUnion N N1 N2 ∧ Matches G typing N1 E ∧ Matches G typing N2 (repExact E k)) :=
+          (DisjointUnion N N1 N2 ∧ Matches G t N1 E ∧ Matches G t N2 (repExact E k)) :=
         fun N1 N2 => by
           haveI : Decidable (DisjointUnion N N1 N2) := by
             show Decidable (Disjoint N1 N2 ∧ N = N1 ∪ N2); infer_instance
           haveI := hE N1
-          haveI := repExactDecidableAux G typing E hE k N2
+          haveI := repExactDecidableAux G t E hE k N2
           infer_instance
       have hd1 : ∀ N1 : Finset Triple, Decidable (∃ N2 ∈ N.powerset,
-          DisjointUnion N N1 N2 ∧ Matches G typing N1 E ∧ Matches G typing N2 (repExact E k)) :=
+          DisjointUnion N N1 N2 ∧ Matches G t N1 E ∧ Matches G t N2 (repExact E k)) :=
         fun N1 => @Finset.decidableExistsAndFinset (Finset Triple) N.powerset _ (hd2 N1)
-      @decidable_of_iff _ _ (matches_eachOf_iff G typing N E (repExact E k)).symm
+      @decidable_of_iff _ _ (matches_eachOf_iff G t N E (repExact E k)).symm
         (@Finset.decidableExistsAndFinset (Finset Triple) N.powerset _ hd1)
 
-/-- `NodeInValueDescr n V` is decidable: case on `n`'s (finitely many)
+/-- `InV n V` is decidable: case on `n`'s (finitely many)
 constructors, each reducing it to plain `Finset` membership. -/
-instance decidableNodeInValueDescr : ∀ (n : RDFNode) (V : ValueDescr),
-    Decidable (NodeInValueDescr n V)
+instance decidableInV : ∀ (n : RDFNode) (V : ValueDescr),
+    Decidable (InV n V)
   | .iri i, V => inferInstanceAs (Decidable (ValueItem.iri i ∈ V))
   | .lit l, V => inferInstanceAs (Decidable (ValueItem.lit l ∈ V))
   | .bnode _, _ => inferInstanceAs (Decidable False)
 
-/-- `NodeIsAnyBlankInValueDescr n V` is decidable, likewise by cases on `n`. -/
-instance decidableNodeIsAnyBlankInValueDescr : ∀ (n : RDFNode) (V : ValueDescr),
-    Decidable (NodeIsAnyBlankInValueDescr n V)
+/-- `BNodeInV n V` is decidable, likewise by cases on `n`. -/
+instance decidableBNodeInV : ∀ (n : RDFNode) (V : ValueDescr),
+    Decidable (BNodeInV n V)
   | .bnode _, V => inferInstanceAs (Decidable (ValueItem.anyBlank ∈ V))
   | .iri _, _ => inferInstanceAs (Decidable False)
   | .lit _, _ => inferInstanceAs (Decidable False)
 
 mutual
-/-- **`Satisfies` is decidable — for every `ShapeExpr`, no restriction.**
+/-- **`Satisfies` is decidable — for every `ShExpr`, no restriction.**
 Proved by structural recursion mirroring `Satisfies`'s own mutual
 definition — every case was already decidable except `.neigDescr`, which
 routes through `matches_decidable`. `show`s are needed throughout since
@@ -137,63 +137,63 @@ search won't unfold them on its own to see the underlying `∨`/`∧`/`Finset`
 proposition, even though the kernel reduction `decide` itself relies on
 later isn't restricted that way (see `ShexLean.Common.Typing`'s
 `Typing.has` for the same gotcha elsewhere in this project). -/
-def satisfies_decidable (G : Graph) (typing : Typing) (n : RDFNode) :
-    ∀ S : ShapeExpr, Decidable (Satisfies G typing n S)
+def satisfies_decidable (G : Graph) (t : Typing) (n : RDFNode) :
+    ∀ S : ShExpr, Decidable (Satisfies G t n S)
   | .valueDescr V => by
-      show Decidable (NodeInValueDescr n V ∨ NodeIsAnyBlankInValueDescr n V)
+      show Decidable (InV n V ∨ BNodeInV n V)
       infer_instance
   | .neigDescr E => by
-      show Decidable (Matches G typing (neigh G n) E)
-      exact matches_decidable G typing (neigh G n) E
+      show Decidable (Matches G t (neigh G n) E)
+      exact matches_decidable G t (neigh G n) E
   | .and S1 S2 => by
-      show Decidable (Satisfies G typing n S1 ∧ Satisfies G typing n S2)
-      haveI := satisfies_decidable G typing n S1
-      haveI := satisfies_decidable G typing n S2
+      show Decidable (Satisfies G t n S1 ∧ Satisfies G t n S2)
+      haveI := satisfies_decidable G t n S1
+      haveI := satisfies_decidable G t n S2
       infer_instance
   | .or S1 S2 => by
-      show Decidable (Satisfies G typing n S1 ∨ Satisfies G typing n S2)
-      haveI := satisfies_decidable G typing n S1
-      haveI := satisfies_decidable G typing n S2
+      show Decidable (Satisfies G t n S1 ∨ Satisfies G t n S2)
+      haveI := satisfies_decidable G t n S1
+      haveI := satisfies_decidable G t n S2
       infer_instance
   | .not S => by
-      show Decidable (¬ Satisfies G typing n S)
-      haveI := satisfies_decidable G typing n S
+      show Decidable (¬ Satisfies G t n S)
+      haveI := satisfies_decidable G t n S
       infer_instance
 
-/-- **`Matches` is decidable — for every `TripleExpr`, no restriction.**
+/-- **`Matches` is decidable — for every `TExpr`, no restriction.**
 `.tPattern`/`.eachOf` go through the bounded reformulations above; `.rep`
 goes through `matches_rep_iff_bounded` (`RepBound.lean`), which bounds
 even the `max = none` case. -/
-def matches_decidable (G : Graph) (typing : Typing) (N : Finset Triple) :
-    ∀ E : TripleExpr, Decidable (Matches G typing N E)
+def matches_decidable (G : Graph) (t : Typing) (N : Finset Triple) :
+    ∀ E : TExpr, Decidable (Matches G t N E)
   | .tPattern P L =>
-      decidable_of_iff _ (matches_tPattern_iff G typing N P L).symm
+      decidable_of_iff _ (matches_tPattern_iff G t N P L).symm
   | .empty => by show Decidable (N = ∅); infer_instance
   | .someOf E1 E2 => by
-      show Decidable (Matches G typing N E1 ∨ Matches G typing N E2)
-      haveI := matches_decidable G typing N E1
-      haveI := matches_decidable G typing N E2
+      show Decidable (Matches G t N E1 ∨ Matches G t N E2)
+      haveI := matches_decidable G t N E1
+      haveI := matches_decidable G t N E2
       infer_instance
   | .eachOf E1 E2 =>
       haveI hd2 : ∀ N1 N2 : Finset Triple, Decidable
-          (DisjointUnion N N1 N2 ∧ Matches G typing N1 E1 ∧ Matches G typing N2 E2) :=
+          (DisjointUnion N N1 N2 ∧ Matches G t N1 E1 ∧ Matches G t N2 E2) :=
         fun N1 N2 => by
           haveI : Decidable (DisjointUnion N N1 N2) := by
             show Decidable (Disjoint N1 N2 ∧ N = N1 ∪ N2); infer_instance
-          haveI := matches_decidable G typing N1 E1
-          haveI := matches_decidable G typing N2 E2
+          haveI := matches_decidable G t N1 E1
+          haveI := matches_decidable G t N2 E2
           infer_instance
       have hd1 : ∀ N1 : Finset Triple, Decidable (∃ N2 ∈ N.powerset,
-          DisjointUnion N N1 N2 ∧ Matches G typing N1 E1 ∧ Matches G typing N2 E2) :=
+          DisjointUnion N N1 N2 ∧ Matches G t N1 E1 ∧ Matches G t N2 E2) :=
         fun N1 => @Finset.decidableExistsAndFinset (Finset Triple) N.powerset _ (hd2 N1)
-      @decidable_of_iff _ _ (matches_eachOf_iff G typing N E1 E2).symm
+      @decidable_of_iff _ _ (matches_eachOf_iff G t N E1 E2).symm
         (@Finset.decidableExistsAndFinset (Finset Triple) N.powerset _ hd1)
   | .rep E min max =>
-      haveI hE : ∀ N' : Finset Triple, Decidable (Matches G typing N' E) :=
-        fun N' => matches_decidable G typing N' E
-      haveI hbound : ∀ k : ℕ, Decidable (Matches G typing N (repExact E k)) :=
-        fun k => repExactDecidableAux G typing E hE k N
-      decidable_of_iff _ (matches_rep_iff_bounded G typing N E min max).symm
+      haveI hE : ∀ N' : Finset Triple, Decidable (Matches G t N' E) :=
+        fun N' => matches_decidable G t N' E
+      haveI hbound : ∀ k : ℕ, Decidable (Matches G t N (repExact E k)) :=
+        fun k => repExactDecidableAux G t E hE k N
+      decidable_of_iff _ (matches_rep_iff_bounded G t N E min max).symm
 end
 
 end ShexLean

@@ -24,7 +24,7 @@ by `.tc`'s own semantics. The cardinality fact behind Example 4's negative
 claims (`M2a`/`M246` can't satisfy `e_ex4`, for unrelated reasons: `M2a`'s
 matching part is too small, `M246` itself is too big). -/
 theorem seq_tc_tc_card_two {S : Schema} {G : Graph} {τ : Typing} {fuel : ℕ} {M : Finset Triple}
-    {p1 : IRI} {z1 : ShapeLabel} {p2 : IRI} {z2 : ShapeLabel}
+    {p1 : IRI} {z1 : Label} {p2 : IRI} {z2 : Label}
     (hSat : SatisfiesEFuel (fuel + 2) S G τ M (.seq (.tc p1 z1) (.tc p2 z2))) : M.card = 2 := by
   obtain ⟨M1, M2, ⟨hdisj, hunion⟩, ⟨n1, o1, hM1, _⟩, ⟨n2, o2, hM2, _⟩⟩ := hSat
   subst hM1; subst hM2

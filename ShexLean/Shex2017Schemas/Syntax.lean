@@ -41,39 +41,39 @@ abbrev PropSet := Finset IRI
 mutual
 /-- A shape expression, i.e. a Boolean combination of a value description and
 a neighbourhood description. -/
-inductive ShapeExpr where
+inductive ShExpr where
   /-- `ValueDescr`: constrains the value of the node itself. -/
-  | valueDescr : ValueDescr → ShapeExpr
+  | valueDescr : ValueDescr → ShExpr
   /-- `NeigDescr`: constrains the neighbourhood of the node via a triple
   expression. -/
-  | neigDescr  : TripleExpr → ShapeExpr
+  | neigDescr  : TExpr → ShExpr
   /-- `ShapeAnd`. -/
-  | and        : ShapeExpr → ShapeExpr → ShapeExpr
+  | and        : ShExpr → ShExpr → ShExpr
   /-- `ShapeOr`. -/
-  | or         : ShapeExpr → ShapeExpr → ShapeExpr
+  | or         : ShExpr → ShExpr → ShExpr
   /-- `ShapeNot`. -/
-  | not        : ShapeExpr → ShapeExpr
+  | not        : ShExpr → ShExpr
 
 /-- A triple expression, describing the expected neighbourhood of a node. -/
-inductive TripleExpr where
+inductive TExpr where
   /-- `TriplePattern P @L`: a set of properties `P` paired with a shape
   reference `L` that the matched object must satisfy. -/
-  | tPattern : PropSet → ShapeLabel → TripleExpr
+  | tPattern : PropSet → Label → TExpr
   /-- `EMPTY`: matched only by the empty set of triples. -/
-  | empty    : TripleExpr
+  | empty    : TExpr
   /-- `SomeOfExpr E1 | E2`. -/
-  | someOf   : TripleExpr → TripleExpr → TripleExpr
+  | someOf   : TExpr → TExpr → TExpr
   /-- `EachOfExpr E1 ; E2`. -/
-  | eachOf   : TripleExpr → TripleExpr → TripleExpr
+  | eachOf   : TExpr → TExpr → TExpr
   /-- `RepetExpr E [min; max]`; `none` for `max` stands for `*`. -/
-  | rep      : TripleExpr → Nat → Option Nat → TripleExpr
+  | rep      : TExpr → Nat → Option Nat → TExpr
 end
 
 /-- A shapes schema `S = (L, def)`. -/
 structure Schema where
   /-- `L`: the set of shape labels used as names of shapes. -/
-  labels   : Finset ShapeLabel
+  labels   : Finset Label
   /-- `def`: associates a shape expression with every shape label. -/
-  shapeDef : ShapeLabel → ShapeExpr
+  shapeDef : Label → ShExpr
 
 end ShexLean

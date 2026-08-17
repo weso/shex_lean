@@ -62,14 +62,14 @@ subtree doesn't need to import the entire 2017 proof chain for it; a plain
 function rather than `Typing.restrictTo` dot notation, since `Typing`
 resolves to the shared `ShexLean.Typing` and dot notation would look there
 first, not here). -/
-def restrictTyping (τ : Typing) (Z : Finset ShapeLabel) : Typing := τ.filter (fun p => p.2 ∈ Z)
+def restrictTyping (τ : Typing) (Z : Finset Label) : Typing := τ.filter (fun p => p.2 ∈ Z)
 
-theorem mem_restrictTyping {τ : Typing} {Z : Finset ShapeLabel} {n : RDFNode} {z : ShapeLabel} :
+theorem mem_restrictTyping {τ : Typing} {Z : Finset Label} {n : RDFNode} {z : Label} :
     (n, z) ∈ restrictTyping τ Z ↔ (n, z) ∈ τ ∧ z ∈ Z := by simp [restrictTyping]
 
 /-- Two typings with the same restriction to `Z` agree (as an `Iff`) on
 every label in `Z`. -/
-theorem restrictTyping_agree {τ τ' : Typing} {Z : Finset ShapeLabel}
+theorem restrictTyping_agree {τ τ' : Typing} {Z : Finset Label}
     (h : restrictTyping τ Z = restrictTyping τ' Z) :
     ∀ n z, z ∈ Z → ((n, z) ∈ τ ↔ (n, z) ∈ τ') := by
   intro n z hz
@@ -87,7 +87,7 @@ theorem restrictTyping_agree {τ τ' : Typing} {Z : Finset ShapeLabel}
 `D_S`-reachable from a declared label (`z ∈ Y ∪ X`) is itself declared.
 Needed for the same reason 2017's `Schema.Closed` was (`ShexLean/
 Proposition1.lean`'s module docstring) — `shapeDef` is total on all of
-`ShapeLabel`, so nothing stops a schema from referencing an undeclared
+`Label`, so nothing stops a schema from referencing an undeclared
 label, but `Stratification`'s conditions are only required to hold with
 `z ∈ Y ∪ X` as the edge's source. -/
 def Schema.DClosed (S : Schema) : Prop :=
@@ -101,7 +101,7 @@ path form), and the edge form is what `maxTypingAgreeing_correct`
 (`ShexLean/Shex2017Schemas/Stratification.lean`). -/
 structure Stratification (S : Schema) where
   k : ℕ
-  strat : ShapeLabel → ℕ
+  strat : Label → ℕ
   mem_range : ∀ z ∈ S.Y ∪ S.X, 1 ≤ strat z ∧ strat z ≤ k
   dep_le : ∀ z ∈ S.Y ∪ S.X, ∀ z', S.DEdge z z' → strat z' ≤ strat z
   negDep_lt : ∀ z ∈ S.Y ∪ S.X, ∀ z', S.DNegEdge z z' → strat z' < strat z
@@ -116,7 +116,7 @@ def Schema.StratifiedNegation (S : Schema) : Prop := Nonempty (Stratification S)
 
 /-- "`dep` subsumes `dep-shape-neg`/`dep-extra-neg`" lifted to `DEdge`: any
 negative edge is in particular an ordinary `D_S` edge. -/
-theorem Schema.DEdge_of_DNegEdge {S : Schema} {z z' : ShapeLabel} (h : S.DNegEdge z z') :
+theorem Schema.DEdge_of_DNegEdge {S : Schema} {z z' : Label} (h : S.DNegEdge z z') :
     S.DEdge z z' := by
   rcases h with h | h
   · exact Or.inl (Schema.dep_of_depShapeNeg h)
@@ -124,7 +124,7 @@ theorem Schema.DEdge_of_DNegEdge {S : Schema} {z z' : ShapeLabel} (h : S.DNegEdg
 
 /-- `Y ∪ X` membership propagates forward along any `D_S`-path, given
 `Schema.DClosed`. -/
-theorem Schema.mem_of_reach {S : Schema} (hDClosed : S.DClosed) {z z' : ShapeLabel}
+theorem Schema.mem_of_reach {S : Schema} (hDClosed : S.DClosed) {z z' : Label}
     (hzY : z ∈ S.Y ∪ S.X) (h : Relation.ReflTransGen S.DEdge z z') : z' ∈ S.Y ∪ S.X := by
   induction h with
   | refl => exact hzY
@@ -133,7 +133,7 @@ theorem Schema.mem_of_reach {S : Schema} (hDClosed : S.DClosed) {z z' : ShapeLab
 /-- `strat` never increases along a `D_S`-path (Definition 7's first
 bullet, in path form). -/
 theorem Stratification.le_of_path {S : Schema} (hDClosed : S.DClosed) (strat : Stratification S)
-    {z z' : ShapeLabel} (hzY : z ∈ S.Y ∪ S.X) (h : Relation.ReflTransGen S.DEdge z z') :
+    {z z' : Label} (hzY : z ∈ S.Y ∪ S.X) (h : Relation.ReflTransGen S.DEdge z z') :
     strat.strat z' ≤ strat.strat z := by
   induction h with
   | refl => exact le_refl _
@@ -145,7 +145,7 @@ decreases overall (Definition 7's second bullet, in path form) — the
 composition of `le_of_path` on either side of the strict `negDep_lt` step
 in the middle. -/
 theorem Stratification.lt_of_negPath {S : Schema} (hDClosed : S.DClosed)
-    (strat : Stratification S) {z a b z' : ShapeLabel} (hzY : z ∈ S.Y ∪ S.X)
+    (strat : Stratification S) {z a b z' : Label} (hzY : z ∈ S.Y ∪ S.X)
     (hza : Relation.ReflTransGen S.DEdge z a) (hab : S.DNegEdge a b)
     (hbz' : Relation.ReflTransGen S.DEdge b z') :
     strat.strat z' < strat.strat z := by
@@ -173,7 +173,7 @@ Termination.lean`. -/
 in it (`ShapeExpr.depsAux`) and `extends` targets anywhere in it
 (`ShapeExpr.extendsTargets`, now a full recursive walk — see that
 definition's docstring for why it has to be). -/
-def ShapeExpr.depsIn (s : ShapeExpr) (Z : Finset ShapeLabel) : Prop :=
+def ShapeExpr.depsIn (s : ShapeExpr) (Z : Finset Label) : Prop :=
   (s.depsAux false).refs ⊆ Z ∧ s.extendsTargets ⊆ Z
 
 /-- A further well-formedness condition `stratMono` needs, beyond
@@ -234,20 +234,20 @@ theorem ShapeExpr.depsAux_refs_indep (s : ShapeExpr) (neg1 neg2 : Bool) :
   | not s _ => simp only [ShapeExpr.depsAux]
 
 /-- The labels a triple expression's own triple constraints reference. -/
-def TripleExpr.refs (e : TripleExpr) : Finset ShapeLabel := e.tcs.image Prod.snd
+def TripleExpr.refs (e : TripleExpr) : Finset Label := e.tcs.image Prod.snd
 
 /-- `Z` is closed under `D_S`: everything a member of `Z` depends on
 (`dep` or `depExtends`) is also in `Z`. Generalizes `Schema.DClosed`
 (the `Z = Y ∪ X` case) to an arbitrary label set, since Proposition 1
 below needs it for `Z = ` a stratum, not just the whole schema. -/
-def Schema.DClosedOn (S : Schema) (Z : Finset ShapeLabel) : Prop :=
+def Schema.DClosedOn (S : Schema) (Z : Finset Label) : Prop :=
   ∀ z ∈ Z, ∀ z', S.DEdge z z' → z' ∈ Z
 
 /-- Membership in a `D_S`-closed `Z` propagates along any `D_S`-path
 (generalizes `Schema.mem_of_reach`, whose `Z = Y ∪ X` instance this now
 subsumes). -/
-theorem Schema.reach_mem {S : Schema} {Z : Finset ShapeLabel} (hZ : S.DClosedOn Z)
-    {z z' : ShapeLabel} (hz : z ∈ Z) (h : Relation.ReflTransGen S.DEdge z z') : z' ∈ Z := by
+theorem Schema.reach_mem {S : Schema} {Z : Finset Label} (hZ : S.DClosedOn Z)
+    {z z' : Label} (hz : z ∈ Z) (h : Relation.ReflTransGen S.DEdge z z') : z' ∈ Z := by
   induction h with
   | refl => exact hz
   | tail _ hstep ih => exact hZ _ ih _ hstep
@@ -255,14 +255,14 @@ theorem Schema.reach_mem {S : Schema} {Z : Finset ShapeLabel} (hZ : S.DClosedOn 
 /-- If `x ∈ Z` and `Z` is `D_S`-closed, then `x`'s own definition only
 reaches labels in `Z` too — i.e. `Z`-closure is exactly what's needed to
 recurse one more `extends`-hop deep and stay inside `Z`. -/
-theorem Schema.shapeDef_depsIn {S : Schema} {Z : Finset ShapeLabel} (hZ : S.DClosedOn Z)
-    {x : ShapeLabel} (hx : x ∈ Z) : (S.shapeDef x).depsIn Z :=
+theorem Schema.shapeDef_depsIn {S : Schema} {Z : Finset Label} (hZ : S.DClosedOn Z)
+    {x : Label} (hx : x ∈ Z) : (S.shapeDef x).depsIn Z :=
   ⟨fun _ hz' => hZ x hx _ (Or.inl hz'), fun _ hz' => hZ x hx _ (Or.inr (Or.inl hz'))⟩
 
 /-- `S.ancSet xs ⊆ Z` whenever `xs ⊆ Z` and `Z` is `D_S`-closed: every
 ancestor reached by a rule-18 partition stays inside `Z` too. -/
-theorem Schema.ancSet_subset {S : Schema} {Z : Finset ShapeLabel} (hZ : S.DClosedOn Z)
-    {xs : Finset ShapeLabel} (hxs : xs ⊆ Z) : S.ancSet xs ⊆ Z := by
+theorem Schema.ancSet_subset {S : Schema} {Z : Finset Label} (hZ : S.DClosedOn Z)
+    {xs : Finset Label} (hxs : xs ⊆ Z) : S.ancSet xs ⊆ Z := by
   intro x hx
   unfold Schema.ancSet at hx
   obtain ⟨y, hy, hyx⟩ := Finset.mem_biUnion.mp hx
@@ -274,7 +274,7 @@ theorem Schema.ancSet_subset {S : Schema} {Z : Finset ShapeLabel} (hZ : S.DClose
 
 /-- Every label in `S.ancSet xs` is in `S.X` (immediate from `Schema.anc`'s
 own definition, which filters over `S.X`). -/
-theorem Schema.mem_ancSet_mem_X {S : Schema} {xs : Finset ShapeLabel} {x : ShapeLabel}
+theorem Schema.mem_ancSet_mem_X {S : Schema} {xs : Finset Label} {x : Label}
     (hx : x ∈ S.ancSet xs) : x ∈ S.X := by
   unfold Schema.ancSet at hx
   obtain ⟨y, _, hyx⟩ := Finset.mem_biUnion.mp hx
@@ -286,7 +286,7 @@ theorem Schema.mem_ancSet_mem_X {S : Schema} {xs : Finset ShapeLabel} {x : Shape
 to `Z`, given `e`'s own references are `⊆ Z`. No schema-closure hypothesis
 needed at all — Table 1 never does a schema lookup, exactly as in
 `stableE`. -/
-theorem agreeE {S : Schema} {G : Graph} {τ τ' : Typing} {Z : Finset ShapeLabel}
+theorem agreeE {S : Schema} {G : Graph} {τ τ' : Typing} {Z : Finset Label}
     (hagree : ∀ n z, z ∈ Z → ((n, z) ∈ τ ↔ (n, z) ∈ τ')) :
     ∀ (e : TripleExpr), e.refs ⊆ Z →
       ∀ fuel (M : Finset Triple), SatisfiesEFuel fuel S G τ M e ↔ SatisfiesEFuel fuel S G τ' M e := by
@@ -347,7 +347,7 @@ every triple's membership test only ever consults `τ` on a label in
 `e.refs ⊆ Z`. This is why rule 17's own agreement case (inside `agreeM`
 below) can reuse `agreeE` directly at a *shared* `M^e`, rather than needing
 a further congruence argument. -/
-theorem Me_eq {τ τ' : Typing} {Z : Finset ShapeLabel}
+theorem Me_eq {τ τ' : Typing} {Z : Finset Label}
     (hagree : ∀ n z, z ∈ Z → ((n, z) ∈ τ ↔ (n, z) ∈ τ')) {e : TripleExpr} (href : e.refs ⊆ Z)
     (M : Finset Triple) : Me τ M e = Me τ' M e := by
   unfold Me
@@ -365,7 +365,7 @@ theorem Me_eq {τ τ' : Typing} {Z : Finset ShapeLabel}
 /-- `M^{e'}` (Table 3's `Mnotin`) is likewise literally equal — it's built
 from `Me` (equal by `Me_eq`) and a `props`-based filter that doesn't
 mention `τ` at all. -/
-theorem Mnotin_eq {τ τ' : Typing} {Z : Finset ShapeLabel}
+theorem Mnotin_eq {τ τ' : Typing} {Z : Finset Label}
     (hagree : ∀ n z, z ∈ Z → ((n, z) ∈ τ ↔ (n, z) ∈ τ')) {e : TripleExpr} (href : e.refs ⊆ Z)
     (M : Finset Triple) : Mnotin τ M e = Mnotin τ' M e := by
   unfold Mnotin
@@ -378,7 +378,7 @@ Proved *before* the general case for the same reason `stableM_noExtends`
 was: `restr(x)`'s evaluation (inside `agreeM`'s `.extends` case) isn't on a
 subterm of the shape that induction is on, so that induction's own IH
 can't reach it — this lemma is what's invoked instead. -/
-theorem agreeM_noExtends {S : Schema} {G : Graph} {τ τ' : Typing} {Z : Finset ShapeLabel}
+theorem agreeM_noExtends {S : Schema} {G : Graph} {τ τ' : Typing} {Z : Finset Label}
     (hagree : ∀ n z, z ∈ Z → ((n, z) ∈ τ ↔ (n, z) ∈ τ')) :
     ∀ (u : ShapeExpr), u.NoExtends → (u.depsAux false).refs ⊆ Z →
       ∀ fuel (M : Finset Triple), SatisfiesMFuel fuel S G τ M u ↔ SatisfiesMFuel fuel S G τ' M u := by
@@ -431,7 +431,7 @@ theorem agreeM_noExtends {S : Schema} {G : Graph} {τ τ' : Typing} {Z : Finset 
 /-- `ext-te(x)`'s own references, at *any* chosen disjunct index, are
 among `def(x)`'s — the `refs`-containment analogue of `Termination.lean`'s
 `extTeAt_size_le`. -/
-theorem extTeAt_refs_subset {S : Schema} (hWFX : S.WellFormedX) {x : ShapeLabel} (hx : x ∈ S.X)
+theorem extTeAt_refs_subset {S : Schema} (hWFX : S.WellFormedX) {x : Label} (hx : x ∈ S.X)
     (i : ℕ) : ((S.shapeDef x).extTeAt i).refs ⊆ ((S.shapeDef x).depsAux false).refs := by
   obtain ⟨xs', hs', -, hcase⟩ := hWFX x hx
   rcases ShapeExpr.extTeAt_mem_or_empty (S.shapeDef x) i with hempty | ⟨e, hmem, heq⟩
@@ -449,7 +449,7 @@ theorem extTeAt_refs_subset {S : Schema} (hWFX : S.WellFormedX) {x : ShapeLabel}
 /-- `restr(x)`'s own references are among `def(x)`'s — the
 `refs`-containment analogue of `Termination.lean`'s
 `restrOf_noExtends_and_size_le`. -/
-theorem restrOf_refs_subset {S : Schema} {x : ShapeLabel} {u : ShapeExpr}
+theorem restrOf_refs_subset {S : Schema} {x : Label} {u : ShapeExpr}
     (hu : (S.shapeDef x).restrOf = some u) :
     (u.depsAux false).refs ⊆ ((S.shapeDef x).depsAux false).refs := by
   generalize hg : S.shapeDef x = e at hu
@@ -465,7 +465,7 @@ theorem restrOf_refs_subset {S : Schema} {x : ShapeLabel} {u : ShapeExpr}
   | _ => simp [ShapeExpr.restrOf] at hu
 
 /-- `restr(x)`'s own negative references are among `def(x)`'s. -/
-theorem restrOf_negRefs_subset {S : Schema} {x : ShapeLabel} {u : ShapeExpr}
+theorem restrOf_negRefs_subset {S : Schema} {x : Label} {u : ShapeExpr}
     (hu : (S.shapeDef x).restrOf = some u) :
     (u.depsAux false).negRefs ⊆ ((S.shapeDef x).depsAux false).negRefs := by
   generalize hg : S.shapeDef x = e at hu
@@ -488,7 +488,7 @@ components threaded through instead of just `.refs`; `.extends` combines
 `restr(x)`, via `restrOf_refs_subset` and `WellFormedExtends`), exactly
 mirroring `stableM`'s own `.extends` case in `Termination.lean`. -/
 theorem agreeM {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.WellFormedExtends)
-    {G : Graph} {τ τ' : Typing} {Z : Finset ShapeLabel} (hZ : S.DClosedOn Z)
+    {G : Graph} {τ τ' : Typing} {Z : Finset Label} (hZ : S.DClosedOn Z)
     (hagree : ∀ n z, z ∈ Z → ((n, z) ∈ τ ↔ (n, z) ∈ τ')) :
     ∀ (s : ShapeExpr), s.depsIn Z →
       ∀ fuel (M : Finset Triple), SatisfiesMFuel fuel S G τ M s ↔ SatisfiesMFuel fuel S G τ' M s := by
@@ -516,13 +516,13 @@ theorem agreeM {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.WellFormedExtends
       obtain ⟨hrefsZ, hxsZ⟩ := hdeps
       simp only [ShapeExpr.extendsTargets] at hxsZ
       have hancZ : S.ancSet xs ⊆ Z := S.ancSet_subset hZ hxsZ
-      show (∃ M' Mx, ∃ pick : ShapeLabel → ℕ, DisjointUnionOn M M' (S.ancSet xs) Mx ∧
+      show (∃ M' Mx, ∃ pick : Label → ℕ, DisjointUnionOn M M' (S.ancSet xs) Mx ∧
             (∃ h ∈ hs, SatisfiesMFuel f S G τ M' (.ofShape h)) ∧
             (∀ x ∈ S.ancSet xs,
               SatisfiesEFuel f S G τ (Mx x) ((S.shapeDef x).extTeAt (pick x))) ∧
             (∀ x ∈ S.ancSet xs, ∀ u, (S.shapeDef x).restrOf = some u →
               SatisfiesMFuel f S G τ ((S.anc x).biUnion Mx) u)) ↔
-          (∃ M' Mx, ∃ pick : ShapeLabel → ℕ, DisjointUnionOn M M' (S.ancSet xs) Mx ∧
+          (∃ M' Mx, ∃ pick : Label → ℕ, DisjointUnionOn M M' (S.ancSet xs) Mx ∧
             (∃ h ∈ hs, SatisfiesMFuel f S G τ' M' (.ofShape h)) ∧
             (∀ x ∈ S.ancSet xs,
               SatisfiesEFuel f S G τ' (Mx x) ((S.shapeDef x).extTeAt (pick x))) ∧
@@ -596,7 +596,7 @@ content is always `NoExtends`, by `ShapeExpr.NotIsExtendsFree`), which
 would otherwise have to reach for the much heavier `agreeFuel` below (and
 its `DClosedOn`/schema-wide-agreement requirements that a `NoExtends`
 shape never actually needs). -/
-theorem agreeFuel_noExtends {S : Schema} {G : Graph} {τ τ' : Typing} {Z : Finset ShapeLabel}
+theorem agreeFuel_noExtends {S : Schema} {G : Graph} {τ τ' : Typing} {Z : Finset Label}
     (hagree : ∀ n z, z ∈ Z → ((n, z) ∈ τ ↔ (n, z) ∈ τ')) :
     ∀ (s : ShapeExpr), s.NoExtends → (s.depsAux false).refs ⊆ Z →
       ∀ fuel (n : RDFNode), SatisfiesFuel fuel S G τ n s ↔ SatisfiesFuel fuel S G τ' n s := by
@@ -646,7 +646,7 @@ to `Z`, given `s.depsIn Z` and `Z` is `D_S`-closed. The `.ofShape`/
 `.extends` cases are immediate from `agreeM`; everything else is
 self-recursion — exactly mirroring `stableFuel`'s own structure. -/
 theorem agreeFuel {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.WellFormedExtends)
-    {G : Graph} {τ τ' : Typing} {Z : Finset ShapeLabel} (hZ : S.DClosedOn Z)
+    {G : Graph} {τ τ' : Typing} {Z : Finset Label} (hZ : S.DClosedOn Z)
     (hagree : ∀ n z, z ∈ Z → ((n, z) ∈ τ ↔ (n, z) ∈ τ')) :
     ∀ (s : ShapeExpr), s.depsIn Z →
       ∀ fuel (n : RDFNode), SatisfiesFuel fuel S G τ n s ↔ SatisfiesFuel fuel S G τ' n s := by
@@ -702,7 +702,7 @@ since `reqFuel S s` doesn't depend on `τ` at all, `Satisfies S G τ n s`
 and `Satisfies S G τ' n s` use the *same* concrete fuel value, so this is
 just `agreeFuel` at that shared value. -/
 theorem Satisfies.agree {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.WellFormedExtends)
-    {G : Graph} {τ τ' : Typing} {Z : Finset ShapeLabel} (hZ : S.DClosedOn Z)
+    {G : Graph} {τ τ' : Typing} {Z : Finset Label} (hZ : S.DClosedOn Z)
     (hagree : ∀ n z, z ∈ Z → ((n, z) ∈ τ ↔ (n, z) ∈ τ')) {s : ShapeExpr} (hdeps : s.depsIn Z)
     (n : RDFNode) : Satisfies S G τ n s ↔ Satisfies S G τ' n s :=
   agreeFuel hWFX hWFExt hZ hagree s hdeps (ShapeExpr.reqFuel S s + 1) n
@@ -761,7 +761,7 @@ def ShapeExpr.WellFormedExtra : ShapeExpr → Prop
 def Schema.WellFormedExtra (S : Schema) : Prop := ∀ ℓ, (S.shapeDef ℓ).WellFormedExtra
 
 /-- `restr(x)`'s "(*)" invariant is inherited from `def(x)`'s own. -/
-theorem restrOf_wellFormedExtra {S : Schema} (hWFExtra : S.WellFormedExtra) {x : ShapeLabel}
+theorem restrOf_wellFormedExtra {S : Schema} (hWFExtra : S.WellFormedExtra) {x : Label}
     {u : ShapeExpr} (hu : (S.shapeDef x).restrOf = some u) : u.WellFormedExtra := by
   have hWFx := hWFExtra x
   generalize hg : S.shapeDef x = e at hu hWFx
@@ -778,7 +778,7 @@ theorem restrOf_wellFormedExtra {S : Schema} (hWFExtra : S.WellFormedExtra) {x :
 
 /-- `restr(x)`'s "no `extends` under `not`" invariant is inherited from
 `def(x)`'s own. -/
-theorem restrOf_notIsExtendsFree {S : Schema} (hNEF : S.NotIsExtendsFree) {x : ShapeLabel}
+theorem restrOf_notIsExtendsFree {S : Schema} (hNEF : S.NotIsExtendsFree) {x : Label}
     {u : ShapeExpr} (hu : (S.shapeDef x).restrOf = some u) : u.NotIsExtendsFree := by
   have hNx := hNEF x
   generalize hg : S.shapeDef x = e at hu hNx
@@ -904,7 +904,7 @@ switches to `agreeM_noExtends` (exact agreement), using
 bounded by the outer call's `negRefs` — not just its own not-yet-further-
 negated references — which is exactly why `depsAux` had to latch rather
 than toggle (see that definition's docstring). -/
-theorem stratMonoM_noExtends {S : Schema} {G : Graph} {τ τ' : Typing} {Lo : Finset ShapeLabel}
+theorem stratMonoM_noExtends {S : Schema} {G : Graph} {τ τ' : Typing} {Lo : Finset Label}
     (hsub : τ ⊆ τ') (hagree : ∀ n z, z ∈ Lo → ((n, z) ∈ τ ↔ (n, z) ∈ τ')) :
     ∀ (u : ShapeExpr), u.NoExtends → u.WellFormedExtra → ((u.depsAux false).negRefs ⊆ Lo) →
       ∀ fuel (M : Finset Triple), SatisfiesMFuel fuel S G τ M u → SatisfiesMFuel fuel S G τ' M u := by
@@ -960,7 +960,7 @@ monotone) and `stratMonoM_noExtends` in place of `agreeM_noExtends` for
 `restrOf_negRefs_subset` + the schema-wide `hLo`). -/
 theorem stratMonoM {S : Schema} (_hWFX : S.WellFormedX) (hWFExt : S.WellFormedExtends)
     (hWFExtra : S.WellFormedExtra) (_hNEF : S.NotIsExtendsFree)
-    {G : Graph} {τ τ' : Typing} {Z Lo : Finset ShapeLabel}
+    {G : Graph} {τ τ' : Typing} {Z Lo : Finset Label}
     (hZ : S.DClosedOn Z) (hsub : τ ⊆ τ') (hagree : ∀ n z, z ∈ Lo → ((n, z) ∈ τ ↔ (n, z) ∈ τ'))
     (hLo : ∀ z ∈ Z, ((S.shapeDef z).depsAux false).negRefs ⊆ Lo) :
     ∀ (s : ShapeExpr), s.depsIn Z → s.WellFormedExtra → s.NotIsExtendsFree →
@@ -1040,7 +1040,7 @@ self-recursion — exactly mirroring `stableFuel`/`agreeFuel`'s own
 structure. -/
 theorem stratMonoFuel {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.WellFormedExtends)
     (hWFExtra : S.WellFormedExtra) (hNEF : S.NotIsExtendsFree)
-    {G : Graph} {τ τ' : Typing} {Z Lo : Finset ShapeLabel}
+    {G : Graph} {τ τ' : Typing} {Z Lo : Finset Label}
     (hZ : S.DClosedOn Z) (hsub : τ ⊆ τ') (hagree : ∀ n z, z ∈ Lo → ((n, z) ∈ τ ↔ (n, z) ∈ τ'))
     (hLo : ∀ z ∈ Z, ((S.shapeDef z).depsAux false).negRefs ⊆ Lo) :
     ∀ (s : ShapeExpr), s.depsIn Z → s.WellFormedExtra → s.NotIsExtendsFree →
@@ -1106,10 +1106,10 @@ association for `G` by `S`. -/
 def Schema.univTyping (S : Schema) (G : Graph) : Typing := G.nodes ×ˢ (S.Y ∪ S.X)
 
 /-- `Y_i^σ ∪ X_i^σ = {z ∈ Y ∪ X | σ(z) ≤ i}`. -/
-def Schema.stratum (S : Schema) (strat : ShapeLabel → ℕ) (i : ℕ) : Finset ShapeLabel :=
+def Schema.stratum (S : Schema) (strat : Label → ℕ) (i : ℕ) : Finset Label :=
   (S.Y ∪ S.X).filter (fun z => strat z ≤ i)
 
-theorem Schema.stratum_mono {S : Schema} {strat : ShapeLabel → ℕ} {i j : ℕ} (h : i ≤ j) :
+theorem Schema.stratum_mono {S : Schema} {strat : Label → ℕ} {i j : ℕ} (h : i ≤ j) :
     S.stratum strat i ⊆ S.stratum strat j := by
   intro z hz
   simp only [Schema.stratum, Finset.mem_filter] at hz ⊢
@@ -1117,7 +1117,7 @@ theorem Schema.stratum_mono {S : Schema} {strat : ShapeLabel → ℕ} {i j : ℕ
 
 /-- `S_i^σ = (Y_i^σ, X_i^σ, def, A_i^σ)`: the restriction of `S` to labels
 of stratum `≤ i`, keeping the same definitions. -/
-def Schema.stratRestrict (S : Schema) (strat : ShapeLabel → ℕ) (i : ℕ) : Schema where
+def Schema.stratRestrict (S : Schema) (strat : Label → ℕ) (i : ℕ) : Schema where
   Y := S.Y.filter (fun z => strat z ≤ i)
   X := S.X.filter (fun z => strat z ≤ i)
   A := S.A.filter (fun z => strat z ≤ i)
@@ -1134,14 +1134,14 @@ def Schema.stratRestrict (S : Schema) (strat : ShapeLabel → ℕ) (i : ℕ) : S
 Definition 8 needs to glue strata together — exactly 2017's
 `maxTypingAgreeing` (`ShexLean/Shex2017Schemas/Proposition1.lean`), with `Schema.
 CorrectTyping`/`restrictTyping` in place of the 2017 versions. -/
-noncomputable def maxTypingAgreeing (S' : Schema) (G : Graph) (Lo : Finset ShapeLabel)
+noncomputable def maxTypingAgreeing (S' : Schema) (G : Graph) (Lo : Finset Label)
     (fixed : Typing) : Typing :=
   haveI := Classical.decPred
     (fun t => S'.CorrectTyping G t ∧ restrictTyping t Lo = restrictTyping fixed Lo)
   ((S'.univTyping G).powerset.filter
     (fun t => S'.CorrectTyping G t ∧ restrictTyping t Lo = restrictTyping fixed Lo)).sup id
 
-theorem subset_maxTypingAgreeing {S' : Schema} {G : Graph} {Lo : Finset ShapeLabel}
+theorem subset_maxTypingAgreeing {S' : Schema} {G : Graph} {Lo : Finset Label}
     {fixed t : Typing} (hsub : t ⊆ S'.univTyping G) (hcorrect : S'.CorrectTyping G t)
     (hagree : restrictTyping t Lo = restrictTyping fixed Lo) :
     t ⊆ maxTypingAgreeing S' G Lo fixed := by
@@ -1151,7 +1151,7 @@ theorem subset_maxTypingAgreeing {S' : Schema} {G : Graph} {Lo : Finset ShapeLab
   simp only [Finset.mem_filter, Finset.mem_powerset]
   exact ⟨hsub, hcorrect, hagree⟩
 
-theorem maxTypingAgreeing_subset (S' : Schema) (G : Graph) (Lo : Finset ShapeLabel)
+theorem maxTypingAgreeing_subset (S' : Schema) (G : Graph) (Lo : Finset Label)
     (fixed : Typing) : maxTypingAgreeing S' G Lo fixed ⊆ S'.univTyping G := by
   have := Classical.decPred
     (fun t => S'.CorrectTyping G t ∧ restrictTyping t Lo = restrictTyping fixed Lo)
@@ -1160,7 +1160,7 @@ theorem maxTypingAgreeing_subset (S' : Schema) (G : Graph) (Lo : Finset ShapeLab
   simp only [Finset.mem_filter, Finset.mem_powerset] at ht
   exact ht.1
 
-theorem maxTypingAgreeing_restrictTo {S' : Schema} {G : Graph} {Lo : Finset ShapeLabel}
+theorem maxTypingAgreeing_restrictTo {S' : Schema} {G : Graph} {Lo : Finset Label}
     {fixed : Typing} (hfixed_sub : fixed ⊆ S'.univTyping G)
     (hfixed_correct : S'.CorrectTyping G fixed) :
     restrictTyping (maxTypingAgreeing S' G Lo fixed) Lo = restrictTyping fixed Lo := by
@@ -1188,7 +1188,7 @@ descendant) instead of `S'.shapeDef L`. -/
 theorem maxTypingAgreeing_correct {S' : Schema} (hWFX : S'.WellFormedX)
     (hWFExt : S'.WellFormedExtends) (hWFExtra : S'.WellFormedExtra)
     (hNEF : S'.NotIsExtendsFree) (hDClosed : S'.DClosedOn (S'.Y ∪ S'.X)) {G : Graph}
-    {Lo : Finset ShapeLabel} {fixed : Typing} (hfixed_sub : fixed ⊆ S'.univTyping G)
+    {Lo : Finset Label} {fixed : Typing} (hfixed_sub : fixed ⊆ S'.univTyping G)
     (hfixed_correct : S'.CorrectTyping G fixed)
     (hLo : ∀ z ∈ S'.Y ∪ S'.X, ((S'.shapeDef z).depsAux false).negRefs ⊆ Lo) :
     S'.CorrectTyping G (maxTypingAgreeing S' G Lo fixed) := by
@@ -1336,7 +1336,7 @@ is `NoExtends`, so its own recursive call can go through
 fact about `.extends`-containing shapes (`restr(x)` never contains one, by
 `WellFormedExtends`). -/
 theorem schemaAgreeM {S1 S2 : Schema} (hSD : S1.shapeDef = S2.shapeDef)
-    (hWFExt1 : S1.WellFormedExtends) {Z : Finset ShapeLabel} (hZ : S1.DClosedOn Z)
+    (hWFExt1 : S1.WellFormedExtends) {Z : Finset Label} (hZ : S1.DClosedOn Z)
     (hAnc : ∀ x ∈ Z, S1.anc x = S2.anc x) {G : Graph} :
     ∀ (s : ShapeExpr), s.depsIn Z →
       ∀ (fuel : ℕ) (τ : Typing) (M : Finset Triple),
@@ -1367,13 +1367,13 @@ theorem schemaAgreeM {S1 S2 : Schema} (hSD : S1.shapeDef = S2.shapeDef)
         intro x hx
         exact hAnc x (hxsZ hx)
       have hancZ : S1.ancSet xs ⊆ Z := S1.ancSet_subset hZ hxsZ
-      show (∃ M' Mx, ∃ pick : ShapeLabel → ℕ, DisjointUnionOn M M' (S1.ancSet xs) Mx ∧
+      show (∃ M' Mx, ∃ pick : Label → ℕ, DisjointUnionOn M M' (S1.ancSet xs) Mx ∧
             (∃ h ∈ hs, SatisfiesMFuel f S1 G τ M' (.ofShape h)) ∧
             (∀ x ∈ S1.ancSet xs,
               SatisfiesEFuel f S1 G τ (Mx x) ((S1.shapeDef x).extTeAt (pick x))) ∧
             (∀ x ∈ S1.ancSet xs, ∀ u, (S1.shapeDef x).restrOf = some u →
               SatisfiesMFuel f S1 G τ ((S1.anc x).biUnion Mx) u)) ↔
-          (∃ M' Mx, ∃ pick : ShapeLabel → ℕ, DisjointUnionOn M M' (S2.ancSet xs) Mx ∧
+          (∃ M' Mx, ∃ pick : Label → ℕ, DisjointUnionOn M M' (S2.ancSet xs) Mx ∧
             (∃ h ∈ hs, SatisfiesMFuel f S2 G τ M' (.ofShape h)) ∧
             (∀ x ∈ S2.ancSet xs,
               SatisfiesEFuel f S2 G τ (Mx x) ((S2.shapeDef x).extTeAt (pick x))) ∧
@@ -1439,7 +1439,7 @@ theorem schemaAgreeM {S1 S2 : Schema} (hSD : S1.shapeDef = S2.shapeDef)
 — `.ofShape`/`.extends` are immediate from `schemaAgreeM`, everything else
 is self-recursion. -/
 theorem schemaAgreeFuel {S1 S2 : Schema} (hSD : S1.shapeDef = S2.shapeDef)
-    (hWFExt1 : S1.WellFormedExtends) {Z : Finset ShapeLabel} (hZ : S1.DClosedOn Z)
+    (hWFExt1 : S1.WellFormedExtends) {Z : Finset Label} (hZ : S1.DClosedOn Z)
     (hAnc : ∀ x ∈ Z, S1.anc x = S2.anc x) {G : Graph} :
     ∀ (s : ShapeExpr), s.depsIn Z →
       ∀ (fuel : ℕ) (τ : Typing) (n : RDFNode),
@@ -1495,7 +1495,7 @@ theorem schemaAgreeFuel {S1 S2 : Schema} (hSD : S1.shapeDef = S2.shapeDef)
 and the witness `WellFormedX` supplies for `x ∈ S.X` doesn't care which
 restriction (if any) `x` happens to also satisfy. -/
 theorem Schema.stratRestrict_WellFormedX {S : Schema} (hWFX : S.WellFormedX)
-    (strat : ShapeLabel → ℕ) (i : ℕ) : (S.stratRestrict strat i).WellFormedX := by
+    (strat : Label → ℕ) (i : ℕ) : (S.stratRestrict strat i).WellFormedX := by
   intro x hx
   simp only [Schema.stratRestrict, Finset.mem_filter] at hx
   exact hWFX x hx.1
@@ -1522,7 +1522,7 @@ confined to the lower one — the whole `ancSet`/`extends`-hop machinery
 which (sufficiently high) stratum level the ambient schema was restricted
 to. -/
 theorem Schema.stratRestrict_anc_eq {S : Schema} (hDClosed : S.DClosed) (strat : Stratification S)
-    {x : ShapeLabel} (hxY : x ∈ S.Y ∪ S.X) {i : ℕ} (hxi : strat.strat x ≤ i) :
+    {x : Label} (hxY : x ∈ S.Y ∪ S.X) {i : ℕ} (hxi : strat.strat x ≤ i) :
     (S.stratRestrict strat.strat i).anc x = S.anc x := by
   apply Finset.ext
   intro y
@@ -1553,7 +1553,7 @@ correct`'s inductive step (`hcorrect_i := hcorrect_i` fails here because,
 unlike 2017, `Satisfies` genuinely depends on the schema). -/
 theorem Satisfies_stratRestrict_agree {S : Schema} (hWFX : S.WellFormedX)
     (hWFExt : S.WellFormedExtends) (hDClosed : S.DClosed) (strat : Stratification S)
-    {i j : ℕ} (hij : i ≤ j) {x : ShapeLabel} (hxY : x ∈ S.Y ∪ S.X) (hxi : strat.strat x ≤ i)
+    {i j : ℕ} (hij : i ≤ j) {x : Label} (hxY : x ∈ S.Y ∪ S.X) (hxi : strat.strat x ≤ i)
     {G : Graph} {τ : Typing} {n : RDFNode} :
     Satisfies (S.stratRestrict strat.strat i) G τ n (S.shapeDef x) ↔
     Satisfies (S.stratRestrict strat.strat j) G τ n (S.shapeDef x) := by
@@ -1593,7 +1593,7 @@ theorem Satisfies_stratRestrict_agree {S : Schema} (hWFX : S.WellFormedX)
 `Classical.decPred`/`Finset.filter` instance-mismatch trap (see this file's
 module docstring/memory notes) by fixing the filter's instance once here
 rather than at every call site. -/
-theorem Schema.mem_desc {S : Schema} {x y : ShapeLabel} :
+theorem Schema.mem_desc {S : Schema} {x y : Label} :
     y ∈ S.desc x ↔ y ∈ S.X ∧ Relation.ReflTransGen S.extEdge y x := by
   unfold Schema.desc
   simp only [Finset.mem_filter]
@@ -1602,7 +1602,7 @@ theorem Schema.mem_desc {S : Schema} {x y : ShapeLabel} :
 two separately-filtered sets) and `S.stratum strat i` (one filter over the
 union) are the same `Finset`, just built differently — needed to bridge
 `Schema.univTyping`'s `Y ∪ X` form with `Schema.stratum_mono`'s. -/
-theorem Schema.stratRestrict_YX_eq_stratum (S : Schema) (strat : ShapeLabel → ℕ) (i : ℕ) :
+theorem Schema.stratRestrict_YX_eq_stratum (S : Schema) (strat : Label → ℕ) (i : ℕ) :
     (S.stratRestrict strat i).Y ∪ (S.stratRestrict strat i).X = S.stratum strat i := by
   unfold Schema.stratRestrict Schema.stratum
   rw [Finset.filter_union]
@@ -1615,7 +1615,7 @@ it by unification buried inside a large application (which is expensive
 enough, given how much `Schema`/`Finset` machinery `DEdge` unfolds through,
 to time out `maxTypingAgreeing_correct`'s own `hDClosed` argument if left
 implicit). -/
-theorem Schema.stratRestrict_DEdge_eq (S : Schema) (strat : ShapeLabel → ℕ) (i : ℕ) :
+theorem Schema.stratRestrict_DEdge_eq (S : Schema) (strat : Label → ℕ) (i : ℕ) :
     (S.stratRestrict strat i).DEdge = S.DEdge := rfl
 
 /-- `S.stratRestrict strat i` is itself `DClosed`, given `S` is — the
@@ -1683,7 +1683,7 @@ correct typings of `G` by `S^σ_{i+1}` agreeing with `τ_i` on `Y^σ_i ∪
 X^σ_i`. Matches the paper's own recursion once `τ_1` (Definition 8's base
 case, defined there directly as "the union of all correct typings of `G`
 by `S^σ_1`") is seen as the special case `Lo = ∅` of the general step. -/
-noncomputable def stratTypingSeq (S : Schema) (strat : ShapeLabel → ℕ) (G : Graph) : ℕ → Typing
+noncomputable def stratTypingSeq (S : Schema) (strat : Label → ℕ) (G : Graph) : ℕ → Typing
   | 0 => ∅
   | i + 1 => maxTypingAgreeing (S.stratRestrict strat (i + 1)) G (S.stratum strat i)
       (stratTypingSeq S strat G i)

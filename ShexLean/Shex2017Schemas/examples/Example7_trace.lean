@@ -36,19 +36,19 @@ docstring), and `4` has neither shape (it's not the placeholder string
 literal either, and, being a literal, has no outgoing triples, so it can
 never match `<L2>`'s own `ex:c @<L3>` neighbourhood description). -/
 
-theorem n2_not_Str : ¬ Satisfies G₃ typing n2 (S₃.shapeDef Str) := by
+theorem n2_not_Str : ¬ Satisfies G₃ t n2 (S₃.shapeDef Str) := by
   rw [shapeDef_Str]
   rintro (h | h) <;> exact absurd h (by decide)
 
-theorem four_not_Str : ¬ Satisfies G₃ typing four (S₃.shapeDef Str) := by
+theorem four_not_Str : ¬ Satisfies G₃ t four (S₃.shapeDef Str) := by
   rw [shapeDef_Str]
   rintro (h | h) <;> exact absurd h (by decide)
 
-theorem four_not_L2 : ¬ Satisfies G₃ typing four (S₃.shapeDef L2) := by
+theorem four_not_L2 : ¬ Satisfies G₃ t four (S₃.shapeDef L2) := by
   rw [shapeDef_L2]
   intro hsat
-  have hmatch : Matches G₃ typing (neigh G₃ four) _ :=
-    (show Matches G₃ typing (neigh G₃ four) _ from hsat)
+  have hmatch : Matches G₃ t (neigh G₃ four) _ :=
+    (show Matches G₃ t (neigh G₃ four) _ from hsat)
   have hneigh : neigh G₃ four = (∅ : Finset Triple) := by decide
   rw [hneigh] at hmatch
   obtain ⟨subj, pred, obj, heq, -, -⟩ := hmatch
@@ -58,15 +58,15 @@ end Examples.ProveAlgorithmExample
 
 namespace Examples
 
-open Examples.ProveAlgorithmExample (G₃ typing n1 n2 n3 four L1 L2 L3 Str)
+open Examples.ProveAlgorithmExample (G₃ t n1 n2 n3 four L1 L2 L3 Str)
 open Examples.StratificationExample (S₃)
 open ShexLean (Schema.render Graph.render renderDecide satisfies_decidable)
 
 /-- Every line of the trace below is `renderDecide (satisfies_decidable …)`
 — an actual `Decidable` computation of `Satisfies` at each call's node and
 shape, not a value transcribed from the paper. -/
-private def sat (n : ShexLean.RDFNode) (L : ShexLean.ShapeLabel) : String :=
-  renderDecide (satisfies_decidable G₃ typing n (S₃.shapeDef L))
+private def sat (n : ShexLean.RDFNode) (L : ShexLean.Label) : String :=
+  renderDecide (satisfies_decidable G₃ t n (S₃.shapeDef L))
 
 /-- Example 7: the execution trace of `prove(ex:n1, <L1>, [])` on `G₃`/`S₃`. -/
 def proveAlgorithmTrace : Example where
