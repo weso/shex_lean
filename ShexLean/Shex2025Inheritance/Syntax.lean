@@ -18,7 +18,7 @@ the 2017 encoding trick, and `extends` is new. It lives in its own
 `ShexLean.Inheritance` namespace so its `ShapeExpr`/`Schema`/etc. do not
 clash with the 2017 ones, while reusing the paper-independent RDF/typing
 vocabulary directly: `ShexLean.RDF` (`IRI`, `RDFNode`, `Triple`, `Graph`,
-`neigh`) and `ShexLean.Typing` (`ShapeLabel`, `NodeTypeAssoc`, `Typing`,
+`neigh`) and `ShexLean.Typing` (`Label`, `Assoc`, `Typing`,
 `Typing.has`) are used completely unchanged — a "typing of `G` by `S`" is
 literally the same notion in both papers (`Nodes(G) × (labels)`).
 
@@ -66,11 +66,11 @@ abbrev NodeConstraint := RDFNode → Prop
 
 /-- Def 1's triple expression grammar,
 `e ::= ε | p @z | e|e | e;e | e*`. `tc p z` is the triple constraint
-`p @z`; `z` ranges over `ShapeLabel` (reused from `ShexLean.Typing`), i.e.
+`p @z`; `z` ranges over `Label` (reused from `ShexLean.Typing`), i.e.
 over `Y ∪ X` for whichever schema the expression belongs to. -/
 inductive TripleExpr where
   | empty : TripleExpr
-  | tc (p : IRI) (z : ShapeLabel) : TripleExpr
+  | tc (p : IRI) (z : Label) : TripleExpr
   | choice (e1 e2 : TripleExpr) : TripleExpr
   | seq (e1 e2 : TripleExpr) : TripleExpr
   | star (e : TripleExpr) : TripleExpr
@@ -78,7 +78,7 @@ inductive TripleExpr where
 
 /-- The triple-constraint sub-expressions of `e` (the paper's `tcs(e)`),
 represented as `(property, target label)` pairs. -/
-def TripleExpr.tcs : TripleExpr → Finset (IRI × ShapeLabel)
+def TripleExpr.tcs : TripleExpr → Finset (IRI × Label)
   | .empty => ∅
   | .tc p z => {(p, z)}
   | .choice e1 e2 => e1.tcs ∪ e2.tcs
@@ -103,7 +103,7 @@ docstring for why `@z` is not a constructor and why `extends` has no
 `restr` field of its own. -/
 inductive ShapeExpr where
   | ofShape (h : Shape) : ShapeExpr
-  | extends (xs : Finset ShapeLabel) (h : Shape) : ShapeExpr
+  | extends (xs : Finset Label) (h : Shape) : ShapeExpr
   | constraint (c : NodeConstraint) : ShapeExpr
   | or (s1 s2 : ShapeExpr) : ShapeExpr
   | and (s1 s2 : ShapeExpr) : ShapeExpr
@@ -132,7 +132,7 @@ agreement lemma) even though it happened not to matter for
 `ShexLean/Shex2025Inheritance/Termination.lean` (whose `Fuel` bookkeeping walks the
 whole tree independently via `ShapeExpr.reqFuel`, not through this
 function at all). -/
-def ShapeExpr.extendsTargets : ShapeExpr → Finset ShapeLabel
+def ShapeExpr.extendsTargets : ShapeExpr → Finset Label
   | .extends xs _ => xs
   | .constraint _ => ∅
   | .ofShape _ => ∅
@@ -160,17 +160,17 @@ def ShapeExpr.restrOf : ShapeExpr → Option ShapeExpr
 /-- Definition 2 (ShEx schema). `S = (Y, X, def, A)`: `Y` simple labels,
 `X` extendable labels disjoint from `Y`, `A ⊆ X` abstract labels, and
 `shapeDef` (the paper's `def`) associates every label of `Y ∪ X` with its
-definition. `shapeDef` is total on all of `ShapeLabel` (as in the 2017
+definition. `shapeDef` is total on all of `Label` (as in the 2017
 formalization) because Lean functions must be total; `Schema.WellFormedX`
 below is the extra hypothesis this forces (mirroring `Schema.Closed` in
 `ShexLean/Shex2017Schemas/Proposition1.lean`). -/
 structure Schema where
-  Y : Finset ShapeLabel
-  X : Finset ShapeLabel
-  A : Finset ShapeLabel
+  Y : Finset Label
+  X : Finset Label
+  A : Finset Label
   disjointYX : Disjoint Y X
   A_subX : A ⊆ X
-  shapeDef : ShapeLabel → ShapeExpr
+  shapeDef : Label → ShapeExpr
 
 /-- Definition 2's second bullet: for `x ∈ X`, `def(x)` must be of the
 form `extends X h [and u]`, i.e. `.extends xs h` or
@@ -183,7 +183,7 @@ def Schema.WellFormedX (S : Schema) : Prop :=
 
 /-- Definition 3's edge relation of `H_S`: an edge from `x` to `x'` iff
 `x'` is named right after `extends` at the top of `def(x)`. -/
-abbrev Schema.extEdge (S : Schema) (x x' : ShapeLabel) : Prop :=
+abbrev Schema.extEdge (S : Schema) (x x' : Label) : Prop :=
   x' ∈ (S.shapeDef x).extendsTargets
 
 /-- Definition 3 (extension hierarchy). `x' ∈ S.anc x` iff there is a
@@ -194,18 +194,18 @@ matching the paper. Classical choice decides the (in general undecidable
 for an arbitrary `Prop`-valued `extEdge`) reachability predicate, exactly
 as `Classical.decPred` is used throughout the 2017 formalization for
 similar non-obviously-decidable filters. -/
-noncomputable def Schema.anc (S : Schema) (x : ShapeLabel) : Finset ShapeLabel :=
+noncomputable def Schema.anc (S : Schema) (x : Label) : Finset Label :=
   haveI := Classical.decPred (Relation.ReflTransGen S.extEdge x)
   S.X.filter (Relation.ReflTransGen S.extEdge x)
 
 /-- `S.desc x`: the descendants of `x` (dual of `S.anc`). -/
-noncomputable def Schema.desc (S : Schema) (x : ShapeLabel) : Finset ShapeLabel :=
+noncomputable def Schema.desc (S : Schema) (x : Label) : Finset Label :=
   haveI := Classical.decPred (Relation.ReflTransGen S.extEdge · x)
   S.X.filter (Relation.ReflTransGen S.extEdge · x)
 
 /-- `anc(X) = ⋃_{x ∈ X} anc(x)` (Table 3's extension of `anc` to a set of
 labels, used by rule 18). -/
-noncomputable def Schema.ancSet (S : Schema) (xs : Finset ShapeLabel) : Finset ShapeLabel :=
+noncomputable def Schema.ancSet (S : Schema) (xs : Finset Label) : Finset Label :=
   xs.biUnion S.anc
 
 end ShexLean.Inheritance

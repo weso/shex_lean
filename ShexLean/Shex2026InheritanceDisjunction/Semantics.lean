@@ -105,9 +105,9 @@ theorem mem_Mnotin {τ : Typing} {M : Finset Triple} {e : TripleExpr} {t : Tripl
 `x ∈ Idx`) are pairwise disjoint and their union is `M` — Table 3's rule
 18 partition of a neighbourhood set into the portion satisfying `h` and
 one portion per ancestor being (transitively) extended. -/
-def DisjointUnionOn (M M' : Finset Triple) (Idx : Finset ShapeLabel)
-    (Mx : ShapeLabel → Finset Triple) : Prop :=
-  Disjoint M' (Idx.biUnion Mx) ∧ (Idx : Set ShapeLabel).PairwiseDisjoint Mx ∧
+def DisjointUnionOn (M M' : Finset Triple) (Idx : Finset Label)
+    (Mx : Label → Finset Triple) : Prop :=
+  Disjoint M' (Idx.biUnion Mx) ∧ (Idx : Set Label).PairwiseDisjoint Mx ∧
     M = M' ∪ Idx.biUnion Mx
 
 /-- `M,τ ⊨ e` (Table 1), `Fuel`-bounded — see the module docstring. -/
@@ -155,7 +155,7 @@ def SatisfiesMFuel : (Fuel : ℕ) → Schema → Graph → Typing → Finset Tri
   -- `ext-te(x)`, and — if `restr(x)` is present — the union of `Mx z` over
   -- `z ∈ anc(x)` satisfies `restr(x)`).
   --
-  -- **The actual §6 fix**: a single `pick : ShapeLabel → ℕ` witness, chosen
+  -- **The actual §6 fix**: a single `pick : Label → ℕ` witness, chosen
   -- once per `.extends` occurrence (existentially bound alongside `Mx`, not
   -- threaded globally through `Satisfies`), selects *which* disjunct of
   -- `(S.shapeDef x).extTeList` each ancestor `x` must be checked against —
@@ -170,7 +170,7 @@ def SatisfiesMFuel : (Fuel : ℕ) → Schema → Graph → Typing → Finset Tri
   -- satisfy the same disjunct" from the paper's own sketch, without adding
   -- a schema- or typing-global parameter anywhere else.
   | fuel+1, S, G, τ, M, .extends xs hs =>
-      ∃ M' Mx, ∃ pick : ShapeLabel → ℕ, DisjointUnionOn M M' (S.ancSet xs) Mx ∧
+      ∃ M' Mx, ∃ pick : Label → ℕ, DisjointUnionOn M M' (S.ancSet xs) Mx ∧
         (∃ h ∈ hs, SatisfiesMFuel fuel S G τ M' (.ofShape h)) ∧
         (∀ x ∈ S.ancSet xs,
           SatisfiesEFuel fuel S G τ (Mx x) ((S.shapeDef x).extTeAt (pick x))) ∧
@@ -224,7 +224,7 @@ under `τ` also satisfies the trivial shape `[closed:=false][extra:=none]
 ⟨p @z⟩` (rule 17, `.ofShape`) — the special case of `ofShape_of_Me_eq_self`
 most `.extends` proofs actually need. -/
 theorem singleton_tc_ofShape {S : Schema} {G : Graph} {τ : Typing} {fuel : ℕ}
-    {p : IRI} {z : ShapeLabel} {n : Subject} {o : RDFNode} (hty : τ.has o z) :
+    {p : IRI} {z : Label} {n : Subject} {o : RDFNode} (hty : τ.has o z) :
     SatisfiesMFuel (fuel + 2) S G τ {(⟨n, p, o⟩ : Triple)} (.ofShape ⟨false, none, .tc p z⟩) := by
   apply ofShape_of_Me_eq_self (fuel := fuel + 1) (e := .tc p z) (M := {(⟨n, p, o⟩ : Triple)})
   · apply Finset.Subset.antisymm

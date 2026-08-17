@@ -23,17 +23,17 @@ depend on `strat`, `ShexLean/Shex2017Schemas/Lemma2.lean`):
 
 The only work left to do here is to record that Definition 5 is
 well-defined regardless of which stratification `Classical.choice` happens
-to pick out of `S.StratifiedNegation` (immediate from `lemma2`), and that
+to pick out of `S.StratNeg` (immediate from `lemma2`), and that
 the resulting typing is indeed correct (immediate from `proposition1`).
 -/
 
 namespace ShexLean
 
 /-- Definition 5 (maximal correct typing). `Typing(G, S)`: pick any
-stratification witnessing `S.StratifiedNegation` (its exact identity is
-irrelevant by `maximalCorrectTyping_eq_Typing4` below) and take
+stratification witnessing `S.StratNeg` (its exact identity is
+irrelevant by `maximalCorrTyping_eq_Typing4` below) and take
 `Typing(G, S, strat)` (Definition 4, `Typing4`). -/
-noncomputable def Schema.maximalCorrectTyping (S : Schema) (hStrat : S.StratifiedNegation)
+noncomputable def Schema.maximalCorrTyping (S : Schema) (hStrat : S.StratNeg)
     (G : Graph) : Typing :=
   Typing4 G S hStrat.some
 
@@ -41,36 +41,36 @@ noncomputable def Schema.maximalCorrectTyping (S : Schema) (hStrat : S.Stratifie
 it: `Typing(G, S)` agrees with `Typing(G, S, strat)` for *every*
 stratification `strat` of `S`, not just the one `Classical.choice` happened
 to pick. This is exactly Lemma 2. -/
-theorem Schema.maximalCorrectTyping_eq_Typing4 (S : Schema) (hClosed : S.Closed)
-    (hStrat : S.StratifiedNegation) (G : Graph) (strat : Stratification S) :
-    S.maximalCorrectTyping hStrat G = Typing4 G S strat :=
+theorem Schema.maximalCorrTyping_eq_Typing4 (S : Schema) (hClosed : S.Closed)
+    (hStrat : S.StratNeg) (G : Graph) (strat : Stratification S) :
+    S.maximalCorrTyping hStrat G = Typing4 G S strat :=
   lemma2 S hClosed hStrat.some strat G
 
 /-- Definition 5's `Typing(G, S)` is a correct typing of `G` by `S`
 (Definition 2). Immediate from Proposition 1 applied to whichever
-stratification underlies `S.maximalCorrectTyping`. -/
-theorem Schema.maximalCorrectTyping_correct (S : Schema) (hClosed : S.Closed)
-    (hStrat : S.StratifiedNegation) (G : Graph) :
-    S.CorrectTyping G (S.maximalCorrectTyping hStrat G) :=
+stratification underlies `S.maximalCorrTyping`. -/
+theorem Schema.maximalCorrTyping_correct (S : Schema) (hClosed : S.Closed)
+    (hStrat : S.StratNeg) (G : Graph) :
+    S.CorrTyping G (S.maximalCorrTyping hStrat G) :=
   proposition1 S hStrat.some hClosed G
 
 /-- Definition 6 (`SHAPES_SEM`). Node `n` (of `G`) has shape `L` (from `S`)
 iff `(n, L) ∈ Typing(G, S)`, i.e. `(n, L)` belongs to the maximal correct
-typing of `G` by `S` (Definition 5). -/
-def Schema.ShapesSem (S : Schema) (hStrat : S.StratifiedNegation)
-    (G : Graph) (n : RDFNode) (L : ShapeLabel) : Prop :=
-  (n, L) ∈ S.maximalCorrectTyping hStrat G
+t of `G` by `S` (Definition 5). -/
+def Schema.ShapesSem (S : Schema) (hStrat : S.StratNeg)
+    (G : Graph) (n : RDFNode) (L : Label) : Prop :=
+  (n, L) ∈ S.maximalCorrTyping hStrat G
 
 /-- `SHAPES_SEM` does not depend on which stratification witnesses
-`S.StratifiedNegation`: it can equivalently be tested against
+`S.StratNeg`: it can equivalently be tested against
 `Typing(G, S, strat)` for *any* stratification `strat` of `S`. This is what
 makes Definition 6 well-defined at all, and is exactly why Definitions 5
 and 6 needed Lemma 2 first. -/
 theorem Schema.shapesSem_iff_typing4 (S : Schema) (hClosed : S.Closed)
-    (hStrat : S.StratifiedNegation) (G : Graph) (n : RDFNode) (L : ShapeLabel)
+    (hStrat : S.StratNeg) (G : Graph) (n : RDFNode) (L : Label)
     (strat : Stratification S) :
     S.ShapesSem hStrat G n L ↔ (n, L) ∈ Typing4 G S strat := by
   unfold Schema.ShapesSem
-  rw [S.maximalCorrectTyping_eq_Typing4 hClosed hStrat G strat]
+  rw [S.maximalCorrTyping_eq_Typing4 hClosed hStrat G strat]
 
 end ShexLean

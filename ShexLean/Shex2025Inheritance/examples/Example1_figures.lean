@@ -136,14 +136,14 @@ shapes Fig. 1 actually uses (`⟨ε⟩`, a bare `p @z`, and a bare `p1 @z1 ; p2
 @z2`), each allowing arbitrary "junk" triples with an unrelated predicate
 since none of Fig. 1's own shapes are `closed`. -/
 
-theorem reach_root {S : Schema} {p : ShapeLabel} (hparent : ∀ c, ¬ S.extEdge p c) :
+theorem reach_root {S : Schema} {p : Label} (hparent : ∀ c, ¬ S.extEdge p c) :
     ∀ x', Relation.ReflTransGen S.extEdge p x' → x' = p := by
   intro x' h
   rcases Relation.ReflTransGen.cases_head h with heq | ⟨c, hc, _⟩
   · exact heq.symm
   · exact absurd hc (hparent c)
 
-theorem anc_root {S : Schema} {x : ShapeLabel} (hx : x ∈ S.X)
+theorem anc_root {S : Schema} {x : Label} (hx : x ∈ S.X)
     (hedge : ∀ c, ¬ S.extEdge x c) : S.anc x = {x} := by
   apply Finset.ext; intro x'
   unfold Schema.anc
@@ -152,7 +152,7 @@ theorem anc_root {S : Schema} {x : ShapeLabel} (hx : x ∈ S.X)
   · rintro ⟨_, h⟩; exact reach_root hedge x' h
   · rintro rfl; exact ⟨hx, Relation.ReflTransGen.refl⟩
 
-theorem anc_one_parent {S : Schema} {x p : ShapeLabel} (hx : x ∈ S.X) (hp : p ∈ S.X)
+theorem anc_one_parent {S : Schema} {x p : Label} (hx : x ∈ S.X) (hp : p ∈ S.X)
     (hedge : ∀ c, S.extEdge x c ↔ c = p) (hparent : ∀ c, ¬ S.extEdge p c) :
     S.anc x = {x, p} := by
   apply Finset.ext; intro x'
@@ -188,7 +188,7 @@ different from `p` (so, non-closed, entirely unconstrained). Reused for
 `Colour`'s own `name @T_"colour"` restriction applied to `a2`'s full
 neighbourhood (which also has `scope`/`value` triples). -/
 theorem single_tc_ofShape_junk {S : Schema} {G : Graph} {τ : Typing} {fuel : ℕ}
-    {p : IRI} {z : ShapeLabel} {t : Triple} {junk : Finset Triple}
+    {p : IRI} {z : Label} {t : Triple} {junk : Finset Triple}
     (hp : t.pred = p) (hjunk : ∀ t' ∈ junk, t'.pred ≠ p) (hty : τ.has t.obj z) :
     SatisfiesMFuel (fuel + 2) S G τ (insert t junk) (.ofShape ⟨false, none, .tc p z⟩) := by
   have hMe : Me τ (insert t junk) (.tc p z) = {t} := by
@@ -228,7 +228,7 @@ exactly two triples, no junk — the two-triple-constraint analogue of
 `a1`/`a3`, which have no other triples), and `Radius`'s own
 `name @T_"radius" ; value @T_float` restriction. -/
 theorem pair_tc_tc_ofShape {S : Schema} {G : Graph} {τ : Typing} {fuel : ℕ}
-    {p1 p2 : IRI} {z1 z2 : ShapeLabel} {t1 t2 : Triple}
+    {p1 p2 : IRI} {z1 z2 : Label} {t1 t2 : Triple}
     (hp1 : t1.pred = p1) (hp2 : t2.pred = p2) (hne : t1 ≠ t2)
     (hty1 : τ.has t1.obj z1) (hty2 : τ.has t2.obj z2) :
     SatisfiesMFuel (fuel + 3) S G τ {t1, t2}
@@ -256,7 +256,7 @@ theorem pair_tc_tc_ofShape {S : Schema} {G : Graph} {τ : Typing} {fuel : ℕ}
 `a2 ⊨ Attribute` (`a2`'s neighbourhood also has a `scope` triple, unrelated
 to `Attribute`'s own `name`/`value`). -/
 theorem pair_tc_tc_ofShape_junk {S : Schema} {G : Graph} {τ : Typing} {fuel : ℕ}
-    {p1 p2 : IRI} {z1 z2 : ShapeLabel} {t1 t2 : Triple} {junk : Finset Triple}
+    {p1 p2 : IRI} {z1 z2 : Label} {t1 t2 : Triple} {junk : Finset Triple}
     (hp1 : t1.pred = p1) (hp2 : t2.pred = p2) (hne : t1 ≠ t2)
     (hjunk : ∀ t ∈ junk, t.pred ≠ p1 ∧ t.pred ≠ p2)
     (hty1 : τ.has t1.obj z1) (hty2 : τ.has t2.obj z2) :
@@ -369,7 +369,7 @@ theorem hancSetFigure : S_fig1.ancSet {"Figure"} = {"Figure"} := by
 theorem hancSetCircleColouredFigure :
     S_fig1.ancSet {"Circle", "ColouredFigure"} = {"Circle", "Figure", "ColouredFigure"} := by
   unfold Schema.ancSet
-  rw [show ({"Circle", "ColouredFigure"} : Finset ShapeLabel) = insert "Circle" {"ColouredFigure"}
+  rw [show ({"Circle", "ColouredFigure"} : Finset Label) = insert "Circle" {"ColouredFigure"}
       from rfl, Finset.biUnion_insert, Finset.singleton_biUnion, hancCircle, hancColouredFigure]
   decide
 
@@ -412,7 +412,7 @@ theorem a1_satisfies_Attribute :
   have hneigh : neigh G_fig1 a1 =
       {(⟨a1, "name", .lit (.str "radius")⟩ : Triple), ⟨a1, "value", .lit (.int 10)⟩} := by decide
   rw [hneigh]
-  have hanc : S_fig1.ancSet (∅ : Finset ShapeLabel) = ∅ := by unfold Schema.ancSet; simp
+  have hanc : S_fig1.ancSet (∅ : Finset Label) = ∅ := by unfold Schema.ancSet; simp
   refine ⟨{(⟨a1, "name", .lit (.str "radius")⟩ : Triple), ⟨a1, "value", .lit (.int 10)⟩},
     fun _ => ∅, ⟨?_, ?_, ?_⟩, ?_, ?_, ?_⟩
   · rw [hanc]; decide
@@ -432,7 +432,7 @@ theorem a3_satisfies_Attribute :
   have hneigh : neigh G_fig1 a3 =
       {(⟨a3, "name", .lit (.str "radius")⟩ : Triple), ⟨a3, "value", .lit (.int 7)⟩} := by decide
   rw [hneigh]
-  have hanc : S_fig1.ancSet (∅ : Finset ShapeLabel) = ∅ := by unfold Schema.ancSet; simp
+  have hanc : S_fig1.ancSet (∅ : Finset Label) = ∅ := by unfold Schema.ancSet; simp
   refine ⟨{(⟨a3, "name", .lit (.str "radius")⟩ : Triple), ⟨a3, "value", .lit (.int 7)⟩},
     fun _ => ∅, ⟨?_, ?_, ?_⟩, ?_, ?_, ?_⟩
   · rw [hanc]; decide
@@ -456,7 +456,7 @@ theorem a2_satisfies_Attribute :
         (insert (⟨a2, "value", .lit (.str "#ff0000")⟩ : Triple) {⟨a2, "scope", .lit (.str "fill")⟩}) := by
     decide
   rw [hneigh]
-  have hanc : S_fig1.ancSet (∅ : Finset ShapeLabel) = ∅ := by unfold Schema.ancSet; simp
+  have hanc : S_fig1.ancSet (∅ : Finset Label) = ∅ := by unfold Schema.ancSet; simp
   refine ⟨insert (⟨a2, "name", .lit (.str "colour")⟩ : Triple)
       (insert (⟨a2, "value", .lit (.str "#ff0000")⟩ : Triple) {⟨a2, "scope", .lit (.str "fill")⟩}),
     fun _ => ∅, ⟨?_, ?_, ?_⟩, ?_, ?_, ?_⟩
@@ -689,7 +689,7 @@ def colouredCircleFOk : (S_fig1.shapeDef "ColouredCircle").FOk S_fig1 := PLift.u
 
 /-- `renderDecide`'s `native_decide`-computed verdict for `n ⊨ S_fig1.shapeDef L`,
 one line per headline claim below. -/
-def satFig1 (n : RDFNode) (L : ShapeLabel) (hOk : (S_fig1.shapeDef L).FOk S_fig1) : String :=
+def satFig1 (n : RDFNode) (L : Label) (hOk : (S_fig1.shapeDef L).FOk S_fig1) : String :=
   renderDecide (satisfiesFuel_decidable S_fig1 G_fig1 τ_fig1 S_fig1_XClosed S_fig1_RestrOk
     bigFuel1 n (S_fig1.shapeDef L) hOk)
 

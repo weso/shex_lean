@@ -50,7 +50,7 @@ def ShapeExpr.render : ShapeExpr → String
 (`shapeDef` is total, but only these labels are the schema's own — matching
 `ShexLean.Shex2017Schemas.Render`'s `Schema.render`). Sorted directly via
 `Finset.sort` (unlike `renderSorted`, which sorts *rendered strings* for
-types with no order of their own — `ShapeLabel := String` already has one,
+types with no order of their own — `Label := String` already has one,
 and here each label `L` is still needed, not just its rendering, to look up
 `S.shapeDef L`/`L ∈ S.A`). -/
 def Schema.render (S : Schema) : String :=

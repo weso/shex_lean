@@ -13,18 +13,18 @@ Prud'hommeaux (2017).
 namespace ShexLean
 
 /-- The set `L` of shape labels used to name shapes in a schema. -/
-abbrev ShapeLabel := String
+abbrev Label := String
 
 /-- A node-type association `(n, L)`. -/
-abbrev NodeTypeAssoc := RDFNode × ShapeLabel
+abbrev Assoc := RDFNode × Label
 
 /-- A typing is a (finite) set of node-type associations. -/
-abbrev Typing := Finset NodeTypeAssoc
+abbrev Typing := Finset Assoc
 
 /-- `(n, L) ∈ typing`, i.e. `n` is asserted to have shape `L` by `typing`.
 An `abbrev` (reducible) so that `decide` can see through it to the underlying
 (decidable) `Finset` membership. -/
-abbrev Typing.has (typing : Typing) (n : RDFNode) (L : ShapeLabel) : Prop :=
+abbrev Typing.has (typing : Typing) (n : RDFNode) (L : Label) : Prop :=
   (n, L) ∈ typing
 
 end ShexLean

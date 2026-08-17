@@ -105,16 +105,16 @@ theorem depExtends_S3_x2_x1 : S3.depExtends "x2" "x1" := by
 (`ShapeExpr.depsAux`, structural on the AST, no `Classical`/fuel involved
 at all), so `unfold`-then-`infer_instance` is all a `Decidable` instance
 needs, unlike `Satisfies*`. -/
-def renderDepG (S : Schema) (z z' : ShapeLabel) : String :=
+def renderDepG (S : Schema) (z z' : Label) : String :=
   renderDecide (show Decidable (S.dep z z') by unfold Schema.dep; infer_instance)
 
-def renderDepShapeNeg (S : Schema) (z z' : ShapeLabel) : String :=
+def renderDepShapeNeg (S : Schema) (z z' : Label) : String :=
   renderDecide (show Decidable (S.depShapeNeg z z') by unfold Schema.depShapeNeg; infer_instance)
 
-def renderDepExtraNeg (S : Schema) (z z' : ShapeLabel) : String :=
+def renderDepExtraNeg (S : Schema) (z z' : Label) : String :=
   renderDecide (show Decidable (S.depExtraNeg z z') by unfold Schema.depExtraNeg; infer_instance)
 
-def renderDepExtends (S : Schema) (z z' : ShapeLabel) : String :=
+def renderDepExtends (S : Schema) (z z' : Label) : String :=
   renderDecide (show Decidable (S.depExtends z z') by unfold Schema.depExtends; infer_instance)
 
 end ShexLean.Inheritance

@@ -6,16 +6,16 @@ Bounding `.rep`'s witness-list length — the piece `Decidable.lean` left
 open. `te-repet`'s existential (`∃ Ns : List (Finset Triple), …`) quantifies
 over arbitrary-length lists, which looks genuinely unbounded unlike
 `te-tpattern`/`te-each-of`'s existentials. It isn't: for a *fixed* `N`,
-`Matches G typing N (.rep E min none)` (no upper cap) is equivalent to the
-*bounded* `Matches G typing N (.rep E min (some (N.card + min)))`.
+`Matches G t N (.rep E min none)` (no upper cap) is equivalent to the
+*bounded* `Matches G t N (.rep E min (some (N.card + min)))`.
 
 The argument: any witness list splits into its nonempty pieces (at most
 `N.card` of them, being pairwise disjoint subsets of `N`) and its empty
-pieces (valid only if `Matches G typing ∅ E` holds). Given a witness of any
+pieces (valid only if `Matches G t ∅ E` holds). Given a witness of any
 length `≥ min`: if the nonempty-piece count `k` is already `≥ min`, drop
 every empty piece (new length `k ≤ N.card`); if `k < min`, the original
 witness had to contain at least `min − k` empty pieces to reach length
-`≥ min`, so `Matches G typing ∅ E` holds — pad to exactly `min`. Either way,
+`≥ min`, so `Matches G t ∅ E` holds — pad to exactly `min`. Either way,
 a witness of length `≤ N.card + min` exists.
 
 Formalized via `repExact E k` (`E` matched exactly `k` times, as a plain
@@ -47,10 +47,10 @@ theorem disjoint_foldr_union_of_forall {a : Finset Triple} {l : List (Finset Tri
       ⟨h b List.mem_cons_self, ih (fun x hx => h x (List.mem_cons_of_mem _ hx))⟩
 
 /-- `E` matched exactly `k` times in sequence — `repExact E 0 = .empty`,
-`repExact E (k+1) = .eachOf E (repExact E k)`. A derived `TripleExpr`, not a
+`repExact E (k+1) = .eachOf E (repExact E k)`. A derived `TExpr`, not a
 new constructor: used only to restate `.rep`'s witness-list existential as
 an existential over `ℕ` (`matches_repExact_iff` below). -/
-def repExact (E : TripleExpr) : ℕ → TripleExpr
+def repExact (E : TExpr) : ℕ → TExpr
   | 0 => .empty
   | k + 1 => .eachOf E (repExact E k)
 
@@ -58,10 +58,10 @@ def repExact (E : TripleExpr) : ℕ → TripleExpr
 length-`k` list of pieces, each matching `E` — i.e. `repExact E k` is
 exactly `.rep E k (some k)`'s own witness-list existential, restricted to
 one specific length `k`. -/
-theorem matches_repExact_iff (G : Graph) (typing : Typing) (E : TripleExpr) :
-    ∀ (k : ℕ) (N : Finset Triple), Matches G typing N (repExact E k) ↔
+theorem matches_repExact_iff (G : Graph) (t : Typing) (E : TExpr) :
+    ∀ (k : ℕ) (N : Finset Triple), Matches G t N (repExact E k) ↔
       ∃ Ns : List (Finset Triple), Ns.length = k ∧ DisjointUnionList N Ns ∧
-        ∀ Ni ∈ Ns, Matches G typing Ni E
+        ∀ Ni ∈ Ns, Matches G t Ni E
   | 0, N => by
       show N = ∅ ↔ _
       constructor
@@ -72,11 +72,11 @@ theorem matches_repExact_iff (G : Graph) (typing : Typing) (E : TripleExpr) :
         subst hlen
         simpa using hunion
   | k + 1, N => by
-      show (∃ N1 N2, DisjointUnion N N1 N2 ∧ Matches G typing N1 E ∧
-        Matches G typing N2 (repExact E k)) ↔ _
+      show (∃ N1 N2, DisjointUnion N N1 N2 ∧ Matches G t N1 E ∧
+        Matches G t N2 (repExact E k)) ↔ _
       constructor
       · rintro ⟨N1, N2, ⟨hdisj, hunion⟩, hm1, hm2⟩
-        obtain ⟨Ns, hlen, ⟨hpw, hunion'⟩, hmatch⟩ := (matches_repExact_iff G typing E k N2).mp hm2
+        obtain ⟨Ns, hlen, ⟨hpw, hunion'⟩, hmatch⟩ := (matches_repExact_iff G t E k N2).mp hm2
         refine ⟨N1 :: Ns, by simp [hlen], ⟨?_, ?_⟩, ?_⟩
         · rw [List.pairwise_cons]
           refine ⟨fun x hx => hdisj.mono_right (hunion' ▸ mem_subset_foldr_union hx), hpw⟩
@@ -93,21 +93,21 @@ theorem matches_repExact_iff (G : Graph) (typing : Typing) (E : TripleExpr) :
           refine ⟨N1, Ns'.foldr (· ∪ ·) ∅,
             ⟨disjoint_foldr_union_of_forall hpw.1, by rw [hunion, List.foldr_cons]⟩,
             hmatch N1 List.mem_cons_self,
-            (matches_repExact_iff G typing E k _).mpr
+            (matches_repExact_iff G t E k _).mpr
               ⟨Ns', hlen, ⟨hpw.2, rfl⟩, fun Ni hNi => hmatch Ni (List.mem_cons_of_mem _ hNi)⟩⟩
 
 /-- **Claim B.** `.rep`'s own witness-list existential, restated as an
 existential over the witness *length* alone via `matches_repExact_iff`. -/
-theorem matches_rep_iff_exists_repExact (G : Graph) (typing : Typing) (N : Finset Triple)
-    (E : TripleExpr) (min : ℕ) (max : Option ℕ) :
-    Matches G typing N (.rep E min max) ↔
-      ∃ k, min ≤ k ∧ (∀ m', max = some m' → k ≤ m') ∧ Matches G typing N (repExact E k) := by
+theorem matches_rep_iff_exists_repExact (G : Graph) (t : Typing) (N : Finset Triple)
+    (E : TExpr) (min : ℕ) (max : Option ℕ) :
+    Matches G t N (.rep E min max) ↔
+      ∃ k, min ≤ k ∧ (∀ m', max = some m' → k ≤ m') ∧ Matches G t N (repExact E k) := by
   constructor
   · rintro ⟨Ns, hdisj, hmin, hmax, hmatch⟩
     exact ⟨Ns.length, hmin, hmax,
-      (matches_repExact_iff G typing E Ns.length N).mpr ⟨Ns, rfl, hdisj, hmatch⟩⟩
+      (matches_repExact_iff G t E Ns.length N).mpr ⟨Ns, rfl, hdisj, hmatch⟩⟩
   · rintro ⟨k, hmin, hmax, hm⟩
-    obtain ⟨Ns, hlen, hdisj, hmatch⟩ := (matches_repExact_iff G typing E k N).mp hm
+    obtain ⟨Ns, hlen, hdisj, hmatch⟩ := (matches_repExact_iff G t E k N).mp hm
     exact ⟨Ns, hdisj, hlen ▸ hmin, fun m' hm' => hlen ▸ hmax m' hm', hmatch⟩
 
 theorem foldr_union_filter_nonempty (l : List (Finset Triple)) :
@@ -145,20 +145,20 @@ theorem nonempty_filter_length_le_card {Ns : List (Finset Triple)} {N : Finset T
 can be shrunk to one of length `≤ N.card + min` — this is what lets
 `.rep _ min none` (no upper cap) be decided as if it were
 `.rep _ min (some (N.card + min))`. -/
-theorem matches_rep_bound (G : Graph) (typing : Typing) (N : Finset Triple) (E : TripleExpr)
-    (min k : ℕ) (hmin : min ≤ k) (hm : Matches G typing N (repExact E k)) :
-    ∃ k' ≤ N.card + min, k' ≤ k ∧ min ≤ k' ∧ Matches G typing N (repExact E k') := by
-  obtain ⟨Ns, hlen, ⟨hpw, hunion⟩, hmatch⟩ := (matches_repExact_iff G typing E k N).mp hm
+theorem matches_rep_bound (G : Graph) (t : Typing) (N : Finset Triple) (E : TExpr)
+    (min k : ℕ) (hmin : min ≤ k) (hm : Matches G t N (repExact E k)) :
+    ∃ k' ≤ N.card + min, k' ≤ k ∧ min ≤ k' ∧ Matches G t N (repExact E k') := by
+  obtain ⟨Ns, hlen, ⟨hpw, hunion⟩, hmatch⟩ := (matches_repExact_iff G t E k N).mp hm
   set Nsnz := Ns.filter (·.Nonempty) with hNsnz_def
   have hpwnz : Nsnz.Pairwise Disjoint := hpw.filter _
   have hunionnz : N = Nsnz.foldr (· ∪ ·) ∅ := by rw [hunion]; exact foldr_union_filter_nonempty Ns
-  have hmatchnz : ∀ Ni ∈ Nsnz, Matches G typing Ni E := fun Ni hNi =>
+  have hmatchnz : ∀ Ni ∈ Nsnz, Matches G t Ni E := fun Ni hNi =>
     hmatch Ni (List.mem_of_mem_filter hNi)
   have hcard : Nsnz.length ≤ N.card := nonempty_filter_length_le_card hpw hunion
   have hleNs : Nsnz.length ≤ Ns.length := List.length_filter_le _ Ns
   by_cases hge : min ≤ Nsnz.length
   · exact ⟨Nsnz.length, hcard.trans (Nat.le_add_right _ _), hlen ▸ hleNs, hge,
-      (matches_repExact_iff G typing E Nsnz.length N).mpr ⟨Nsnz, rfl, ⟨hpwnz, hunionnz⟩, hmatchnz⟩⟩
+      (matches_repExact_iff G t E Nsnz.length N).mpr ⟨Nsnz, rfl, ⟨hpwnz, hunionnz⟩, hmatchnz⟩⟩
   · push Not at hge
     have hlt : Nsnz.length < Ns.length := by omega
     have hex : ∃ x ∈ Ns, ¬ x.Nonempty := by
@@ -169,9 +169,9 @@ theorem matches_rep_bound (G : Graph) (typing : Typing) (N : Finset Triple) (E :
       rw [heq] at hlt; omega
     obtain ⟨x, hxNs, hxne⟩ := hex
     have hxempty : x = (∅ : Finset Triple) := Finset.not_nonempty_iff_eq_empty.mp hxne
-    have hMatchesEmpty : Matches G typing (∅ : Finset Triple) E := hxempty ▸ hmatch x hxNs
+    have hMatchesEmpty : Matches G t (∅ : Finset Triple) E := hxempty ▸ hmatch x hxNs
     refine ⟨min, Nat.le_add_left _ _, hmin, le_refl _,
-      (matches_repExact_iff G typing E min N).mpr
+      (matches_repExact_iff G t E min N).mpr
         ⟨Nsnz ++ List.replicate (min - Nsnz.length) (∅ : Finset Triple), ?_, ⟨?_, ?_⟩, ?_⟩⟩
     · rw [List.length_append, List.length_replicate]; omega
     · rw [List.pairwise_append]
@@ -196,15 +196,15 @@ theorem matches_rep_bound (G : Graph) (typing : Typing) (N : Finset Triple) (E :
       · rw [List.eq_of_mem_replicate hNi]; exact hMatchesEmpty
 
 /-- **The bounded reformulation `Decidable.lean` needs.** -/
-theorem matches_rep_iff_bounded (G : Graph) (typing : Typing) (N : Finset Triple) (E : TripleExpr)
+theorem matches_rep_iff_bounded (G : Graph) (t : Typing) (N : Finset Triple) (E : TExpr)
     (min : ℕ) (max : Option ℕ) :
-    Matches G typing N (.rep E min max) ↔
+    Matches G t N (.rep E min max) ↔
       ∃ k ∈ Finset.range (N.card + min + 1),
-        min ≤ k ∧ (∀ m', max = some m' → k ≤ m') ∧ Matches G typing N (repExact E k) := by
+        min ≤ k ∧ (∀ m', max = some m' → k ≤ m') ∧ Matches G t N (repExact E k) := by
   rw [matches_rep_iff_exists_repExact]
   constructor
   · rintro ⟨k, hmin, hmax, hm⟩
-    obtain ⟨k', hk'le, hk'k, hk'min, hk'm⟩ := matches_rep_bound G typing N E min k hmin hm
+    obtain ⟨k', hk'le, hk'k, hk'min, hk'm⟩ := matches_rep_bound G t N E min k hmin hm
     exact ⟨k', Finset.mem_range.mpr (by omega), hk'min,
       fun m' hm' => hk'k.trans (hmax m' hm'), hk'm⟩
   · rintro ⟨k, -, hmin, hmax, hm⟩

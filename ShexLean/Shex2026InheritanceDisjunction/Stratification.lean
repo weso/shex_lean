@@ -65,9 +65,9 @@ referenced under an odd number of `not` (`negRefs`, for `dep-shape-neg_S`),
 and labels referenced by a triple constraint whose property is also in
 that same shape's `extra` set (`extraNegRefs`, for `dep-extra-neg_S`). -/
 structure DepInfo where
-  refs : Finset ShapeLabel
-  negRefs : Finset ShapeLabel
-  extraNegRefs : Finset ShapeLabel
+  refs : Finset Label
+  negRefs : Finset Label
+  extraNegRefs : Finset Label
 
 instance : Union DepInfo :=
   ⟨fun a b => ⟨a.refs ∪ b.refs, a.negRefs ∪ b.negRefs, a.extraNegRefs ∪ b.extraNegRefs⟩⟩
@@ -200,21 +200,21 @@ def ShapeExpr.depsAux (neg : Bool) : ShapeExpr → DepInfo
 
 /-- `dep-extends_S(z,z')`: `H_S` has an edge between `z` and `z'`, in
 either direction. -/
-def Schema.depExtends (S : Schema) (z z' : ShapeLabel) : Prop := S.extEdge z z' ∨ S.extEdge z' z
+def Schema.depExtends (S : Schema) (z z' : Label) : Prop := S.extEdge z z' ∨ S.extEdge z' z
 
 /-- `dep_S(z,z')`: `z'` appears as a reference (`@z'`) somewhere in
 `def(z)`. -/
-def Schema.dep (S : Schema) (z z' : ShapeLabel) : Prop :=
+def Schema.dep (S : Schema) (z z' : Label) : Prop :=
   z' ∈ ((S.shapeDef z).depsAux false).refs
 
 /-- `dep-shape-neg_S(z,z')`: `z'` is referenced under an odd number of
 `not` in `def(z)`. -/
-def Schema.depShapeNeg (S : Schema) (z z' : ShapeLabel) : Prop :=
+def Schema.depShapeNeg (S : Schema) (z z' : Label) : Prop :=
   z' ∈ ((S.shapeDef z).depsAux false).negRefs
 
 /-- `dep-extra-neg_S(z,z')`: some `[closed][extra P]⟨e⟩` sub-expression of
 `def(z)` has a triple constraint `p @z'` with `p ∈ P`. -/
-def Schema.depExtraNeg (S : Schema) (z z' : ShapeLabel) : Prop :=
+def Schema.depExtraNeg (S : Schema) (z z' : Label) : Prop :=
   z' ∈ ((S.shapeDef z).depsAux false).extraNegRefs
 
 /-- `negRefs ⊆ refs` for any shape expression, at any `neg` — the
@@ -272,12 +272,12 @@ theorem ShapeExpr.extraNegRefs_subset_refs (s : ShapeExpr) (neg : Bool) :
   | not s ih => simpa only [ShapeExpr.depsAux] using ih true
 
 /-- "`dep` subsumes `dep-shape-neg`" (Definition 5's remark). -/
-theorem Schema.dep_of_depShapeNeg {S : Schema} {z z' : ShapeLabel} (h : S.depShapeNeg z z') :
+theorem Schema.dep_of_depShapeNeg {S : Schema} {z z' : Label} (h : S.depShapeNeg z z') :
     S.dep z z' :=
   ShapeExpr.negRefs_subset_refs (S.shapeDef z) false h
 
 /-- "`dep` subsumes `dep-extra-neg`" (Definition 5's remark). -/
-theorem Schema.dep_of_depExtraNeg {S : Schema} {z z' : ShapeLabel} (h : S.depExtraNeg z z') :
+theorem Schema.dep_of_depExtraNeg {S : Schema} {z z' : Label} (h : S.depExtraNeg z z') :
     S.dep z z' :=
   ShapeExpr.extraNegRefs_subset_refs (S.shapeDef z) false h
 
@@ -292,10 +292,10 @@ def Schema.ExtAcyclic (S : Schema) : Prop :=
 after Definition 5: "`dep` subsumes `dep-shape-neg`/`dep-extra-neg`", so
 following either the `dep` or `dep-extends` relation already covers every
 edge `D_S` can have, regardless of which of the four labels it carries). -/
-def Schema.DEdge (S : Schema) (z z' : ShapeLabel) : Prop := S.dep z z' ∨ S.depExtends z z'
+def Schema.DEdge (S : Schema) (z z' : Label) : Prop := S.dep z z' ∨ S.depExtends z z'
 
 /-- A `D_S` edge carrying one of the two *negative* labels. -/
-def Schema.DNegEdge (S : Schema) (z z' : ShapeLabel) : Prop :=
+def Schema.DNegEdge (S : Schema) (z z' : Label) : Prop :=
   S.depShapeNeg z z' ∨ S.depExtraNeg z z'
 
 /-- `D_S` has a cycle through a negative dependency edge: some negative

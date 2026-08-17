@@ -26,7 +26,7 @@ outside `{y1,y2,y3}`, whose `shapeDef` is the referenceless
 `.constraint (fun _ => False)`). -/
 theorem S1_wellDefined : S1.WellDefined := by
   refine ⟨?_, ?_⟩
-  · have hX : S1.X = (∅ : Finset ShapeLabel) := rfl
+  · have hX : S1.X = (∅ : Finset Label) := rfl
     intro x hx; rw [hX] at hx; exact absurd hx (Finset.notMem_empty x)
   · rintro ⟨a, b, hDNeg, -⟩
     have hnoNeg : ∀ z z', ¬ S1.depShapeNeg z z' ∧ ¬ S1.depExtraNeg z z' := by

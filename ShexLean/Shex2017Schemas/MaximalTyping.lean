@@ -9,8 +9,8 @@ up to and including Lemma 1.
 
 > Lemma 1. Let `S` be a schema that does not use the negation operator NOT.
 > Then for all graphs `G`, there exists a correct typing `typing_g` of `G`
-> by `S` such that for every typing `typing'`, if `typing'` is a correct
-> typing of `G` by `S`, then `typing' ⊆ typing_g`.
+> by `S` such that for every typing `t'`, if `t'` is a correct
+> typing of `G` by `S`, then `t' ⊆ typing_g`.
 >
 > The typing `typing_g` can be computed as the union of all correct
 > typings.
@@ -20,8 +20,8 @@ Since (Definition 1) a typing of `G` by `S` is, by convention, a subset of
 many finite sets — a subset of the finite set `Nodes(G) × L` itself — so it
 is again a `Typing`. We build it as `Finset.sup` over the `Finset` of
 correct typings among the (finitely many) subsets of `Nodes(G) × L`, using
-classical choice to decide `CorrectTyping` (which is not decidable in
-general, e.g. across `TripleExpr.rep`'s existential over `List (Finset
+classical choice to decide `CorrTyping` (which is not decidable in
+general, e.g. across `TExpr.rep`'s existential over `List (Finset
 Triple)`) — Lemma 1 is a pure existence statement, so this is harmless.
 -/
 
@@ -30,15 +30,15 @@ namespace ShexLean
 mutual
 
 /-- `S` contains no occurrence of the `NOT` operator. -/
-def ShapeExpr.NegFree : ShapeExpr → Prop
+def ShExpr.NegFree : ShExpr → Prop
   | .valueDescr _ => True
-  | .neigDescr E  => TripleExpr.NegFree E
+  | .neigDescr E  => TExpr.NegFree E
   | .and S1 S2    => S1.NegFree ∧ S2.NegFree
   | .or S1 S2     => S1.NegFree ∧ S2.NegFree
   | .not _        => False
 
-/-- Same as `ShapeExpr.NegFree`, for a triple expression. -/
-def TripleExpr.NegFree : TripleExpr → Prop
+/-- Same as `ShExpr.NegFree`, for a triple expression. -/
+def TExpr.NegFree : TExpr → Prop
   | .tPattern _ _ => True
   | .empty        => True
   | .someOf E1 E2 => E1.NegFree ∧ E2.NegFree
@@ -51,21 +51,21 @@ end
 NOT", i.e. every label's definition is negation-free. -/
 def Schema.NegFree (S : Schema) : Prop := ∀ L ∈ S.labels, (S.shapeDef L).NegFree
 
-/-- Definition 2 (correct typing), named: `typing` is a correct typing of
+/-- Definition 2 (correct typing), named: `t` is a correct typing of
 `G` by `S` if every node-type association it contains is backed by a `⊢`
 derivation. -/
-def Schema.CorrectTyping (S : Schema) (G : Graph) (typing : Typing) : Prop :=
-  ∀ n L, (n, L) ∈ typing → Satisfies G typing n (S.shapeDef L)
+def Schema.CorrTyping (S : Schema) (G : Graph) (t : Typing) : Prop :=
+  ∀ n L, (n, L) ∈ t → Satisfies G t n (S.shapeDef L)
 
 mutual
 
-/-- Monotonicity of `⊢` in `typing`, for negation-free shape expressions:
-growing `typing` can only make more nodes satisfy `S`. This is exactly what
+/-- Monotonicity of `⊢` in `t`, for negation-free shape expressions:
+growing `t` can only make more nodes satisfy `S`. This is exactly what
 fails for `NOT` (Rule se-shape-not's premise gets *harder* to satisfy as
-`typing` grows), which is why `S.NegFree` is needed. -/
-theorem Satisfies.mono {G : Graph} {typing typing' : Typing} (hsub : typing ⊆ typing') :
-    ∀ (S : ShapeExpr), S.NegFree → ∀ (n : RDFNode),
-      Satisfies G typing n S → Satisfies G typing' n S
+`t` grows), which is why `S.NegFree` is needed. -/
+theorem Satisfies.mono {G : Graph} {t t' : Typing} (hsub : t ⊆ t') :
+    ∀ (S : ShExpr), S.NegFree → ∀ (n : RDFNode),
+      Satisfies G t n S → Satisfies G t' n S
   | .valueDescr _, _, _, h => h
   | .neigDescr E, hnf, n, h => Matches.mono hsub E hnf (neigh G n) h
   | .and S1 S2, ⟨hnf1, hnf2⟩, n, ⟨h1, h2⟩ =>
@@ -74,10 +74,10 @@ theorem Satisfies.mono {G : Graph} {typing typing' : Typing} (hsub : typing ⊆ 
   | .or _S1 S2, ⟨_hnf1, hnf2⟩, n, Or.inr h => Or.inr (Satisfies.mono hsub S2 hnf2 n h)
   | .not _, hnf, _, _ => hnf.elim
 
-/-- Monotonicity of `⊨` in `typing`, for negation-free triple expressions. -/
-theorem Matches.mono {G : Graph} {typing typing' : Typing} (hsub : typing ⊆ typing') :
-    ∀ (E : TripleExpr), E.NegFree → ∀ (N : Finset Triple),
-      Matches G typing N E → Matches G typing' N E
+/-- Monotonicity of `⊨` in `t`, for negation-free triple expressions. -/
+theorem Matches.mono {G : Graph} {t t' : Typing} (hsub : t ⊆ t') :
+    ∀ (E : TExpr), E.NegFree → ∀ (N : Finset Triple),
+      Matches G t N E → Matches G t' N E
   | .tPattern _ _, _, _, ⟨subj, pred, obj, hN, hP, htyp⟩ =>
       ⟨subj, pred, obj, hN, hP, hsub htyp⟩
   | .empty, _, _, h => h
@@ -97,23 +97,23 @@ def Schema.univTyping (S : Schema) (G : Graph) : Typing := G.nodes ×ˢ S.labels
 
 /-- `typing_g` from Lemma 1: the union of all correct typings of `G` by `S`
 among the subsets of `Schema.univTyping`. Uses classical choice to decide
-`CorrectTyping` (see the module docstring); Lemma 1 is a pure existence
+`CorrTyping` (see the module docstring); Lemma 1 is a pure existence
 statement, so this is harmless. -/
 noncomputable def Schema.maximalTyping (S : Schema) (G : Graph) : Typing :=
-  haveI := Classical.decPred (S.CorrectTyping G)
-  ((S.univTyping G).powerset.filter (fun t => S.CorrectTyping G t)).sup id
+  haveI := Classical.decPred (S.CorrTyping G)
+  ((S.univTyping G).powerset.filter (fun t => S.CorrTyping G t)).sup id
 
-theorem Schema.subset_maximalTyping {S : Schema} {G : Graph} {typing : Typing}
-    (hsub : typing ⊆ S.univTyping G) (hcorrect : S.CorrectTyping G typing) :
-    typing ⊆ S.maximalTyping G := by
-  have := Classical.decPred (S.CorrectTyping G)
+theorem Schema.subset_maximalTyping {S : Schema} {G : Graph} {t : Typing}
+    (hsub : t ⊆ S.univTyping G) (hcorrect : S.CorrTyping G t) :
+    t ⊆ S.maximalTyping G := by
+  have := Classical.decPred (S.CorrTyping G)
   apply Finset.le_sup (f := id)
   simp only [Finset.mem_filter, Finset.mem_powerset]
   exact ⟨hsub, hcorrect⟩
 
 theorem Schema.maximalTyping_subset (S : Schema) (G : Graph) :
     S.maximalTyping G ⊆ S.univTyping G := by
-  have := Classical.decPred (S.CorrectTyping G)
+  have := Classical.decPred (S.CorrTyping G)
   apply Finset.sup_le
   intro t ht
   simp only [Finset.mem_filter, Finset.mem_powerset] at ht
@@ -124,8 +124,8 @@ contains comes from some correct typing `t` (a member of the union), and
 `Satisfies G t n (def L)` transports to `Satisfies G typing_g n (def L)` by
 monotonicity, since `S` is negation-free. -/
 theorem Schema.maximalTyping_correct (S : Schema) (hnf : S.NegFree) (G : Graph) :
-    S.CorrectTyping G (S.maximalTyping G) := by
-  have := Classical.decPred (S.CorrectTyping G)
+    S.CorrTyping G (S.maximalTyping G) := by
+  have := Classical.decPred (S.CorrTyping G)
   intro n L hmem
   obtain ⟨t, htmem, hnLt⟩ := Finset.mem_sup.mp hmem
   simp only [Finset.mem_filter, Finset.mem_powerset] at htmem
@@ -138,8 +138,8 @@ theorem Schema.maximalTyping_correct (S : Schema) (hnf : S.NegFree) (G : Graph) 
 correct typing `typing_g` of `G` by `S` (computed as the union of all
 correct typings) that contains every correct typing of `G` by `S`. -/
 theorem lemma1 (S : Schema) (hnf : S.NegFree) (G : Graph) :
-    ∃ typingG : Typing, typingG ⊆ S.univTyping G ∧ S.CorrectTyping G typingG ∧
-      ∀ typing', typing' ⊆ S.univTyping G → S.CorrectTyping G typing' → typing' ⊆ typingG :=
+    ∃ typingG : Typing, typingG ⊆ S.univTyping G ∧ S.CorrTyping G typingG ∧
+      ∀ t', t' ⊆ S.univTyping G → S.CorrTyping G t' → t' ⊆ typingG :=
   ⟨S.maximalTyping G, S.maximalTyping_subset G, S.maximalTyping_correct hnf G,
     fun _ hsub' hcorrect' => S.subset_maximalTyping hsub' hcorrect'⟩
 

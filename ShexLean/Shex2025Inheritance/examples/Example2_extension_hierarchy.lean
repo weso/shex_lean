@@ -16,13 +16,13 @@ its rule-18 partition — this file just re-displays them.
 namespace Examples
 
 open ShexLean.Inheritance (S_fig1 ancReach ancSetReach)
-open ShexLean (ShapeLabel)
+open ShexLean (Label)
 
-/-- `{L1, L2, …}`, sorted, for a `Finset ShapeLabel` — the display form
+/-- `{L1, L2, …}`, sorted, for a `Finset Label` — the display form
 `ancReach`/`ancSetReach` (both genuinely computed, not the noncomputable
 `Schema.anc`/`ancSet` — see `ShexLean.Inheritance.ancReach_eq_anc`, which
 `Example1_figures.lean`'s own proofs invoke to relate the two) need. -/
-def renderLabels (s : Finset ShapeLabel) : String :=
+def renderLabels (s : Finset Label) : String :=
   "{" ++ ", ".intercalate (s.sort (· ≤ ·)) ++ "}"
 
 /-- Fig. 3's extension hierarchy `H_{S1}` for the schema from Example 1.

@@ -63,7 +63,7 @@ and that is faithfully preserved by `allPreds \ {…}`.
 
 **Why every leaf needs its own typing entry.** `Semantics.lean`'s
 `te-tpattern` rule resolves a `TriplePattern`'s shape reference by consulting
-`typing` directly (`typing.has obj L`), not by recursing into `Satisfies` on
+`t` directly (`t.has obj L`), not by recursing into `Satisfies` on
 `def(L)`. So to prove the typing below "correct" (Definition 2), it must
 contain an entry not just for the six nodes the paper's prose names, but for
 every `ValueDescr` leaf and every `<AnythgShape>`-typed "leftover" object
@@ -122,16 +122,16 @@ private def t15 : Triple := ⟨emin, foafMbox, mbox⟩
 def G₀ : Graph := {t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15}
 
 -- Shape labels.
-private def UserShape     : ShapeLabel := "UserShape"
-private def ProgShape     : ShapeLabel := "ProgShape"
-private def ClientShape   : ShapeLabel := "ClientShape"
-private def IssueShape    : ShapeLabel := "IssueShape"
-private def AnythgShape   : ShapeLabel := "AnythgShape"
-private def ClientAndUser : ShapeLabel := "ClientAndUser"
-private def StringValue   : ShapeLabel := "StringValue"
-private def IRIValue      : ShapeLabel := "IRIValue"
-private def ExpValueSet   : ShapeLabel := "ExpValueSet"
-private def IntValue      : ShapeLabel := "IntValue"
+private def UserShape     : Label := "UserShape"
+private def ProgShape     : Label := "ProgShape"
+private def ClientShape   : Label := "ClientShape"
+private def IssueShape    : Label := "IssueShape"
+private def AnythgShape   : Label := "AnythgShape"
+private def ClientAndUser : Label := "ClientAndUser"
+private def StringValue   : Label := "StringValue"
+private def IRIValue      : Label := "IRIValue"
+private def ExpValueSet   : Label := "ExpValueSet"
+private def IntValue      : Label := "IntValue"
 
 /-- All predicates occurring in `G₀`, standing in for the unrestricted `IRI`
 wildcard (see the module docstring). -/
@@ -146,43 +146,43 @@ private def clientLeftover : PropSet := allPreds \ {clientNbr, clientAffil}
 private def userLeftover : PropSet := allPreds \ {foafName, foafMbox}
 
 /-- `Def_Client`: the triple-expression body of `<ClientShape>`. -/
-private def clientTE : TripleExpr :=
+private def clientTE : TExpr :=
   .someOf (.tPattern {clientNbr} IntValue) (.tPattern {clientAffil} AnythgShape)
 
 /-- `Def_User`: the triple-expression body of `<UserShape>`. -/
-private def userTE : TripleExpr :=
+private def userTE : TExpr :=
   .eachOf (.tPattern {foafName} StringValue) (.rep (.tPattern {foafMbox} IRIValue) 0 (some 1))
 
-private def userShapeDef : ShapeExpr := .neigDescr userTE
+private def userShapeDef : ShExpr := .neigDescr userTE
 
-def progShapeDef : ShapeExpr :=
+def progShapeDef : ShExpr :=
   .neigDescr (.eachOf (.rep (.tPattern {expertise} IRIValue) 0 none)
     (.tPattern {experience} ExpValueSet))
 
-private def clientShapeDef : ShapeExpr := .neigDescr clientTE
+private def clientShapeDef : ShExpr := .neigDescr clientTE
 
-private def issueShapeDef : ShapeExpr :=
+private def issueShapeDef : ShExpr :=
   .neigDescr (.eachOf (.tPattern {reportedBy} ClientAndUser)
     (.eachOf (.rep (.tPattern {reproducedBy} ProgShape) 1 (some 5))
       (.rep (.tPattern {relatedTo} IssueShape) 0 none)))
 
-private def anythgShapeDef : ShapeExpr :=
+private def anythgShapeDef : ShExpr :=
   .neigDescr (.rep (.tPattern allPreds AnythgShape) 0 none)
 
-private def clientAndUserDef : ShapeExpr :=
+private def clientAndUserDef : ShExpr :=
   .and (.neigDescr (.eachOf clientTE (.rep (.tPattern clientLeftover AnythgShape) 0 none)))
        (.neigDescr (.eachOf userTE (.rep (.tPattern userLeftover AnythgShape) 0 none)))
 
-private def stringValueDef : ShapeExpr :=
+private def stringValueDef : ShExpr :=
   .valueDescr {.lit (.str "Fatima Smith"), .lit (.str "Emin V. Petrov")}
 
-private def iriValueDef : ShapeExpr :=
+private def iriValueDef : ShExpr :=
   .valueDescr {.iri "ex:semweb", .iri "mailto:evp@example.org"}
 
-private def expValueSetDef : ShapeExpr :=
+private def expValueSetDef : ShExpr :=
   .valueDescr {.iri "ex:senior", .iri "ex:junior"}
 
-private def intValueDef : ShapeExpr :=
+private def intValueDef : ShExpr :=
   .valueDescr {.lit (.int 1)}
 
 /-- The schema `S₀` from the Introduction. -/
@@ -363,7 +363,7 @@ end Examples.Introduction
 namespace Examples
 
 open Examples.Introduction (S₀ G₀ typing2)
-open ShexLean (Schema.render Graph.render Typing.render renderDecide correctTyping_decidable)
+open ShexLean (Schema.render Graph.render Typing.render renderDecide corrTyping_decidable)
 
 /-- The Introduction's `S₀`/`G₀` example. `schemaText`/`graphText`/
 `typingText` are all generated from the real `S₀`/`G₀`/`typing2` values —
@@ -377,6 +377,6 @@ def introduction : Example where
   graphText := Graph.render G₀
   typingText :=
     Typing.render typing2 ++
-    s!"\n\n(correct = {renderDecide (correctTyping_decidable S₀ G₀ typing2)})"
+    s!"\n\n(correct = {renderDecide (corrTyping_decidable S₀ G₀ typing2)})"
 
 end Examples

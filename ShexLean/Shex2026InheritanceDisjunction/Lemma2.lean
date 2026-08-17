@@ -33,7 +33,7 @@ necessarily `S.stratum strat i` for some `strat`/`i`. -/
 /-- `S` restricted to an arbitrary label set `Ls`, keeping the same
 definitions — 2017's `Schema.restrictLabels` (`ShexLean/Shex2017Schemas/Lemma2.lean`),
 generalizing `Schema.stratRestrict`. -/
-def Schema.restrictLabels (S : Schema) (Ls : Finset ShapeLabel) : Schema where
+def Schema.restrictLabels (S : Schema) (Ls : Finset Label) : Schema where
   Y := S.Y ∩ Ls
   X := S.X ∩ Ls
   A := S.A ∩ Ls
@@ -46,7 +46,7 @@ def Schema.restrictLabels (S : Schema) (Ls : Finset ShapeLabel) : Schema where
 
 /-- When `Ls ⊆ Y ∪ X`, `restrictLabels Ls`'s own `Y ∪ X` is exactly `Ls` —
 the general analogue of `Schema.stratRestrict_YX_eq_stratum`. -/
-theorem Schema.restrictLabels_YX_eq {S : Schema} {Ls : Finset ShapeLabel}
+theorem Schema.restrictLabels_YX_eq {S : Schema} {Ls : Finset Label}
     (hLs : Ls ⊆ S.Y ∪ S.X) : (S.restrictLabels Ls).Y ∪ (S.restrictLabels Ls).X = Ls := by
   unfold Schema.restrictLabels
   rw [← Finset.union_inter_distrib_right]
@@ -55,14 +55,14 @@ theorem Schema.restrictLabels_YX_eq {S : Schema} {Ls : Finset ShapeLabel}
 /-- `WellFormedX` transfers to any `restrictLabels` — the general analogue
 of `Schema.stratRestrict_WellFormedX`. -/
 theorem Schema.restrictLabels_WellFormedX {S : Schema} (hWFX : S.WellFormedX)
-    (Ls : Finset ShapeLabel) : (S.restrictLabels Ls).WellFormedX := by
+    (Ls : Finset Label) : (S.restrictLabels Ls).WellFormedX := by
   intro x hx
   simp only [Schema.restrictLabels, Finset.mem_inter] at hx
   exact hWFX x hx.1
 
 /-- `restrictLabels` doesn't change `D_S`'s edges — the general analogue of
 `Schema.stratRestrict_DEdge_eq`. -/
-theorem Schema.restrictLabels_DEdge_eq (S : Schema) (Ls : Finset ShapeLabel) :
+theorem Schema.restrictLabels_DEdge_eq (S : Schema) (Ls : Finset Label) :
     (S.restrictLabels Ls).DEdge = S.DEdge := rfl
 
 /-- `(restrictLabels Ls).Y ∪ (restrictLabels Ls).X ⊆ Ls` always (regardless
@@ -70,7 +70,7 @@ of whether `Ls ⊆ Y ∪ X`) — the intersection-based definition never adds
 anything beyond `Ls` itself. Used to convert a `∀ z ∈ Ls, ...` hypothesis
 into the `∀ z ∈ (restrictLabels Ls).Y ∪ (restrictLabels Ls).X, ...` form
 `maxTypingAgreeing_correct` actually wants. -/
-theorem Schema.restrictLabels_mem_YX_subset (S : Schema) (Ls : Finset ShapeLabel) :
+theorem Schema.restrictLabels_mem_YX_subset (S : Schema) (Ls : Finset Label) :
     (S.restrictLabels Ls).Y ∪ (S.restrictLabels Ls).X ⊆ Ls := by
   intro z hz
   simp only [Schema.restrictLabels, Finset.mem_union, Finset.mem_inter] at hz
@@ -82,7 +82,7 @@ analogue of `Schema.stratRestrict_DClosed`, built the same way (via the two
 cheap `rfl`/set-equality bridging lemmas above) to avoid the same `whnf`
 blow-up passing `hLsClosed` directly would cause (see `Schema.stratRestrict_
 DClosed`'s docstring, `ShexLean/Shex2025Inheritance/Proposition1.lean`). -/
-theorem Schema.restrictLabels_DClosed {S : Schema} {Ls : Finset ShapeLabel}
+theorem Schema.restrictLabels_DClosed {S : Schema} {Ls : Finset Label}
     (hLsClosed : S.DClosedOn Ls) (hLsYX : Ls ⊆ S.Y ∪ S.X) :
     (S.restrictLabels Ls).DClosedOn ((S.restrictLabels Ls).Y ∪ (S.restrictLabels Ls).X) := by
   rw [Schema.restrictLabels_YX_eq hLsYX]
@@ -90,7 +90,7 @@ theorem Schema.restrictLabels_DClosed {S : Schema} {Ls : Finset ShapeLabel}
   rw [Schema.restrictLabels_DEdge_eq] at hedge
   exact hLsClosed z hz z' hedge
 
-theorem Schema.univTyping_mono {S : Schema} {G : Graph} {Ls Ls' : Finset ShapeLabel}
+theorem Schema.univTyping_mono {S : Schema} {G : Graph} {Ls Ls' : Finset Label}
     (h : Ls ⊆ Ls') : (S.restrictLabels Ls).univTyping G ⊆ (S.restrictLabels Ls').univTyping G := by
   have hY : (S.restrictLabels Ls).Y ⊆ (S.restrictLabels Ls').Y := Finset.inter_subset_inter le_rfl h
   have hX : (S.restrictLabels Ls).X ⊆ (S.restrictLabels Ls').X := Finset.inter_subset_inter le_rfl h
@@ -112,8 +112,8 @@ symmetric, Definition 5), since it's folded into `D_S` at all. -/
 
 /-- `S.anc x ⊆ Ls` whenever `x ∈ Ls` and `Ls` is `D_S`-closed — direct
 corollary of `Schema.ancSet_subset` at `xs = {x}`. -/
-theorem Schema.anc_subset_of_DClosedOn {S : Schema} {Ls : Finset ShapeLabel} (hLs : S.DClosedOn Ls)
-    {x : ShapeLabel} (hx : x ∈ Ls) : S.anc x ⊆ Ls := by
+theorem Schema.anc_subset_of_DClosedOn {S : Schema} {Ls : Finset Label} (hLs : S.DClosedOn Ls)
+    {x : Label} (hx : x ∈ Ls) : S.anc x ⊆ Ls := by
   have h := S.ancSet_subset hLs (xs := {x}) (Finset.singleton_subset_iff.mpr hx)
   simpa [Schema.ancSet, Finset.singleton_biUnion] using h
 
@@ -130,8 +130,8 @@ private theorem reflTransGen_reverse_of_symm {α : Type*} {r : α → α → Pro
 the reversal above since `Schema.desc`'s own reachability runs the opposite
 way along `extEdge`, but `dep-extends` (hence `D_S`) doesn't care about
 direction. -/
-theorem Schema.desc_subset_of_DClosedOn {S : Schema} {Ls : Finset ShapeLabel} (hLs : S.DClosedOn Ls)
-    {L : ShapeLabel} (hL : L ∈ Ls) : S.desc L ⊆ Ls := by
+theorem Schema.desc_subset_of_DClosedOn {S : Schema} {Ls : Finset Label} (hLs : S.DClosedOn Ls)
+    {L : Label} (hL : L ∈ Ls) : S.desc L ⊆ Ls := by
   intro x hx
   rw [Schema.mem_desc] at hx
   obtain ⟨_, hxpath⟩ := hx
@@ -145,8 +145,8 @@ theorem Schema.desc_subset_of_DClosedOn {S : Schema} {Ls : Finset ShapeLabel} (h
 
 /-- `(S.restrictLabels Ls).anc x = S.anc x` for `x` confined to a
 `D_S`-closed `Ls` — the general analogue of `Schema.stratRestrict_anc_eq`. -/
-theorem Schema.restrictLabels_anc_eq {S : Schema} {Ls : Finset ShapeLabel} (hLsClosed : S.DClosedOn Ls)
-    {x : ShapeLabel} (hxLs : x ∈ Ls) : (S.restrictLabels Ls).anc x = S.anc x := by
+theorem Schema.restrictLabels_anc_eq {S : Schema} {Ls : Finset Label} (hLsClosed : S.DClosedOn Ls)
+    {x : Label} (hxLs : x ∈ Ls) : (S.restrictLabels Ls).anc x = S.anc x := by
   have hsub : S.anc x ⊆ Ls := S.anc_subset_of_DClosedOn hLsClosed hxLs
   apply Finset.ext
   intro y
@@ -162,8 +162,8 @@ theorem Schema.restrictLabels_anc_eq {S : Schema} {Ls : Finset ShapeLabel} (hLsC
 
 /-- `(S.restrictLabels Ls).desc L = S.desc L` for `L` confined to a
 `D_S`-closed `Ls` — the dual of `Schema.restrictLabels_anc_eq`. -/
-theorem Schema.restrictLabels_desc_eq {S : Schema} {Ls : Finset ShapeLabel} (hLsClosed : S.DClosedOn Ls)
-    {L : ShapeLabel} (hLLs : L ∈ Ls) : (S.restrictLabels Ls).desc L = S.desc L := by
+theorem Schema.restrictLabels_desc_eq {S : Schema} {Ls : Finset Label} (hLsClosed : S.DClosedOn Ls)
+    {L : Label} (hLLs : L ∈ Ls) : (S.restrictLabels Ls).desc L = S.desc L := by
   have hsub : S.desc L ⊆ Ls := S.desc_subset_of_DClosedOn hLsClosed hLLs
   apply Finset.ext
   intro x
@@ -187,9 +187,9 @@ any bigger `D_S`-closed `restrictLabels Ls2 ⊇ Ls1`, for a label confined to
 `schemaAgreeFuel`), just with `Schema.restrictLabels_anc_eq` in place of
 the stratum-specific `Schema.stratRestrict_anc_eq`. -/
 theorem Satisfies_restrictLabels_agree {S : Schema} (hWFX : S.WellFormedX)
-    (hWFExt : S.WellFormedExtends) {Ls1 Ls2 : Finset ShapeLabel} (hLs1Ls2 : Ls1 ⊆ Ls2)
+    (hWFExt : S.WellFormedExtends) {Ls1 Ls2 : Finset Label} (hLs1Ls2 : Ls1 ⊆ Ls2)
     (hLs1Closed : S.DClosedOn Ls1) (hLs2Closed : S.DClosedOn Ls2)
-    {x : ShapeLabel} (hxLs1 : x ∈ Ls1) {G : Graph} {τ : Typing} {n : RDFNode} :
+    {x : Label} (hxLs1 : x ∈ Ls1) {G : Graph} {τ : Typing} {n : RDFNode} :
     Satisfies (S.restrictLabels Ls1) G τ n (S.shapeDef x) ↔
     Satisfies (S.restrictLabels Ls2) G τ n (S.shapeDef x) := by
   have hdeps : (S.shapeDef x).depsIn Ls1 := S.shapeDef_depsIn hLs1Closed hxLs1
@@ -229,7 +229,7 @@ the witnessing descendant is automatically confined to `Ls1` too, since
 `Ls1`'s `D_S`-closure already captures every `H_S`-neighbour of `L`
 (`dep-extends` being symmetric), not just its ordinary `dep`-references. -/
 theorem restrictLabels_correct_restrictTo {S : Schema} (hWFX : S.WellFormedX)
-    (hWFExt : S.WellFormedExtends) {G : Graph} {Ls1 Ls2 : Finset ShapeLabel} {t : Typing}
+    (hWFExt : S.WellFormedExtends) {G : Graph} {Ls1 Ls2 : Finset Label} {t : Typing}
     (hLs1Ls2 : Ls1 ⊆ Ls2) (hLs1Closed : S.DClosedOn Ls1) (hLs2Closed : S.DClosedOn Ls2)
     (ht : (S.restrictLabels Ls2).CorrectTyping G t) :
     (S.restrictLabels Ls1).CorrectTyping G (restrictTyping t Ls1) := by
@@ -272,7 +272,7 @@ theorem restrictLabels_correct_restrictTo {S : Schema} (hWFX : S.WellFormedX)
 /-- Restricting to `Lo2 ⊆ Lo1` and then to `Lo2` again is the same as
 restricting to `Lo2` directly — 2025's analogue of 2017's `Typing.
 restrictTo_restrictTo`. -/
-theorem restrictTyping_restrictTyping {t : Typing} {Lo1 Lo2 : Finset ShapeLabel}
+theorem restrictTyping_restrictTyping {t : Typing} {Lo1 Lo2 : Finset Label}
     (h : Lo2 ⊆ Lo1) : restrictTyping (restrictTyping t Lo1) Lo2 = restrictTyping t Lo2 := by
   apply Finset.ext
   rintro ⟨n, L⟩
@@ -293,7 +293,7 @@ ambient schema grows, and (as in `correctTyping_stratRestrict_mono`) every
 bigger `Ls2` too, by plain monotonicity of the intersection-based
 `restrictLabels`. -/
 theorem Schema.correctTyping_restrictLabels_mono {S : Schema} (hWFX : S.WellFormedX)
-    (hWFExt : S.WellFormedExtends) {Ls1 Ls2 : Finset ShapeLabel} (hLs1Ls2 : Ls1 ⊆ Ls2)
+    (hWFExt : S.WellFormedExtends) {Ls1 Ls2 : Finset Label} (hLs1Ls2 : Ls1 ⊆ Ls2)
     (hLs1Closed : S.DClosedOn Ls1) (hLs2Closed : S.DClosedOn Ls2) {G : Graph} {t : Typing}
     (ht_sub : t ⊆ (S.restrictLabels Ls1).univTyping G)
     (ht_correct : (S.restrictLabels Ls1).CorrectTyping G t) :
@@ -341,7 +341,7 @@ correct_restrictTo` need throughout, and using `S.DEdge`/`S.DNegEdge`
 membership in place of 2017's `posDeps`/`negDeps` set-containment. -/
 theorem maxTypingAgreeing_fusion {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.WellFormedExtends)
     (hWFExtra : S.WellFormedExtra) (hNEF : S.NotIsExtendsFree)
-    {G : Graph} {Ls Ls1 Ls2 : Finset ShapeLabel} {T : Typing}
+    {G : Graph} {Ls Ls1 Ls2 : Finset Label} {T : Typing}
     (hLsLs1 : Ls ⊆ Ls1) (hLs1Ls2 : Ls1 ⊆ Ls2)
     (hLsClosed : S.DClosedOn Ls) (hLs1Closed : S.DClosedOn Ls1) (hLs2Closed : S.DClosedOn Ls2)
     (hLs1YX : Ls1 ⊆ S.Y ∪ S.X) (hLs2YX : Ls2 ⊆ S.Y ∪ S.X)
@@ -461,14 +461,14 @@ checkpoints separately to show it equals `Typing8` for *both*.
 
 /-- The labels of least `strat`-value among those not yet in `Fixed` — a
 canonical (but not the only valid) choice of "next batch". -/
-def remainingMin (S : Schema) (strat : ShapeLabel → ℕ) (Fixed : Finset ShapeLabel) :
-    Finset ShapeLabel :=
+def remainingMin (S : Schema) (strat : Label → ℕ) (Fixed : Finset Label) :
+    Finset Label :=
   ((S.Y ∪ S.X) \ Fixed).filter (fun L => ∀ L' ∈ (S.Y ∪ S.X) \ Fixed, strat L ≤ strat L')
 
-theorem remainingMin_subset {S : Schema} {strat : ShapeLabel → ℕ} {Fixed : Finset ShapeLabel} :
+theorem remainingMin_subset {S : Schema} {strat : Label → ℕ} {Fixed : Finset Label} :
     remainingMin S strat Fixed ⊆ (S.Y ∪ S.X) \ Fixed := Finset.filter_subset _ _
 
-theorem remainingMin_nonempty {S : Schema} {strat : ShapeLabel → ℕ} {Fixed : Finset ShapeLabel}
+theorem remainingMin_nonempty {S : Schema} {strat : Label → ℕ} {Fixed : Finset Label}
     (h : ((S.Y ∪ S.X) \ Fixed).Nonempty) : (remainingMin S strat Fixed).Nonempty := by
   obtain ⟨L₀, hL₀, hmin⟩ := Finset.exists_min_image ((S.Y ∪ S.X) \ Fixed) strat h
   exact ⟨L₀, Finset.mem_filter.mpr ⟨hL₀, hmin⟩⟩
@@ -476,7 +476,7 @@ theorem remainingMin_nonempty {S : Schema} {strat : ShapeLabel → ℕ} {Fixed :
 /-- `remainingMin`'s batch (for any valid stratification `strat`) only
 `D_S`-negatively depends on `Fixed`. -/
 theorem remainingMin_neg {S : Schema} (strat : Stratification S) (hDClosed : S.DClosed)
-    (Fixed : Finset ShapeLabel) :
+    (Fixed : Finset Label) :
     ∀ z ∈ remainingMin S strat.strat Fixed, ∀ z', S.DNegEdge z z' → z' ∈ Fixed := by
   intro z hz z' hz'
   obtain ⟨hzrem, hzmin⟩ := Finset.mem_filter.mp hz
@@ -490,7 +490,7 @@ theorem remainingMin_neg {S : Schema} (strat : Stratification S) (hDClosed : S.D
 
 /-- `Fixed ∪ remainingMin strat Fixed` is self-contained under `D_S`. -/
 theorem remainingMin_pos {S : Schema} (strat : Stratification S) (hDClosed : S.DClosed)
-    (Fixed : Finset ShapeLabel) :
+    (Fixed : Finset Label) :
     ∀ z ∈ remainingMin S strat.strat Fixed, ∀ z', S.DEdge z z' →
       z' ∈ Fixed ∪ remainingMin S strat.strat Fixed := by
   intro z hz z' hz'
@@ -510,7 +510,7 @@ theorem remainingMin_pos {S : Schema} (strat : Stratification S) (hDClosed : S.D
 /-- Repeatedly reveal `strat`'s `remainingMin` batch, `n` times (or until
 nothing is left — `n` is fuel, not meant to be tight). -/
 noncomputable def cont1Fuel (S : Schema) (strat : Stratification S) (G : Graph) :
-    ℕ → Finset ShapeLabel → Typing → Typing
+    ℕ → Finset Label → Typing → Typing
   | 0, _, T => T
   | (n + 1), Fixed, T =>
       if ((S.Y ∪ S.X) \ Fixed).Nonempty then
@@ -519,8 +519,8 @@ noncomputable def cont1Fuel (S : Schema) (strat : Stratification S) (G : Graph) 
             Fixed T)
       else T
 
-private theorem remainingMin_card_lt (S : Schema) (strat : ShapeLabel → ℕ)
-    {Fixed : Finset ShapeLabel} (h : ((S.Y ∪ S.X) \ Fixed).Nonempty) :
+private theorem remainingMin_card_lt (S : Schema) (strat : Label → ℕ)
+    {Fixed : Finset Label} (h : ((S.Y ∪ S.X) \ Fixed).Nonempty) :
     ((S.Y ∪ S.X) \ (Fixed ∪ remainingMin S strat Fixed)).card < ((S.Y ∪ S.X) \ Fixed).card := by
   have hBnonempty := remainingMin_nonempty (S := S) (strat := strat) h
   apply Finset.card_lt_card
@@ -536,7 +536,7 @@ private theorem remainingMin_card_lt (S : Schema) (strat : ShapeLabel → ℕ)
     exact this.2 (Or.inr hL₀)
 
 private theorem cont1Fuel_of_not_nonempty (S : Schema) (strat : Stratification S) (G : Graph)
-    {Fixed : Finset ShapeLabel} (h : ¬ ((S.Y ∪ S.X) \ Fixed).Nonempty) (T : Typing) :
+    {Fixed : Finset Label} (h : ¬ ((S.Y ∪ S.X) \ Fixed).Nonempty) (T : Typing) :
     ∀ n, cont1Fuel S strat G n Fixed T = T
   | 0 => rfl
   | (n + 1) => by simp only [cont1Fuel, ite_eq_right h]
@@ -544,7 +544,7 @@ private theorem cont1Fuel_of_not_nonempty (S : Schema) (strat : Stratification S
 /-- Once fuel is enough to exhaust the remaining labels, more fuel doesn't
 change the result. -/
 theorem cont1Fuel_stable (S : Schema) (strat : Stratification S) (G : Graph) :
-    ∀ Fixed : Finset ShapeLabel, ∀ T : Typing, ∀ n n' : ℕ, ((S.Y ∪ S.X) \ Fixed).card ≤ n →
+    ∀ Fixed : Finset Label, ∀ T : Typing, ∀ n n' : ℕ, ((S.Y ∪ S.X) \ Fixed).card ≤ n →
       ((S.Y ∪ S.X) \ Fixed).card ≤ n' →
         cont1Fuel S strat G n Fixed T = cont1Fuel S strat G n' Fixed T := by
   intro Fixed
@@ -568,16 +568,16 @@ theorem cont1Fuel_stable (S : Schema) (strat : Stratification S) (G : Graph) :
 each batch (a fixed, concrete choice — but `cont1_indep` below shows *any*
 valid first step gives the same final answer). -/
 noncomputable def cont1 (S : Schema) (strat : Stratification S) (G : Graph)
-    (Fixed : Finset ShapeLabel) (T : Typing) : Typing :=
+    (Fixed : Finset Label) (T : Typing) : Typing :=
   cont1Fuel S strat G (S.Y ∪ S.X).card Fixed T
 
 theorem cont1_eq_fuel (S : Schema) (strat : Stratification S) (G : Graph)
-    (Fixed : Finset ShapeLabel) (T : Typing) (n : ℕ) (hn : ((S.Y ∪ S.X) \ Fixed).card ≤ n) :
+    (Fixed : Finset Label) (T : Typing) (n : ℕ) (hn : ((S.Y ∪ S.X) \ Fixed).card ≤ n) :
     cont1 S strat G Fixed T = cont1Fuel S strat G n Fixed T :=
   cont1Fuel_stable S strat G Fixed T (S.Y ∪ S.X).card n (Finset.card_le_card Finset.sdiff_subset) hn
 
 theorem cont1_done (S : Schema) (strat : Stratification S) (G : Graph)
-    {Fixed : Finset ShapeLabel} (h : ¬ ((S.Y ∪ S.X) \ Fixed).Nonempty) (T : Typing) :
+    {Fixed : Finset Label} (h : ¬ ((S.Y ∪ S.X) \ Fixed).Nonempty) (T : Typing) :
     cont1 S strat G Fixed T = T := by
   have hcardzero : ((S.Y ∪ S.X) \ Fixed).card = 0 := by
     rw [Finset.card_eq_zero, ← Finset.not_nonempty_iff_eq_empty]; exact h
@@ -585,7 +585,7 @@ theorem cont1_done (S : Schema) (strat : Stratification S) (G : Graph)
   simp only [cont1Fuel, ite_eq_right h]
 
 theorem cont1_step (S : Schema) (strat : Stratification S) (G : Graph)
-    {Fixed : Finset ShapeLabel} (h : ((S.Y ∪ S.X) \ Fixed).Nonempty) (T : Typing) :
+    {Fixed : Finset Label} (h : ((S.Y ∪ S.X) \ Fixed).Nonempty) (T : Typing) :
     cont1 S strat G Fixed T = cont1 S strat G (Fixed ∪ remainingMin S strat.strat Fixed)
       (maxTypingAgreeing (S.restrictLabels (Fixed ∪ remainingMin S strat.strat Fixed)) G Fixed T) := by
   obtain ⟨m, hm⟩ : ∃ m, ((S.Y ∪ S.X) \ Fixed).card = m + 1 :=
@@ -605,7 +605,7 @@ independent material doesn't change the final typing", used below
 (`cont1_indep`) to show `cont1`'s first step doesn't matter. -/
 theorem maxTypingAgreeing_swap {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.WellFormedExtends)
     (hWFExtra : S.WellFormedExtra) (hNEF : S.NotIsExtendsFree)
-    {G : Graph} {Ls0 A B : Finset ShapeLabel} {T : Typing}
+    {G : Graph} {Ls0 A B : Finset Label} {T : Typing}
     (hLs0Closed : S.DClosedOn Ls0) (hLs0AClosed : S.DClosedOn (Ls0 ∪ A))
     (hLs0BClosed : S.DClosedOn (Ls0 ∪ B)) (hLs0ABClosed : S.DClosedOn (Ls0 ∪ A ∪ B))
     (hLs0AYX : Ls0 ∪ A ⊆ S.Y ∪ S.X) (hLs0BYX : Ls0 ∪ B ⊆ S.Y ∪ S.X)
@@ -647,11 +647,11 @@ which valid batch its underlying `strat` happens to pick at each step. -/
 theorem cont1_indep {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.WellFormedExtends)
     (hWFExtra : S.WellFormedExtra) (hNEF : S.NotIsExtendsFree) (hDClosed : S.DClosed)
     (strat : Stratification S) (G : Graph) :
-    ∀ Fixed : Finset ShapeLabel, ∀ T : Typing,
+    ∀ Fixed : Finset Label, ∀ T : Typing,
       Fixed ⊆ S.Y ∪ S.X → S.DClosedOn Fixed →
       T ⊆ (S.restrictLabels Fixed).univTyping G →
       (S.restrictLabels Fixed).CorrectTyping G T →
-      ∀ C : Finset ShapeLabel, C ⊆ S.Y ∪ S.X →
+      ∀ C : Finset Label, C ⊆ S.Y ∪ S.X →
         (∀ z ∈ C, ((S.shapeDef z).depsAux false).negRefs ⊆ Fixed) →
         (∀ z ∈ C, ∀ z', S.DEdge z z' → z' ∈ Fixed ∪ C) →
         cont1 S strat G Fixed T =
@@ -827,7 +827,7 @@ are different `Finset` expressions) — bridges `stratTypingSeq_correct`
 `restrictLabels`-based vocabulary this file's general machinery needs,
 matching 2017's own `Schema.stratRestrict_eq_restrictLabels`
 (`ShexLean/Shex2017Schemas/Algorithm1.lean`). -/
-theorem Schema.stratRestrict_eq_restrictLabels (S : Schema) (strat : ShapeLabel → ℕ) (i : ℕ) :
+theorem Schema.stratRestrict_eq_restrictLabels (S : Schema) (strat : Label → ℕ) (i : ℕ) :
     S.stratRestrict strat i = S.restrictLabels (S.stratum strat i) := by
   unfold Schema.stratRestrict Schema.restrictLabels Schema.stratum
   congr 1

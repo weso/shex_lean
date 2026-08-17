@@ -33,59 +33,59 @@ split into those reached with no `NOT` on the path from `S` down to that
 `TriplePattern` (`.1`, the positive dependencies) and those reached under at
 least one `NOT` (`.2`, the negative dependencies). `underNot` records whether
 the recursion has already passed under a `NOT` on the way down to `S`. -/
-@[reducible] def ShapeExpr.depsAux (underNot : Bool) : ShapeExpr → Finset ShapeLabel × Finset ShapeLabel
+@[reducible] def ShExpr.depsAux (underNot : Bool) : ShExpr → Finset Label × Finset Label
   | .valueDescr _ => (∅, ∅)
-  | .neigDescr E  => TripleExpr.depsAux underNot E
+  | .neigDescr E  => TExpr.depsAux underNot E
   | .and S1 S2    =>
-      let d1 := ShapeExpr.depsAux underNot S1
-      let d2 := ShapeExpr.depsAux underNot S2
+      let d1 := ShExpr.depsAux underNot S1
+      let d2 := ShExpr.depsAux underNot S2
       (d1.1 ∪ d2.1, d1.2 ∪ d2.2)
   | .or S1 S2     =>
-      let d1 := ShapeExpr.depsAux underNot S1
-      let d2 := ShapeExpr.depsAux underNot S2
+      let d1 := ShExpr.depsAux underNot S1
+      let d2 := ShExpr.depsAux underNot S2
       (d1.1 ∪ d2.1, d1.2 ∪ d2.2)
   -- Once under a `NOT`, every reference further down stays under it, hence
   -- `underNot` is forced to `true` rather than toggled.
-  | .not S        => ShapeExpr.depsAux true S
+  | .not S        => ShExpr.depsAux true S
 
-/-- Same as `ShapeExpr.depsAux`, for a triple expression. -/
-@[reducible] def TripleExpr.depsAux (underNot : Bool) : TripleExpr → Finset ShapeLabel × Finset ShapeLabel
+/-- Same as `ShExpr.depsAux`, for a triple expression. -/
+@[reducible] def TExpr.depsAux (underNot : Bool) : TExpr → Finset Label × Finset Label
   | .tPattern _ L => if underNot then (∅, {L}) else ({L}, ∅)
   | .empty        => (∅, ∅)
   | .someOf E1 E2 =>
-      let d1 := TripleExpr.depsAux underNot E1
-      let d2 := TripleExpr.depsAux underNot E2
+      let d1 := TExpr.depsAux underNot E1
+      let d2 := TExpr.depsAux underNot E2
       (d1.1 ∪ d2.1, d1.2 ∪ d2.2)
   | .eachOf E1 E2 =>
-      let d1 := TripleExpr.depsAux underNot E1
-      let d2 := TripleExpr.depsAux underNot E2
+      let d1 := TExpr.depsAux underNot E1
+      let d2 := TExpr.depsAux underNot E2
       (d1.1 ∪ d2.1, d1.2 ∪ d2.2)
-  | .rep E _ _    => TripleExpr.depsAux underNot E
+  | .rep E _ _    => TExpr.depsAux underNot E
 
 end
 
 /-- Shape labels appearing in `S` via some `TriplePattern`, never under a
 `NOT` on the path from `S`. -/
-abbrev ShapeExpr.posDeps (S : ShapeExpr) : Finset ShapeLabel := (ShapeExpr.depsAux false S).1
+abbrev ShExpr.posDeps (S : ShExpr) : Finset Label := (ShExpr.depsAux false S).1
 
 /-- Shape labels appearing in `S` via some `TriplePattern`, under at least
 one `NOT` on the path from `S`. -/
-abbrev ShapeExpr.negDeps (S : ShapeExpr) : Finset ShapeLabel := (ShapeExpr.depsAux false S).2
+abbrev ShExpr.negDeps (S : ShExpr) : Finset Label := (ShExpr.depsAux false S).2
 
 /-- Shape labels appearing in `E` via some `TriplePattern`, never under a
 `NOT` on the path from `E`. -/
-abbrev TripleExpr.posDeps (E : TripleExpr) : Finset ShapeLabel := (TripleExpr.depsAux false E).1
+abbrev TExpr.posDeps (E : TExpr) : Finset Label := (TExpr.depsAux false E).1
 
 /-- Shape labels appearing in `E` via some `TriplePattern`, under at least
 one `NOT` on the path from `E`. -/
-abbrev TripleExpr.negDeps (E : TripleExpr) : Finset ShapeLabel := (TripleExpr.depsAux false E).2
+abbrev TExpr.negDeps (E : TExpr) : Finset Label := (TExpr.depsAux false E).2
 
 /-- `dep⁺(L1, L2)`: `L2` appears in `def(L1)` but never under an occurrence
 of `NOT`. -/
-abbrev DepPos (S : Schema) (L1 L2 : ShapeLabel) : Prop := L2 ∈ (S.shapeDef L1).posDeps
+abbrev DepPos (S : Schema) (L1 L2 : Label) : Prop := L2 ∈ (S.shapeDef L1).posDeps
 
 /-- `dep⁻(L1, L2)`: `L2` appears in `def(L1)` under an occurrence of `NOT`. -/
-abbrev DepNeg (S : Schema) (L1 L2 : ShapeLabel) : Prop := L2 ∈ (S.shapeDef L1).negDeps
+abbrev DepNeg (S : Schema) (L1 L2 : Label) : Prop := L2 ∈ (S.shapeDef L1).negDeps
 
 /-- Definition 3 (schema with stratified negation): a stratification of `S`
 into `[1; k]` such that negative dependencies strictly decrease the stratum
@@ -94,7 +94,7 @@ structure Stratification (S : Schema) where
   /-- The number of strata. -/
   k : ℕ
   /-- The mapping from shape labels to their stratum. -/
-  strat : ShapeLabel → ℕ
+  strat : Label → ℕ
   /-- `strat` maps every label of `S` into `[1; k]`. -/
   mem_range : ∀ L ∈ S.labels, 1 ≤ strat L ∧ strat L ≤ k
   /-- If `dep⁻(L1, L2)`, then `strat(L1) > strat(L2)`. Scoped to `L1 ∈
@@ -108,7 +108,7 @@ structure Stratification (S : Schema) where
 
 /-- `S` is a schema with stratified negation if it admits a stratification
 (Definition 3). -/
-def Schema.StratifiedNegation (S : Schema) : Prop := Nonempty (Stratification S)
+def Schema.StratNeg (S : Schema) : Prop := Nonempty (Stratification S)
 
 /-!
 Two facts connecting `depsAux true` (used internally, right under a `NOT`)
@@ -120,51 +120,51 @@ recurse under arbitrarily nested `NOT`s without re-deriving this each time.
 
 mutual
 
-theorem ShapeExpr.depsAux_true : ∀ (S : ShapeExpr),
-    ShapeExpr.depsAux true S = (∅, S.posDeps ∪ S.negDeps)
+theorem ShExpr.depsAux_true : ∀ (S : ShExpr),
+    ShExpr.depsAux true S = (∅, S.posDeps ∪ S.negDeps)
   | .valueDescr _ => rfl
   | .neigDescr E => by
-      simp only [ShapeExpr.depsAux, ShapeExpr.posDeps, ShapeExpr.negDeps]
-      exact TripleExpr.depsAux_true E
+      simp only [ShExpr.depsAux, ShExpr.posDeps, ShExpr.negDeps]
+      exact TExpr.depsAux_true E
   | .and S1 S2 => by
-      simp only [ShapeExpr.depsAux, ShapeExpr.posDeps, ShapeExpr.negDeps,
-        ShapeExpr.depsAux_true S1, ShapeExpr.depsAux_true S2, Prod.mk.injEq, Finset.empty_union,
+      simp only [ShExpr.depsAux, ShExpr.posDeps, ShExpr.negDeps,
+        ShExpr.depsAux_true S1, ShExpr.depsAux_true S2, Prod.mk.injEq, Finset.empty_union,
         true_and]
       ext x; simp only [Finset.mem_union]; tauto
   | .or S1 S2 => by
-      simp only [ShapeExpr.depsAux, ShapeExpr.posDeps, ShapeExpr.negDeps,
-        ShapeExpr.depsAux_true S1, ShapeExpr.depsAux_true S2, Prod.mk.injEq, Finset.empty_union,
+      simp only [ShExpr.depsAux, ShExpr.posDeps, ShExpr.negDeps,
+        ShExpr.depsAux_true S1, ShExpr.depsAux_true S2, Prod.mk.injEq, Finset.empty_union,
         true_and]
       ext x; simp only [Finset.mem_union]; tauto
   | .not S => by
-      simp only [ShapeExpr.depsAux, ShapeExpr.posDeps, ShapeExpr.negDeps,
-        ShapeExpr.depsAux_true S, Finset.empty_union]
+      simp only [ShExpr.depsAux, ShExpr.posDeps, ShExpr.negDeps,
+        ShExpr.depsAux_true S, Finset.empty_union]
 
-theorem TripleExpr.depsAux_true : ∀ (E : TripleExpr),
-    TripleExpr.depsAux true E = (∅, (TripleExpr.depsAux false E).1 ∪ (TripleExpr.depsAux false E).2)
-  | .tPattern _ _ => by simp [TripleExpr.depsAux]
-  | .empty => by simp [TripleExpr.depsAux]
+theorem TExpr.depsAux_true : ∀ (E : TExpr),
+    TExpr.depsAux true E = (∅, (TExpr.depsAux false E).1 ∪ (TExpr.depsAux false E).2)
+  | .tPattern _ _ => by simp [TExpr.depsAux]
+  | .empty => by simp [TExpr.depsAux]
   | .someOf E1 E2 => by
-      simp only [TripleExpr.depsAux, TripleExpr.depsAux_true E1, TripleExpr.depsAux_true E2,
+      simp only [TExpr.depsAux, TExpr.depsAux_true E1, TExpr.depsAux_true E2,
         Prod.mk.injEq, Finset.empty_union, true_and]
       ext x; simp only [Finset.mem_union]; tauto
   | .eachOf E1 E2 => by
-      simp only [TripleExpr.depsAux, TripleExpr.depsAux_true E1, TripleExpr.depsAux_true E2,
+      simp only [TExpr.depsAux, TExpr.depsAux_true E1, TExpr.depsAux_true E2,
         Prod.mk.injEq, Finset.empty_union, true_and]
       ext x; simp only [Finset.mem_union]; tauto
-  | .rep E _ _ => TripleExpr.depsAux_true E
+  | .rep E _ _ => TExpr.depsAux_true E
 
 end
 
 /-- Entering a `NOT` sends everything to `negDeps`: nothing under `.not S`
 counts as a positive dependency. -/
-theorem ShapeExpr.not_posDeps (S : ShapeExpr) : (ShapeExpr.not S).posDeps = ∅ := by
-  simp only [ShapeExpr.posDeps, ShapeExpr.depsAux, ShapeExpr.depsAux_true S]
+theorem ShExpr.not_posDeps (S : ShExpr) : (ShExpr.not S).posDeps = ∅ := by
+  simp only [ShExpr.posDeps, ShExpr.depsAux, ShExpr.depsAux_true S]
 
 /-- Entering a `NOT` merges what would have been `S`'s positive and negative
 dependencies into `.not S`'s negative dependencies. -/
-theorem ShapeExpr.not_negDeps (S : ShapeExpr) :
-    (ShapeExpr.not S).negDeps = S.posDeps ∪ S.negDeps := by
-  simp only [ShapeExpr.negDeps, ShapeExpr.depsAux, ShapeExpr.depsAux_true S]
+theorem ShExpr.not_negDeps (S : ShExpr) :
+    (ShExpr.not S).negDeps = S.posDeps ∪ S.negDeps := by
+  simp only [ShExpr.negDeps, ShExpr.depsAux, ShExpr.depsAux_true S]
 
 end ShexLean

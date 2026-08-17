@@ -65,16 +65,16 @@ def PropSet.render (P : PropSet) : String :=
   "{" ++ ", ".intercalate (renderSorted (·) P) ++ "}"
 
 mutual
-/-- `ShapeExpr.render`, walking the real `ShapeExpr` AST — Fig. 1's own
+/-- `ShExpr.render`, walking the real `ShExpr` AST — Fig. 1's own
 concrete syntax (`AND`/`OR`/`NOT`, `@<L>`, `;`/`|`, `[min;max]`). -/
-def ShapeExpr.render : ShapeExpr → String
+def ShExpr.render : ShExpr → String
   | .valueDescr V => V.render
   | .neigDescr E => E.render
   | .and S1 S2 => s!"({S1.render} AND {S2.render})"
   | .or S1 S2 => s!"({S1.render} OR {S2.render})"
   | .not S => s!"NOT({S.render})"
 
-def TripleExpr.render : TripleExpr → String
+def TExpr.render : TExpr → String
   | .tPattern P L => s!"{P.render} @<{L}>"
   | .empty => "EMPTY"
   | .someOf E1 E2 => s!"({E1.render} | {E2.render})"
@@ -87,33 +87,33 @@ def Schema.render (S : Schema) : String :=
   "\n".intercalate ((renderSorted (·) S.labels).map (fun L => s!"<{L}> → {(S.shapeDef L).render}"))
 
 /-- `Typing.render`, `{(n,<L>), …}` — the *data*, not any claim about it. -/
-def Typing.render (typing : Typing) : String :=
+def Typing.render (t : Typing) : String :=
   "{" ++ ", ".intercalate
-    (renderSorted (fun p : RDFNode × ShapeLabel => s!"({p.1.render},<{p.2}>)") typing) ++ "}"
+    (renderSorted (fun p : RDFNode × Label => s!"({p.1.render},<{p.2}>)") t) ++ "}"
 
 /-! ### Computed claims
 
-`Schema.CorrectTyping`'s own `∀ n L, (n,L) ∈ typing → …` quantifies over
-all of `RDFNode × ShapeLabel`, same shape as the `Satisfies`/`Matches`
-existentials `Decidable.lean` bounds — but the `(n,L) ∈ typing` premise
-already forces `n`/`L` to range over the finite `typing` itself, so the
+`Schema.CorrTyping`'s own `∀ n L, (n,L) ∈ t → …` quantifies over
+all of `RDFNode × Label`, same shape as the `Satisfies`/`Matches`
+existentials `Decidable.lean` bounds — but the `(n,L) ∈ t` premise
+already forces `n`/`L` to range over the finite `t` itself, so the
 same "restate as a bounded search" trick applies directly, one level up. -/
 
-theorem correctTyping_iff_bounded (S : Schema) (G : Graph) (typing : Typing) :
-    S.CorrectTyping G typing ↔
-      ∀ p ∈ typing, Satisfies G typing p.1 (S.shapeDef p.2) := by
+theorem corrTyping_iff_bounded (S : Schema) (G : Graph) (t : Typing) :
+    S.CorrTyping G t ↔
+      ∀ p ∈ t, Satisfies G t p.1 (S.shapeDef p.2) := by
   constructor
   · exact fun h p hp => h p.1 p.2 hp
   · exact fun h n L hnL => h (n, L) hnL
 
-/-- `Schema.CorrectTyping` is decidable — bounded, via
-`correctTyping_iff_bounded`, over the same `satisfies_decidable` this whole
+/-- `Schema.CorrTyping` is decidable — bounded, via
+`corrTyping_iff_bounded`, over the same `satisfies_decidable` this whole
 rendering layer is built on. -/
-def correctTyping_decidable (S : Schema) (G : Graph) (typing : Typing) :
-    Decidable (S.CorrectTyping G typing) :=
-  haveI : ∀ p : RDFNode × ShapeLabel, Decidable (Satisfies G typing p.1 (S.shapeDef p.2)) :=
-    fun p => satisfies_decidable G typing p.1 (S.shapeDef p.2)
-  decidable_of_iff _ (correctTyping_iff_bounded S G typing).symm
+def corrTyping_decidable (S : Schema) (G : Graph) (t : Typing) :
+    Decidable (S.CorrTyping G t) :=
+  haveI : ∀ p : RDFNode × Label, Decidable (Satisfies G t p.1 (S.shapeDef p.2)) :=
+    fun p => satisfies_decidable G t p.1 (S.shapeDef p.2)
+  decidable_of_iff _ (corrTyping_iff_bounded S G t).symm
 
 /-- `"true"`/`"false"` for any proposition with an *explicit* `Decidable`
 instance — the computed replacement for a hand-typed claim in a

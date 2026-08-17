@@ -57,11 +57,11 @@ abbrev NodeConstraint := RDFNode → Prop
 
 /-- Def 1's triple expression grammar,
 `e ::= ε | p @z | e|e | e;e | e*`. `tc p z` is the triple constraint
-`p @z`; `z` ranges over `ShapeLabel` (reused from `ShexLean.Typing`), i.e.
+`p @z`; `z` ranges over `Label` (reused from `ShexLean.Typing`), i.e.
 over `Y ∪ X` for whichever schema the expression belongs to. -/
 inductive TripleExpr where
   | empty : TripleExpr
-  | tc (p : IRI) (z : ShapeLabel) : TripleExpr
+  | tc (p : IRI) (z : Label) : TripleExpr
   | choice (e1 e2 : TripleExpr) : TripleExpr
   | seq (e1 e2 : TripleExpr) : TripleExpr
   | star (e : TripleExpr) : TripleExpr
@@ -69,7 +69,7 @@ inductive TripleExpr where
 
 /-- The triple-constraint sub-expressions of `e` (the paper's `tcs(e)`),
 represented as `(property, target label)` pairs. -/
-def TripleExpr.tcs : TripleExpr → Finset (IRI × ShapeLabel)
+def TripleExpr.tcs : TripleExpr → Finset (IRI × Label)
   | .empty => ∅
   | .tc p z => {(p, z)}
   | .choice e1 e2 => e1.tcs ∪ e2.tcs
@@ -97,7 +97,7 @@ why `@z` is not a constructor and why `extends` has no `restr` field of its
 own; both carry over unchanged here. -/
 inductive ShapeExpr where
   | ofShape (h : Shape) : ShapeExpr
-  | extends (xs : Finset ShapeLabel) (hs : List Shape) : ShapeExpr
+  | extends (xs : Finset Label) (hs : List Shape) : ShapeExpr
   | constraint (c : NodeConstraint) : ShapeExpr
   | or (s1 s2 : ShapeExpr) : ShapeExpr
   | and (s1 s2 : ShapeExpr) : ShapeExpr
@@ -109,7 +109,7 @@ build the extension hierarchy `H_S` (Definition 3). See
 `ShexLean.Shex2025Inheritance.Syntax.ShapeExpr.extendsTargets`'s docstring
 for why the recursion has to reach every nesting depth, not just the
 top-level `extends` clause a well-formed `X`-label is confined to. -/
-def ShapeExpr.extendsTargets : ShapeExpr → Finset ShapeLabel
+def ShapeExpr.extendsTargets : ShapeExpr → Finset Label
   | .extends xs _ => xs
   | .constraint _ => ∅
   | .ofShape _ => ∅
@@ -134,7 +134,7 @@ def ShapeExpr.extTeList : ShapeExpr → List TripleExpr
 /-- `ext-te(x)` at a chosen disjunct index `i` (mod the number of
 disjuncts, so it's total and — on a well-formed, nonempty `hs` — never hits
 the junk default). See `Semantics.lean`'s rule 18 for how `i` is chosen
-(one `pick : ShapeLabel → ℕ` witness per `.extends` occurrence, shared
+(one `pick : Label → ℕ` witness per `.extends` occurrence, shared
 across every ancestor that occurrence reaches) and the module docstring
 there for why a single shared choice per occurrence is enough to rule out
 the §6 ambiguity. -/
@@ -147,7 +147,7 @@ def ShapeExpr.extTeAt (s : ShapeExpr) (i : ℕ) : TripleExpr :=
 the relaxation explored here), `extTeAt` agrees with the original `extTe`
 at *every* index `i` — this is the "singleton case reduces to the
 unmodified formalism" property promised in the module docstring. -/
-theorem ShapeExpr.extTeAt_one {xs : Finset ShapeLabel} {h0 : Shape} (i : ℕ) :
+theorem ShapeExpr.extTeAt_one {xs : Finset Label} {h0 : Shape} (i : ℕ) :
     (ShapeExpr.extends xs [h0]).extTeAt i = h0.triples := by
   unfold ShapeExpr.extTeAt ShapeExpr.extTeList
   simp
@@ -155,7 +155,7 @@ theorem ShapeExpr.extTeAt_one {xs : Finset ShapeLabel} {h0 : Shape} (i : ℕ) :
 /-- On a two-disjunct `hs = [h0, h1]` (the simplest genuinely-relaxed case,
 `⟨h0⟩ or ⟨h1⟩` in the surface syntax), `extTeAt` picks `h0` on an even index
 and `h1` on an odd one. -/
-theorem ShapeExpr.extTeAt_two {xs : Finset ShapeLabel} {h0 h1 : Shape} (i : ℕ) :
+theorem ShapeExpr.extTeAt_two {xs : Finset Label} {h0 h1 : Shape} (i : ℕ) :
     (ShapeExpr.extends xs [h0, h1]).extTeAt i = if i % 2 = 0 then h0.triples else h1.triples := by
   unfold ShapeExpr.extTeAt ShapeExpr.extTeList
   simp only [List.map_cons, List.map_nil]
@@ -181,7 +181,7 @@ theorem ShapeExpr.extTeAt_mem_or_empty (s : ShapeExpr) (i : ℕ) :
 /-- `extTeAt` only ever depends on its index mod (at least 1, to survive an
 empty `extTeList`) the disjunct count — so any `i` can be replaced by its
 representative `i % max 1 s.extTeList.length` without changing the result.
-This is exactly what makes the `pick : ShapeLabel → ℕ` existential in
+This is exactly what makes the `pick : Label → ℕ` existential in
 `Semantics.lean`'s rule 18 *boundable*: `Decidable.lean` searches only over
 `Finset.range (max 1 s.extTeList.length)` for each ancestor, using this
 lemma to show that's lossless (every `pick` is equivalent, at each `x`, to
@@ -212,17 +212,17 @@ def ShapeExpr.restrOf : ShapeExpr → Option ShapeExpr
 /-- Definition 2 (ShEx schema). `S = (Y, X, def, A)`: `Y` simple labels,
 `X` extendable labels disjoint from `Y`, `A ⊆ X` abstract labels, and
 `shapeDef` (the paper's `def`) associates every label of `Y ∪ X` with its
-definition. `shapeDef` is total on all of `ShapeLabel` (as in the 2017
+definition. `shapeDef` is total on all of `Label` (as in the 2017
 formalization) because Lean functions must be total; `Schema.WellFormedX`
 below is the extra hypothesis this forces (mirroring `Schema.Closed` in
 `ShexLean/Shex2017Schemas/Proposition1.lean`). -/
 structure Schema where
-  Y : Finset ShapeLabel
-  X : Finset ShapeLabel
-  A : Finset ShapeLabel
+  Y : Finset Label
+  X : Finset Label
+  A : Finset Label
   disjointYX : Disjoint Y X
   A_subX : A ⊆ X
-  shapeDef : ShapeLabel → ShapeExpr
+  shapeDef : Label → ShapeExpr
 
 /-- Definition 2's second bullet, generalized: for `x ∈ X`, `def(x)` must be
 of the form `extends X hs [and u]` with `hs` *nonempty* — i.e. `.extends xs
@@ -237,7 +237,7 @@ def Schema.WellFormedX (S : Schema) : Prop :=
 
 /-- Definition 3's edge relation of `H_S`: an edge from `x` to `x'` iff
 `x'` is named right after `extends` at the top of `def(x)`. -/
-abbrev Schema.extEdge (S : Schema) (x x' : ShapeLabel) : Prop :=
+abbrev Schema.extEdge (S : Schema) (x x' : Label) : Prop :=
   x' ∈ (S.shapeDef x).extendsTargets
 
 /-- Definition 3 (extension hierarchy). `x' ∈ S.anc x` iff there is a
@@ -248,18 +248,18 @@ matching the paper. Classical choice decides the (in general undecidable
 for an arbitrary `Prop`-valued `extEdge`) reachability predicate, exactly
 as `Classical.decPred` is used throughout the 2017 formalization for
 similar non-obviously-decidable filters. -/
-noncomputable def Schema.anc (S : Schema) (x : ShapeLabel) : Finset ShapeLabel :=
+noncomputable def Schema.anc (S : Schema) (x : Label) : Finset Label :=
   haveI := Classical.decPred (Relation.ReflTransGen S.extEdge x)
   S.X.filter (Relation.ReflTransGen S.extEdge x)
 
 /-- `S.desc x`: the descendants of `x` (dual of `S.anc`). -/
-noncomputable def Schema.desc (S : Schema) (x : ShapeLabel) : Finset ShapeLabel :=
+noncomputable def Schema.desc (S : Schema) (x : Label) : Finset Label :=
   haveI := Classical.decPred (Relation.ReflTransGen S.extEdge · x)
   S.X.filter (Relation.ReflTransGen S.extEdge · x)
 
 /-- `anc(X) = ⋃_{x ∈ X} anc(x)` (Table 3's extension of `anc` to a set of
 labels, used by rule 18). -/
-noncomputable def Schema.ancSet (S : Schema) (xs : Finset ShapeLabel) : Finset ShapeLabel :=
+noncomputable def Schema.ancSet (S : Schema) (xs : Finset Label) : Finset Label :=
   xs.biUnion S.anc
 
 end ShexLean.InheritanceDisjunction

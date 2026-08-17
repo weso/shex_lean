@@ -175,8 +175,8 @@ theorem M24_not_satisfies_defx2 :
         · exact ⟨by decide, Relation.ReflTransGen.refl⟩
         · exact ⟨by decide, Relation.ReflTransGen.single hx1edge⟩
     unfold Schema.ancSet; simp [hanc1]
-  have hx0anc : ("x0" : ShapeLabel) ∈ S_ex5.ancSet {"x1"} := by rw [hancSet1]; decide
-  have hx1anc : ("x1" : ShapeLabel) ∈ S_ex5.ancSet {"x1"} := by rw [hancSet1]; decide
+  have hx0anc : ("x0" : Label) ∈ S_ex5.ancSet {"x1"} := by rw [hancSet1]; decide
+  have hx1anc : ("x1" : Label) ∈ S_ex5.ancSet {"x1"} := by rw [hancSet1]; decide
   have hM'sub : M' ⊆ M24 := hunion ▸ Finset.subset_union_left
   have hM'propsub : props M' ⊆ (TripleExpr.tc "p" "T_lt5" : TripleExpr).props := by
     intro q hq
@@ -349,10 +349,10 @@ namespace Examples
 
 open ShexLean.Inheritance (S_ex5 τ_ex3 bigFuel M24 M246 M2a M24a
   S_ex5_XClosed S_ex5_RestrOk satisfiesMFuel_decidable)
-open ShexLean (Triple ShapeLabel Graph.render Typing.render renderDecide)
+open ShexLean (Triple Label Graph.render Typing.render renderDecide)
 
 /-- `renderDecide`'s `native_decide`-computed verdict for `M ⊨ def(L)`. -/
-def satMEx5 (M : Finset Triple) (L : ShapeLabel)
+def satMEx5 (M : Finset Triple) (L : Label)
     (hOk : (S_ex5.shapeDef L).MOk S_ex5) : String :=
   renderDecide (satisfiesMFuel_decidable S_ex5 default τ_ex3 S_ex5_XClosed S_ex5_RestrOk
     bigFuel M (S_ex5.shapeDef L) hOk)
@@ -375,14 +375,14 @@ def inheritance2025Extends : Example where
   typingText :=
     s!"τ = {Typing.render τ_ex3}\n" ++
     s!"M24,  τ ⊨ def(x1) = " ++
-      s!"{satMEx5 M24 "x1" (show ({"x0"} : Finset ShapeLabel) ⊆ S_ex5.X by decide)}\n" ++
+      s!"{satMEx5 M24 "x1" (show ({"x0"} : Finset Label) ⊆ S_ex5.X by decide)}\n" ++
     s!"M246, τ ⊨ def(x2) = " ++
-      s!"{satMEx5 M246 "x2" (show ({"x1"} : Finset ShapeLabel) ⊆ S_ex5.X by decide)}\n" ++
+      s!"{satMEx5 M246 "x2" (show ({"x1"} : Finset Label) ⊆ S_ex5.X by decide)}\n" ++
     s!"M24,  τ ⊨ def(x2) = " ++
-      s!"{satMEx5 M24 "x2" (show ({"x1"} : Finset ShapeLabel) ⊆ S_ex5.X by decide)}\n" ++
+      s!"{satMEx5 M24 "x2" (show ({"x1"} : Finset Label) ⊆ S_ex5.X by decide)}\n" ++
     s!"M2a,  τ ⊨ def(x5) = " ++
-      s!"{satMEx5 M2a "x5" (show ({"x0"} : Finset ShapeLabel) ⊆ S_ex5.X by decide)}\n" ++
+      s!"{satMEx5 M2a "x5" (show ({"x0"} : Finset Label) ⊆ S_ex5.X by decide)}\n" ++
     s!"M24a, τ ⊨ def(x6) = " ++
-      s!"{satMEx5 M24a "x6" (show ({"x3"} : Finset ShapeLabel) ⊆ S_ex5.X by decide)}"
+      s!"{satMEx5 M24a "x6" (show ({"x3"} : Finset Label) ⊆ S_ex5.X by decide)}"
 
 end Examples
