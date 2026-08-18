@@ -56,8 +56,7 @@ instance : Coe Subject RDFNode := ⟨Subject.toNode⟩
 
 /-- The partial converse: an `RDFNode` is a `Subject` iff it isn't a
 literal. Used wherever some *other* representation of a graph only tracks
-"the node," but needs to rebuild an actual `Triple` — e.g.
-`ShexLean.InductiveRDF.Graph`'s `TContext.toTriples`. -/
+"the node," but needs to rebuild an actual `Triple`. -/
 def RDFNode.toSubject? : RDFNode → Option Subject
   | .iri i => some (.iri i)
   | .bnode b => some (.bnode b)

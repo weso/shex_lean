@@ -12,8 +12,6 @@ import ShexLean.Shex2017Schemas.Lemma2
 import ShexLean.Shex2017Schemas.ShapesSem
 import ShexLean.Shex2017Schemas.Algorithm1
 import ShexLean.Shex2017Schemas.Algorithm2
-import ShexLean.InductiveRDF.Graph
-import ShexLean.InductiveRDF.RoundTrip
 import ShexLean.Shex2017Schemas.RepBound
 import ShexLean.Shex2017Schemas.Decidable
 import ShexLean.Shex2017Schemas.Render
@@ -27,14 +25,3 @@ import ShexLean.Shex2025Inheritance.Lemma2
 import ShexLean.Shex2025Inheritance.Algorithm1
 import ShexLean.Shex2025Inheritance.Decidable
 import ShexLean.Shex2025Inheritance.Render
-import ShexLean.Shex2026InheritanceDisjunction.Syntax
-import ShexLean.Shex2026InheritanceDisjunction.Semantics
-import ShexLean.Shex2026InheritanceDisjunction.examples.Example1_coloured_circle
-import ShexLean.Shex2026InheritanceDisjunction.Stratification
-import ShexLean.Shex2026InheritanceDisjunction.Termination
-import ShexLean.Shex2026InheritanceDisjunction.CorrectTyping
-import ShexLean.Shex2026InheritanceDisjunction.Proposition1
-import ShexLean.Shex2026InheritanceDisjunction.Lemma2
-import ShexLean.Shex2026InheritanceDisjunction.Algorithm1
-import ShexLean.Shex2026InheritanceDisjunction.Decidable
-import ShexLean.Shex2026InheritanceDisjunction.Render
