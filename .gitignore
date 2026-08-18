@@ -1,3 +1,24 @@
 # cache and other artifacts produced by Lean's Lake build tool
 .lake/
 /.lake
+
+# LaTeX build artifacts (paper/, slides/)
+*.aux
+*.log
+*.out
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.run.xml
+*.synctex.gz
+*.toc
+*.nav
+*.snm
+*.vrb
+
+# Springer/LNCS class files are licensed, not ours to redistribute —
+# each of paper/ and slides/ expects its own local copy.
+llncs.cls
+splncs04.bst

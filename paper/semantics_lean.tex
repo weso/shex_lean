@@ -1,0 +1,70 @@
+\section{Representing semantic rules} \label{sec:semantics_lean}
+
+The basic semantics of ShEx formalizes the \lean{Satisfies} ($\vdash$) and \lean{Matches} ($\vDash$) 
+ relations of Fig. 2 in~\cite{BGP17}. 
+both parameterized by a typing t. 
+The two relations are mutually recursive, 
+ a shape expression's neighbourhood description invokes \lean{Matches} 
+ on the node's outgoing triples, 
+ and a triple expression's shape reference invokes \lean{Satisfies} 
+ indirectly, through membership in \lean{t} 
+ so they are declared together as a single mutual block, 
+ \lean{Satisfies} and \lean{Matches}, 
+ mirroring the paper's joint Fig. 2a/2b presentation.
+
+Although \lean{Satisfies} and \lean{Matches} look like a classic mutually 
+ inductive derivability relation, 
+  they are encoded as ordinary Prop-valued recursive functions 
+  rather than a mutual inductive family. 
+  This is necessary because the premise in the rule involving negation 
+  is a negative occurrence of \lean{Satisfies}, 
+  which Lean's positivity checker rejects for an inductive definition 
+  but accepts for a function.
+  
+\lean{Satisfies} and \lean{Matches} are defined case by case. Each equation corresponds to one (or a disjunction of two) rules.
+
+\begin{leanlisting}
+mutual
+def Satisfies (G : Graph) (t : Typing) (n : RDFNode) : ShExpr → Prop
+  | .valueDescr V => InV n V ∨ BNodeInV n V
+  | .neigDescr E => Matches G t (neigh G n) E
+  | .and S1 S2 => Satisfies G t n S1 ∧ Satisfies G t n S2
+  | .or S1 S2 => Satisfies G t n S1 ∨ Satisfies G t n S2
+  | .not S => ¬ Satisfies G t n S
+
+def Matches (G : Graph) (t : Typing) (N : Finset Triple) : TExpr → Prop
+  | .tPattern P L =>
+      ∃ subj pred obj, N = {(⟨subj, pred, obj⟩ : Triple)} ∧ pred ∈ P ∧ t.has obj L
+  | .empty => N = ∅
+  | .someOf E1 E2 => Matches G t N E1 ∨ Matches G t N E2
+  | .eachOf E1 E2 =>
+      ∃ N1 N2, DisjointUnion N N1 N2 ∧
+               Matches G t N1 E1 ∧
+               Matches G t N2 E2
+  | .rep E min max =>
+      ∃ Ns : List (Finset Triple),
+        DisjointUnionList N Ns ∧
+        min ≤ Ns.length ∧
+        (∀ m', max = some m' → Ns.length ≤ m') ∧
+        ∀ Ni ∈ Ns, Matches G t Ni E
+end
+\end{leanlisting}
+
+\lean{InV} is a proposition that passes if \lean{n} 
+ is an RDF Node in \lean{V}, 
+ \lean{BNodeInV} passes if \lean{n} 
+ is a blank node in \lean{V}, 
+ and \lean{neigh} is a function that returns the set of triples in \lean{G}
+ that have \lean{n} as subject. \lean{DisjointUnion} and \lean{DisjointUnionList} are defined as follows:
+
+\begin{leanlisting}
+def DisjointUnion (N N1 N2 : Finset Triple) : Prop :=
+  Disjoint N1 N2 ∧ N = N1 ∪ N2
+
+def DisjointUnionList (N : Finset Triple) 
+                      (Ns : List (Finset Triple)) : Prop :=
+  Ns.Pairwise Disjoint ∧ N = Ns.foldr (· ∪ ·) ∅
+\end{leanlisting}
+
+  
+

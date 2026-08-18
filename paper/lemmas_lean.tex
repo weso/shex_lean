@@ -1,0 +1,148 @@
+\section{Proving lemmas and propositions} \label{sec:lemmas_proofs}
+
+\subsection{Stratified schemas}
+
+Mixing unrestricted recursion with negation can make \emph{correct typing} 
+ fail to find a unique semantics: 
+ the same schema can admit several incompatible correct typings at once. 
+ A standard fix, in the spirit of stratified negation in logic programming, 
+ is to forbid negation from ever occurring on a recursive cycle 
+ between shape labels. 
+ This is captured by a dependency graph on shape labels with two kinds 
+ of edges: \lean{DepPos S L1 L2} holds when the shape label L2 occurs 
+ as a shape reference in L1's definition without being under a NOT (a positive dependency), 
+ and \lean{DepNeg S L1 L2} holds when L2 occurs under some NOT (a negative dependency).
+
+\begin{leanlisting}
+abbrev DepPos (S : Schema) (L1 L2 : Label) : Prop := L2 ∈ (S.shapeDef L1).posDeps
+
+abbrev DepNeg (S : Schema) (L1 L2 : Label) : Prop := L2 ∈ (S.shapeDef L1).negDeps
+\end{leanlisting}
+
+A schema with stratified negation admits a stratification \lean{Strat}, 
+ represented as a structure that packages the number of strata \lean{k}, 
+ the stratum \lean{str} of each label, 
+ and proofs that this assignment respects the schema's dependency graph: 
+ negative dependencies must strictly decrease the stratum (\lean{neg_strict}), 
+ while positive dependencies may never increase it (\lean{pos_le}).
+
+\begin{leanlisting}
+structure Strat (S : Schema) where
+  k : ℕ
+  str : Label → ℕ
+  mem_range : ∀ L ∈ S.labels, 1 ≤ str L ∧ str L ≤ k
+  neg_strict : ∀ L1 ∈ S.labels, ∀ L2, DepNeg S L1 L2 →
+                 str L2 < str L1
+  pos_le : ∀ L1 ∈ S.labels, ∀ L2, DepPos S L1 L2 →
+                 str L2 ≤ str L1
+\end{leanlisting}
+
+\lean{S} is a schema with stratified negation if it admits a stratification
+
+\begin{leanlisting}
+def Schema.StratNeg (S : Schema) : Prop := Nonempty (Strat S)
+\end{leanlisting}
+
+\subsection{Maximal Correct typing}
+
+Lemma 1 covers the base case where negation is entirely absent: 
+  for a negation-free schema \lean{S} (\lean{Schema.NegFree}, 
+  every label's definition uses no NOT) 
+  and any graph \lean{G}, 
+  there is a correct typing that contains every other correct 
+  typing of \lean{G} by \lean{S}. 
+  The reason this case is easy is monotonicity: without negation, 
+  \lean{Satisfies} only grows with the typing — 
+  a node satisfying a shape expression under some typing keeps satisfying 
+  it under any larger one — so simply taking the union of all correct typings (\lean{Schema.maximalTyping}) 
+  is itself correct, 
+  and contains every other one by construction. 
+
+\begin{leanlisting}
+theorem lemma1 (S : Schema) (hnf : S.NegFree) (G : Graph) :
+    ∃ typingG : Typing, typingG ⊆ S.univTyping G ∧ S.CorrTyping G typingG ∧
+      ∀ t', t' ⊆ S.univTyping G → S.CorrTyping G t' → t' ⊆ typingG
+\end{leanlisting}
+
+It is possible to construct a stratified-maximal correct typing \lean{MTyping}
+  one stratum at a time. 
+
+\begin{leanlisting}
+def MTyping (G : Graph) (S : Schema) (str : Strat S) : Typing :=
+  typ S str.str G str.k
+
+def typ (S : Schema) (str : Label → ℕ) (G : Graph) : ℕ → Typing
+  | 0 => ∅
+  | i + 1 => maxAgree (S.stratRestrict str (i + 1)) G
+                      (S.stratum str i) (typ S str G i)
+\end{leanlisting}
+
+where \lean{maxAgree S' G Lo fixed} is the union of all correct typings 
+ of \lean{G} by \lean{S'} that agree with a given typing fixed on the labels in \lean{Lo} — 
+ the per-stratum construction that \lean{typ}'s inductive step performs, 
+ generalizing Lemma 1's maximal correct typing (the special case \lean{Lo = ∅}, 
+ no agreement constraint).
+
+For any schema \lean{S}, any stratification \lean{str} of \lean{S}
+and any graph \lean{G}, the \lean{MTyping G S str}
+is a correct typing of \lean{G} by \lean{S}.
+
+\begin{leanlisting}
+theorem proposition1 (S : Schema) (str : Strat S)
+                    (hClosed : S.Closed) (G : Graph) :
+    S.CorrTyping G (MTyping G S str)
+\end{leanlisting}
+
+The Lean proof strengthens the statement before inducting: 
+ rather than reasoning about MTyping directly, 
+ it shows by induction on the stratum index $i$ that 
+ \lean{typ S str G i} satisfies two invariants at once — 
+ it stays within $S_i$'s universe of typings, 
+ and it is already a correct typing of $S_i$. 
+ The base case ($i = 0$) is vacuous, since the initial stratum $L_0$ is empty. 
+ The inductive step reduces to a single correctness fact about 
+ \lean{maxAgree} (the union-of-typings construction underlying \lean{typ}), 
+ applied with the previous stratum as the 
+ "agreement set" — well-formedness of the schema together with the stratification's 
+ \lean{neg_strict} condition is exactly what guarantees that $S_{i+1}$'s 
+ negative dependencies stay confined there. 
+ Proposition 1 is then just this invariant read off at the last stratum, $i = k$.
+
+ \lean{hClosed} is a well-formedness hypothesis with no counterpart 
+ in the paper's own statement of Proposition 1: 
+ it requires every shape label referenced inside \lean{S}'s definitions 
+ to itself be declared. 
+ In the paper this holds automatically, 
+ since schemas are only ever defined on their own label set; 
+ in Lean, \lean{shapeDef} must be a total function, 
+ so this closure condition has to be assumed explicitly.
+
+
+ Lemma 2 states that for any two stratifications \lean{str1}, \lean{str2} 
+  of a schema \lean{S} the maximal correct typing does not depend on 
+  which stratification was chosen:
+
+ \begin{leanlisting}
+ theorem lemma2 (S : Schema) (hClosed : S.Closed) 
+               (str1 str2 : Strat S)
+               (G : Graph) : MTyping G S str1 = MTyping G S str2
+ \end{leanlisting}
+
+ Here the paper and the Lean development diverge more than for Proposition 1: 
+ the paper's own proof is stated only as an idea, 
+ asserting without further justification that a canonical \emph{most refined} 
+ stratification exists which every other stratification agrees with. 
+ The Lean proof has to supply this argument in full. 
+ It introduces a canonical process that starts from the empty typing 
+ and repeatedly reveals the least-stratum batch of labels still remaining; 
+ an \emph{Independence} argument then shows, 
+ by strong induction on the number of labels left, 
+ that the process's final result does not depend on the order 
+ in which batches are revealed — 
+ the technical heart being a \emph{Swap} lemma letting 
+ two mutually-independent batches be revealed in either order. 
+ Running this process along the checkpoints of an arbitrary 
+ stratification shows it agrees with \lean{MTyping} 
+ for that stratification; 
+ applying this to \lean{str1} and \lean{str2} 
+ separately, both equal the same canonical value, giving Lemma 2.
