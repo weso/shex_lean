@@ -12,12 +12,6 @@ paper — correct typing.
 >
 > We denote `C(G,S)` the set of correct typings of `G` by `S`.
 
-This is stated directly in terms of `Satisfies` (`ShexLean/Shex2025Inheritance/
-Termination.lean`'s fuel-free, canonical relation — well-defined, i.e.
-agreeing with the paper's real `⊨_S`, for schemas satisfying
-`Schema.WellFormedX`/`Schema.WellFormedExtends`, by `lemma1`). The abstract
-case reuses `Schema.desc` (`ShexLean/Shex2025Inheritance/Syntax.lean`, Definition
-3's descendants) exactly as stated.
 -/
 
 namespace ShexLean.Inheritance
@@ -28,9 +22,7 @@ def Schema.CorrectTyping (S : Schema) (G : Graph) (τ : Typing) : Prop :=
     (z ∉ S.A → Satisfies S G τ n (S.shapeDef z)) ∧
     (z ∈ S.A → ∃ x ∈ S.desc z \ S.A, Satisfies S G τ n (S.shapeDef x))
 
-/-- The empty typing is always correct (vacuously — it has no `(n,z)`
-pairs to check), exactly as in the 2017 formalization
-(`ShexLean/Shex2017Schemas/MaximalTyping.lean`'s analogous remark on `typing₄`). -/
+/-- The empty typing is always correct (vacuously — it has no `(n,z)` pairs to check) -/
 theorem Schema.correctTyping_empty (S : Schema) (G : Graph) : S.CorrectTyping G ∅ := by
   intro n z hz
   simp [Typing.has] at hz

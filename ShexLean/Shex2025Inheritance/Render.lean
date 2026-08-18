@@ -3,16 +3,11 @@ import ShexLean.Shex2017Schemas.Render
 import Mathlib.Data.Finset.Sort
 
 /-!
-The 2025 formalism's analogue of `ShexLean.Shex2017Schemas.Render`: turns
-the *real* `Graph`/`Schema`/`Typing` values of a 2025 worked example into
+Turns the *real* `Graph`/`Schema`/`Typing` values of an example into
 display text, and hand-typed `true`/`false`/prose claims into values
 computed via `ShexLean.Inheritance`'s `Decidable` instances
 (`satisfiesFuel_decidable`/`satisfiesMFuel_decidable`/
 `satisfiesEFuel_decidable`, `ShexLean/Shex2025Inheritance/Decidable.lean`).
-
-Reuses `ShexLean.renderSorted`/`RDFNode.render`/`Subject.render`/
-`Triple.render`/`Graph.render`/`renderDecide` from the 2017 side directly —
-those operate on the shared `Common/RDF.lean` types, unchanged here.
 
 **`NodeConstraint := RDFNode → Prop` is opaque** (Def 1, unlike 2017's
 concrete `ValueDescr`), so `.constraint c` can't be rendered from `c`

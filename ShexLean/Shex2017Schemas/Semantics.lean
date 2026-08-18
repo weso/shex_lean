@@ -36,6 +36,7 @@ is left for a follow-up step.
 
 namespace ShexLean
 
+
 /-- `n ∈ V` (Rule se-value-descr1): whether the RDF node `n` belongs to the
 value description `V`, i.e. `n` is an IRI or a literal explicitly listed in
 `V`. Blank nodes are never members of `V` this way — they can only satisfy
@@ -90,6 +91,25 @@ def Matches (G : Graph) (t : Typing) (N : Finset Triple) : TExpr → Prop
         min ≤ Ns.length ∧ (∀ m', max = some m' → Ns.length ≤ m') ∧
         ∀ Ni ∈ Ns, Matches G t Ni E
 end
+
+
+-- `G` is deliberately left free in both notations below, matching the
+-- paper's own habit of leaving the ambient graph implicit: it's resolved as
+-- whichever local/section variable named `G` is in scope at the point of
+-- use (as it is in every declaration in this file), rather than against a
+-- global declaration — hence disabling quotation prechecking (which would
+-- otherwise reject `G` for not already existing) and hygiene (which would
+-- otherwise capture a fresh `G` distinct from the one at each use site),
+-- for just these two declarations.
+set_option quotPrecheck false in
+set_option hygiene false in
+/-- `(t, n) ⊢ S` (Fig. 2a) - infix notation for `Satisfies` -/
+scoped notation:50 "(" t ", " n ")" " ⊢ " S:51 => Satisfies G t n S
+
+set_option quotPrecheck false in
+set_option hygiene false in
+/-- `(t, N) ⊨ E` (Fig. 2b) - infix notation for `Matches` -/
+scoped notation:50 "(" t ", " N ")" " ⊨ " E:51 => Matches G t N E
 
 /-! ### Smart constructors
 

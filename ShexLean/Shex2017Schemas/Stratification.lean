@@ -18,10 +18,10 @@ The dependency graph and Definition 3 ("schema with stratified negation") of
 
 > Definition 3 (schema with stratified negation). A schema `S = (L, def)` is
 > with stratified negation if there exists a natural number `k` and a
-> mapping `strat` from `L` to the interval `[1; k]` such that for all shape
+> mapping `str` from `L` to the interval `[1; k]` such that for all shape
 > labels `L1, L2`:
-> - if `dep⁻(L1, L2)`, then `strat(L1) > strat(L2)`;
-> - if `dep⁺(L1, L2)`, then `strat(L1) ≥ strat(L2)`.
+> - if `dep⁻(L1, L2)`, then `str(L1) > str(L2)`;
+> - if `dep⁺(L1, L2)`, then `str(L1) ≥ str(L2)`.
 -/
 
 namespace ShexLean
@@ -90,25 +90,25 @@ abbrev DepNeg (S : Schema) (L1 L2 : Label) : Prop := L2 ∈ (S.shapeDef L1).negD
 /-- Definition 3 (schema with stratified negation): a stratification of `S`
 into `[1; k]` such that negative dependencies strictly decrease the stratum
 and positive dependencies never increase it. -/
-structure Stratification (S : Schema) where
+structure Strat (S : Schema) where
   /-- The number of strata. -/
   k : ℕ
   /-- The mapping from shape labels to their stratum. -/
-  strat : Label → ℕ
-  /-- `strat` maps every label of `S` into `[1; k]`. -/
-  mem_range : ∀ L ∈ S.labels, 1 ≤ strat L ∧ strat L ≤ k
-  /-- If `dep⁻(L1, L2)`, then `strat(L1) > strat(L2)`. Scoped to `L1 ∈
+  str : Label → ℕ
+  /-- `str` maps every label of `S` into `[1; k]`. -/
+  mem_range : ∀ L ∈ S.labels, 1 ≤ str L ∧ str L ≤ k
+  /-- If `dep⁻(L1, L2)`, then `str(L1) > str(L2)`. Scoped to `L1 ∈
   S.labels`, matching the paper: "the dependency graph of `S` is a graph
   whose set of nodes is `L`" (§3.2) — `dep⁻`/`dep⁺` edges are only ever
   considered between declared labels. -/
-  neg_strict : ∀ L1 ∈ S.labels, ∀ L2, DepNeg S L1 L2 → strat L2 < strat L1
-  /-- If `dep⁺(L1, L2)`, then `strat(L1) ≥ strat(L2)`. Scoped to `L1 ∈
+  neg_strict : ∀ L1 ∈ S.labels, ∀ L2, DepNeg S L1 L2 → str L2 < str L1
+  /-- If `dep⁺(L1, L2)`, then `str(L1) ≥ str(L2)`. Scoped to `L1 ∈
   S.labels`, as for `neg_strict`. -/
-  pos_le : ∀ L1 ∈ S.labels, ∀ L2, DepPos S L1 L2 → strat L2 ≤ strat L1
+  pos_le : ∀ L1 ∈ S.labels, ∀ L2, DepPos S L1 L2 → str L2 ≤ str L1
 
 /-- `S` is a schema with stratified negation if it admits a stratification
 (Definition 3). -/
-def Schema.StratNeg (S : Schema) : Prop := Nonempty (Stratification S)
+def Schema.StratNeg (S : Schema) : Prop := Nonempty (Strat S)
 
 /-!
 Two facts connecting `depsAux true` (used internally, right under a `NOT`)

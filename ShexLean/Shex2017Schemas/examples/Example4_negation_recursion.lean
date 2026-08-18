@@ -8,7 +8,7 @@ Example 4 from Boneva, Labra Gayo, Prud'hommeaux (2017), used to show that
 correct typings (Definition 2) alone are not enough to give a sound
 semantics once negation is mixed with recursion, and that the schema below
 is (as claimed right after Ex. 4) *not* with stratified negation
-(Definition 3, `ShexLean.Stratification`).
+(Definition 3, `ShexLean.Strat`).
 
 ```
 <L1> → NOT(ex:p @<L2>)      <n1> ex:p <n2> .
@@ -93,14 +93,14 @@ theorem typing6_correct :
   exact absurd (hobj ▸ htyp) (by decide)
 
 /-- `S₂` is not with stratified negation (Definition 3): `dep⁻(<L1>, <L2>)`
-and `dep⁻(<L2>, <L1>)` would force `strat(<L1>) > strat(<L2>) > strat(<L1>)`,
+and `dep⁻(<L2>, <L1>)` would force `str(<L1>) > str(<L2>) > str(<L1>)`,
 which is impossible. -/
 theorem S₂_not_stratified : ¬ S₂.StratNeg := by
-  rintro ⟨strat⟩
+  rintro ⟨str⟩
   have hdepL1L2 : DepNeg S₂ L1 L2 := by decide
   have hdepL2L1 : DepNeg S₂ L2 L1 := by decide
-  have h1 := strat.neg_strict L1 (by decide) L2 hdepL1L2
-  have h2 := strat.neg_strict L2 (by decide) L1 hdepL2L1
+  have h1 := str.neg_strict L1 (by decide) L2 hdepL1L2
+  have h2 := str.neg_strict L2 (by decide) L1 hdepL2L1
   omega
 
 end Examples.NegationRecursion
@@ -116,7 +116,7 @@ not enough for a sound semantics, and `S₂` is not with stratified negation.
 `schemaText`/`graphText`/the two correctness verdicts are generated from
 the real `S₂`/`G₂`/`typing5`/`typing6` values; `DepNeg`'s two edges are
 likewise computed (it *is* `Decidable`). `S₂.StratNeg` itself
-(`Nonempty (Stratification S₂)`, an existential over stratification
+(`Nonempty (Strat S₂)`, an existential over stratification
 *functions*) genuinely isn't decidable, so that one claim still just names
 the theorem proving it. -/
 def negationRecursion : Example where
