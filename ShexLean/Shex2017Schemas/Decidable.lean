@@ -87,30 +87,40 @@ instance decidableRepUpperBound (max : Option ℕ) (k : ℕ) :
   | some m' => decidable_of_iff (k ≤ m')
       ⟨fun h _ heq => (Option.some.inj heq) ▸ h, fun h => h m' rfl⟩
 
+/-- `Matches _ N (.eachOf E1 E2)` is decidable given `E1`/`E2`'s own
+decidability at every possible sub-neighbourhood (not just `N` — the search
+below tries every `N1 ∈ N.powerset` against `E1`, and `N \ N1` against
+`E2`), via `matches_eachOf_iff`'s bounded reformulation. Shared by
+`matches_decidable`'s own `.eachOf` case and `repExactDecidableAux` (whose
+`.eachOf E (repExact E k)` unfolding is exactly this shape). -/
+def eachOfDecidableAux (G : Graph) (t : Typing) (N : Finset Triple) (E1 E2 : TExpr)
+    (hE1 : ∀ N1 : Finset Triple, Decidable (Matches G t N1 E1))
+    (hE2 : ∀ N2 : Finset Triple, Decidable (Matches G t N2 E2)) :
+    Decidable (Matches G t N (.eachOf E1 E2)) :=
+  have hd2 : ∀ N1 N2 : Finset Triple, Decidable
+      (DisjointUnion N N1 N2 ∧ Matches G t N1 E1 ∧ Matches G t N2 E2) :=
+    fun N1 N2 => by
+      haveI : Decidable (DisjointUnion N N1 N2) := by
+        show Decidable (Disjoint N1 N2 ∧ N = N1 ∪ N2); infer_instance
+      haveI := hE1 N1
+      haveI := hE2 N2
+      infer_instance
+  have hd1 : ∀ N1 : Finset Triple, Decidable (∃ N2 ∈ N.powerset,
+      DisjointUnion N N1 N2 ∧ Matches G t N1 E1 ∧ Matches G t N2 E2) :=
+    fun N1 => @Finset.decidableExistsAndFinset (Finset Triple) N.powerset _ (hd2 N1)
+  @decidable_of_iff _ _ (matches_eachOf_iff G t N E1 E2).symm
+    (@Finset.decidableExistsAndFinset (Finset Triple) N.powerset _ hd1)
+
 /-- `Matches _ N (repExact E k)` is decidable given `E`'s own decidability
 (at every possible sub-neighbourhood, not just `N` — the `.eachOf`
 unfolding at each step of the chain needs it at a *new* Finset each time),
 by structural recursion on `k` alone: `repExact E (k+1) = .eachOf E
-(repExact E k)` routes through the exact same bounded-`N.powerset` search
-as `.eachOf`'s own case below. -/
+(repExact E k)` routes through `eachOfDecidableAux`. -/
 def repExactDecidableAux (G : Graph) (t : Typing) (E : TExpr)
     (hE : ∀ N' : Finset Triple, Decidable (Matches G t N' E)) :
     ∀ (k : ℕ) (N : Finset Triple), Decidable (Matches G t N (repExact E k))
   | 0, N => by show Decidable (N = ∅); infer_instance
-  | k + 1, N =>
-      have hd2 : ∀ N1 N2 : Finset Triple, Decidable
-          (DisjointUnion N N1 N2 ∧ Matches G t N1 E ∧ Matches G t N2 (repExact E k)) :=
-        fun N1 N2 => by
-          haveI : Decidable (DisjointUnion N N1 N2) := by
-            show Decidable (Disjoint N1 N2 ∧ N = N1 ∪ N2); infer_instance
-          haveI := hE N1
-          haveI := repExactDecidableAux G t E hE k N2
-          infer_instance
-      have hd1 : ∀ N1 : Finset Triple, Decidable (∃ N2 ∈ N.powerset,
-          DisjointUnion N N1 N2 ∧ Matches G t N1 E ∧ Matches G t N2 (repExact E k)) :=
-        fun N1 => @Finset.decidableExistsAndFinset (Finset Triple) N.powerset _ (hd2 N1)
-      @decidable_of_iff _ _ (matches_eachOf_iff G t N E (repExact E k)).symm
-        (@Finset.decidableExistsAndFinset (Finset Triple) N.powerset _ hd1)
+  | k + 1, N => eachOfDecidableAux G t N E (repExact E k) hE (repExactDecidableAux G t E hE k)
 
 /-- `InV n V` is decidable: case on `n`'s (finitely many)
 constructors, each reducing it to plain `Finset` membership. -/
@@ -175,19 +185,7 @@ def matches_decidable (G : Graph) (t : Typing) (N : Finset Triple) :
       haveI := matches_decidable G t N E2
       infer_instance
   | .eachOf E1 E2 =>
-      haveI hd2 : ∀ N1 N2 : Finset Triple, Decidable
-          (DisjointUnion N N1 N2 ∧ Matches G t N1 E1 ∧ Matches G t N2 E2) :=
-        fun N1 N2 => by
-          haveI : Decidable (DisjointUnion N N1 N2) := by
-            show Decidable (Disjoint N1 N2 ∧ N = N1 ∪ N2); infer_instance
-          haveI := matches_decidable G t N1 E1
-          haveI := matches_decidable G t N2 E2
-          infer_instance
-      have hd1 : ∀ N1 : Finset Triple, Decidable (∃ N2 ∈ N.powerset,
-          DisjointUnion N N1 N2 ∧ Matches G t N1 E1 ∧ Matches G t N2 E2) :=
-        fun N1 => @Finset.decidableExistsAndFinset (Finset Triple) N.powerset _ (hd2 N1)
-      @decidable_of_iff _ _ (matches_eachOf_iff G t N E1 E2).symm
-        (@Finset.decidableExistsAndFinset (Finset Triple) N.powerset _ hd1)
+      eachOfDecidableAux G t N E1 E2 (matches_decidable G t · E1) (matches_decidable G t · E2)
   | .rep E min max =>
       haveI hE : ∀ N' : Finset Triple, Decidable (Matches G t N' E) :=
         fun N' => matches_decidable G t N' E

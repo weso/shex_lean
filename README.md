@@ -48,10 +48,14 @@ examples/                     -- the shex_lean executable's CLI infrastructure
 - **`ShexLean/Common/`** holds the vocabulary both papers use *unchanged*:
   `RDF.lean` (IRIs, RDF nodes, triples, graphs — §1 of the 2017 paper),
   `Typing.lean` (shape labels, node-type associations, typings —
-  Definition 1, §3.1), and `DisjointUnion.lean` (the disjoint-union helpers
+  Definition 1, §3.1), `DisjointUnion.lean` (the disjoint-union helpers
   both papers' triple-expression semantics need for `;`/`*`, originally
   written once for 2017's Rules te-each-of/te-repet and reused as-is by
-  2025's analogous Table 1 rules). Neither paper's `Schema`/`ShapeExpr`
+  2025's analogous Table 1 rules), and `FixedPoint.lean` (paper-independent
+  order theory: iterating a monotone `Finset` self-map reaches a fixed
+  point in finitely many steps — used by both papers' `refine`-style
+  validation algorithms, and by the 2025 side's computable ancestor-set
+  closure). Neither paper's `Schema`/`ShapeExpr`
   type is here — those genuinely differ between the two formalisms (2025's
   `Schema = (Y, X, def, A)` vs. 2017's `Schema = (L, def)`, in particular)
   and live in each paper's own directory/namespace instead

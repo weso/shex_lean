@@ -3,6 +3,7 @@
 import ShexLean.Common.RDF
 import ShexLean.Common.Typing
 import ShexLean.Common.DisjointUnion
+import ShexLean.Common.FixedPoint
 import ShexLean.Shex2017Schemas.Syntax
 import ShexLean.Shex2017Schemas.Semantics
 import ShexLean.Shex2017Schemas.Stratification

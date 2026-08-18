@@ -9,7 +9,7 @@ import Example
 /-!
 Example 3 from the 2025 "Shape Expressions with Inheritance" paper (§4.1,
 Table 1): the triple expression `e = p @T_even ; (p @T_<5* | p @T_str)`,
-matched/not matched against three example sets of triples. Also hosts the
+matched/not matched against four example sets of triples. Also hosts the
 ambient schema `S_ex5` (Example 5's own schema, §4.2) and node constraints
 `T_even`/`T_<5`/`T_>5`/`T_str`, since Examples 3-5 all state their claims
 against this same schema — `Example4_closed_extra.lean`/
@@ -138,6 +138,52 @@ theorem M2a_satisfies_e : SatisfiesEFuel bigFuel S_ex5 default τ_ex3 M2a e_ex3 
   · exact ⟨n_ex3, .lit (.int 2), rfl, by decide⟩
   · exact Or.inr ⟨n_ex3, .lit (.str "a"), rfl, by decide⟩
 
+/-- `x` belongs to some piece of a `List.foldr (· ∪ ·) ∅` union — the
+converse of `RepBound.lean`'s `mem_subset_foldr_union`. -/
+private theorem mem_of_mem_foldr_union {α : Type*} [DecidableEq α] (l : List (Finset α))
+    {x : α} (hx : x ∈ l.foldr (· ∪ ·) ∅) : ∃ N ∈ l, x ∈ N := by
+  induction l with
+  | nil => simp at hx
+  | cons N l ih =>
+      rw [List.foldr_cons, Finset.mem_union] at hx
+      rcases hx with hx | hx
+      · exact ⟨N, List.mem_cons_self, hx⟩
+      · obtain ⟨N', hN', hxN'⟩ := ih hx
+        exact ⟨N', List.mem_cons_of_mem _ hN', hxN'⟩
+
+/-- `M24a, τ ¬⊨ e` (Example 3's fourth fact): unlike `M24`/`M246`/`M2a`,
+`M24a` cannot be split to satisfy `e`. -/
+theorem M24a_not_satisfies_e : ¬ SatisfiesEFuel bigFuel S_ex5 default τ_ex3 M24a e_ex3 := by
+  rintro ⟨N1, N2, ⟨hdisj, hunion⟩, ⟨n1, o1, hN1eq, hty1⟩, hN2⟩
+  have ha_mem : tp "p" (.lit (.str "a")) ∈ M24a := by decide
+  have ha_notin_N1 : tp "p" (.lit (.str "a")) ∉ N1 := by
+    rw [hN1eq, Finset.mem_singleton]
+    rintro heq
+    have ho1 : o1 = .lit (.str "a") := by
+      simp only [tp] at heq; injection heq with _ _ ho1; exact ho1.symm
+    rw [ho1] at hty1
+    simp [Typing.has, τ_ex3] at hty1
+  have ha_mem_N2 : tp "p" (.lit (.str "a")) ∈ N2 := by
+    rcases Finset.mem_union.mp (hunion ▸ ha_mem) with h | h
+    · exact absurd h ha_notin_N1
+    · exact h
+  rcases (hN2 : SatisfiesEFuel _ S_ex5 default τ_ex3 N2 (.star (.tc "p" "T_lt5")) ∨
+      SatisfiesEFuel _ S_ex5 default τ_ex3 N2 (.tc "p" "T_str")) with hN2star | hN2str
+  · obtain ⟨Ns, ⟨-, hunion2⟩, hall⟩ := hN2star
+    obtain ⟨Ni, hNi_mem, ha_in_Ni⟩ := mem_of_mem_foldr_union Ns (hunion2 ▸ ha_mem_N2)
+    obtain ⟨ni, oi, hNieq, htyi⟩ := hall Ni hNi_mem
+    rw [hNieq, Finset.mem_singleton] at ha_in_Ni
+    have hoi : oi = .lit (.str "a") := by
+      simp only [tp] at ha_in_Ni; injection ha_in_Ni with _ _ hoi; exact hoi.symm
+    rw [hoi] at htyi
+    simp [Typing.has, τ_ex3] at htyi
+  · obtain ⟨n2, o2, hN2eq, -⟩ := hN2str
+    have hcardEq := Finset.card_union_of_disjoint hdisj
+    rw [← hunion, hN1eq, hN2eq] at hcardEq
+    simp only [Finset.card_singleton] at hcardEq
+    have hcard3 : M24a.card = 3 := by decide
+    omega
+
 /-! `S_ex5`'s decidability prerequisites (`ShexLean.Shex2025Inheritance.
 Decidable`'s `satisfiesFuel_decidable`/`satisfiesMFuel_decidable`), needed
 by every `SatisfiesFuel`/`SatisfiesMFuel` display claim in Examples 4/5. -/
@@ -152,10 +198,10 @@ end ShexLean.Inheritance
 
 namespace Examples
 
-open ShexLean.Inheritance (e_ex3 M24 M246 M2a S_ex5 τ_ex3 bigFuel satisfiesEFuel_decidable)
+open ShexLean.Inheritance (e_ex3 M24 M246 M2a M24a S_ex5 τ_ex3 bigFuel satisfiesEFuel_decidable)
 open ShexLean (Graph.render Typing.render renderDecide)
 
-/-- Example 3's triple expression, matched against `M24`/`M246`/`M2a`.
+/-- Example 3's triple expression, matched against `M24`/`M246`/`M2a`/`M24a`.
 `graphText`/`typingText`'s typing line are rendered from the real
 `Finset Triple`/`Typing` values; every `M,τ ⊨ e` claim is a `native_decide`
 computation via `satisfiesEFuel_decidable` (unconditionally decidable —
@@ -169,11 +215,13 @@ def inheritance2025TripleMatch : Example where
   graphText :=
     s!"M24  = {Graph.render M24}\n" ++
     s!"M246 = {Graph.render M246}\n" ++
-    s!"M2a  = {Graph.render M2a}"
+    s!"M2a  = {Graph.render M2a}\n" ++
+    s!"M24a = {Graph.render M24a}"
   typingText :=
     s!"τ = {Typing.render τ_ex3}\n" ++
     s!"M24, τ ⊨ e = {renderDecide (satisfiesEFuel_decidable bigFuel S_ex5 default τ_ex3 M24 e_ex3)}\n" ++
     s!"M246, τ ⊨ e = {renderDecide (satisfiesEFuel_decidable bigFuel S_ex5 default τ_ex3 M246 e_ex3)}\n" ++
-    s!"M2a, τ ⊨ e = {renderDecide (satisfiesEFuel_decidable bigFuel S_ex5 default τ_ex3 M2a e_ex3)}"
+    s!"M2a, τ ⊨ e = {renderDecide (satisfiesEFuel_decidable bigFuel S_ex5 default τ_ex3 M2a e_ex3)}\n" ++
+    s!"M24a, τ ⊨ e = {renderDecide (satisfiesEFuel_decidable bigFuel S_ex5 default τ_ex3 M24a e_ex3)}"
 
 end Examples

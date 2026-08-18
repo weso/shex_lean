@@ -32,8 +32,8 @@ correctness.
 > Proposition 1. For every schema `S`, stratification `σ` of `S`, and
 > graph `G`, the typing `τ_max(S,σ,G)` is a correct typing.
 
-This whole file is structurally the 2017 formalism's `ShexLean/
-Proposition1.lean` (Definition 3/4 there) ported to the new `Schema`/
+This whole file is structurally the 2017 formalism's
+`ShexLean/Shex2017Schemas/Proposition1.lean` (Definition 3/4 there) ported to the new `Schema`/
 `Satisfies`. The schema-restriction/`maxTypingAgreeing`/`stratTypingSeq`
 scaffolding transfers over essentially mechanically — restricting `Y`, `X`,
 `A` by a stratum filter instead of `.labels`, and `Schema.CorrectTyping`'s
@@ -85,8 +85,8 @@ theorem restrictTyping_agree {τ τ' : Typing} {Z : Finset Label}
 
 /-- Well-formedness beyond `WellFormedX`/`ExtAcyclic`: every label
 `D_S`-reachable from a declared label (`z ∈ Y ∪ X`) is itself declared.
-Needed for the same reason 2017's `Schema.Closed` was (`ShexLean/
-Proposition1.lean`'s module docstring) — `shapeDef` is total on all of
+Needed for the same reason 2017's `Schema.Closed` was
+(`ShexLean/Shex2017Schemas/Proposition1.lean`'s module docstring) — `shapeDef` is total on all of
 `Label`, so nothing stops a schema from referencing an undeclared
 label, but `Stratification`'s conditions are only required to hold with
 `z ∈ Y ∪ X` as the edge's source. -/
@@ -730,9 +730,8 @@ Table 3's rule 17 filters the neighbourhood through `Me`/`Mnotin` — the
 **non-monotone** in `τ`, even with no negation anywhere: growing `τ` can
 move a triple from `Mnotin` into `Me`, and if `Me` was already matching a
 *bare* (non-starred) triple constraint like `p @z` (which needs `M` to be
-*exactly* a singleton), growing it past size 1 breaks that match. A
-concrete instance of this was checked directly in Lean before writing this
-section: a shape `⟨closed := false, extra := some {p}, triples := p @z⟩`
+*exactly* a singleton), growing it past size 1 breaks that match. For
+instance, a shape `⟨closed := false, extra := some {p}, triples := p @z⟩`
 satisfied by `M = {t1, t2}` under `τ₁ = {(t1.obj, z)}` (`Me = {t1}`, a
 singleton) stops being satisfied under `τ₂ = τ₁ ∪ {(t2.obj, z)} ⊇ τ₁`
 (`Me` grows to `{t1, t2}`, no longer a singleton).

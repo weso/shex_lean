@@ -1,3 +1,4 @@
+import ShexLean.Common.FixedPoint
 import ShexLean.Shex2025Inheritance.Lemma2
 
 /-!
@@ -39,40 +40,6 @@ Shex2025Inheritance/Lemma2.lean` provides
 (`Satisfies_restrictLabels_agree`, `Schema.correctTyping_stratRestrict_mono`). -/
 
 namespace ShexLean.Inheritance
-
-/-- A purely order-theoretic fact used to show the per-stratum refinement
-loop actually reaches a fixed point: iterating any *decreasing* self-map of
-a finite type stabilizes within `x.card` steps (pure `Finset`/
-`Function.iterate` reasoning, no schema content). -/
-theorem Finset.decreasing_iterate_fixed {α : Type*} [DecidableEq α] (f : Finset α → Finset α)
-    (hf : ∀ t, f t ⊆ t) (x : Finset α) : f (f^[x.card] x) = f^[x.card] x := by
-  have hfix : ∀ (y : Finset α), f y = y → ∀ n, f^[n] y = y := by
-    intro y hy n
-    induction n with
-    | zero => rfl
-    | succ n ihn => rw [Function.iterate_succ_apply', ihn, hy]
-  induction hcard : x.card using Nat.strong_induction_on generalizing x with
-  | _ card ih =>
-    by_cases heq : f x = x
-    · rw [hfix x heq card]
-      exact heq
-    · have hsub := hf x
-      have hlt : (f x).card < x.card := Finset.card_lt_card (hsub.ssubset_of_ne heq)
-      have hcard' : (f x).card < card := hcard ▸ hlt
-      have hxne : x ≠ ∅ := by rintro rfl; exact heq (by simpa using hf (∅ : Finset α))
-      have hcardpos : 0 < card := by
-        rw [← hcard]; exact Finset.card_pos.mpr (Finset.nonempty_iff_ne_empty.mpr hxne)
-      have hih := ih (f x).card hcard' (f x) rfl
-      have hpad : ∀ n, (f x).card ≤ n → f^[n] (f x) = f^[(f x).card] (f x) := by
-        intro n hn
-        obtain ⟨k, rfl⟩ : ∃ k, n = k + (f x).card := ⟨n - (f x).card, by omega⟩
-        rw [Function.iterate_add_apply]
-        exact hfix (f^[(f x).card] (f x)) hih k
-      have hstep : f^[card] x = f^[card - 1] (f x) := by
-        conv_lhs => rw [show card = (card - 1) + 1 by omega]
-        rw [Function.iterate_succ_apply]
-      rw [hstep, hpad (card - 1) (by omega)]
-      exact hih
 
 /-- The initial guess for stratum `S'` relative to the previous stratum's
 `(Lo, T)`: keep `T`'s contribution on `Lo` exactly, and guess every possible

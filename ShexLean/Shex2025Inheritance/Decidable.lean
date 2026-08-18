@@ -1,3 +1,4 @@
+import ShexLean.Common.FixedPoint
 import ShexLean.Shex2025Inheritance.Semantics
 import ShexLean.Shex2017Schemas.RepBound
 import Mathlib.Data.Finset.Card
@@ -35,53 +36,6 @@ file confronts head-on rather than working around:
    way `matches_decidable`'s `.rep` case threads through a decidability
    witness for `repExact`'s repeated sub-expression.
 -/
-
-/-- Dual of `ShexLean.Shex2017Schemas.Algorithm1`'s `Finset.decreasing_
-iterate_fixed`: an *increasing* self-map bounded above by a finite `U`
-stabilizes within `U.card` steps too (same proof shape — strong induction
-on how much of `U \ t` is left to fill in, rather than on `t` itself). -/
-theorem Finset.increasing_iterate_fixed {α : Type*} [DecidableEq α] (f : Finset α → Finset α)
-    (U : Finset α) (hf : ∀ t ⊆ U, t ⊆ f t) (hfU : ∀ t ⊆ U, f t ⊆ U) :
-    ∀ (x : Finset α), x ⊆ U → f (f^[(U \ x).card] x) = f^[(U \ x).card] x := by
-  have hfix : ∀ (y : Finset α), f y = y → ∀ n, f^[n] y = y := by
-    intro y hy n
-    induction n with
-    | zero => rfl
-    | succ n ihn => rw [Function.iterate_succ_apply', ihn, hy]
-  intro x
-  induction hcard : (U \ x).card using Nat.strong_induction_on generalizing x with
-  | _ card ih =>
-    intro hxU
-    by_cases heq : f x = x
-    · rw [hfix x heq card]
-      exact heq
-    · have hsub := hf x hxU
-      have hfxU := hfU x hxU
-      have hssubset : x ⊂ f x := hsub.ssubset_of_ne (fun h => heq h.symm)
-      have hlt : (U \ f x).card < (U \ x).card := by
-        have hsubd : U \ f x ⊆ U \ x := Finset.sdiff_subset_sdiff (le_refl U) hssubset.le
-        apply Finset.card_lt_card
-        rw [Finset.ssubset_iff_of_subset hsubd]
-        obtain ⟨a, ha1, ha2⟩ := Finset.exists_of_ssubset hssubset
-        refine ⟨a, ?_, ?_⟩
-        · simp [hfxU ha1, ha2]
-        · simp [ha1]
-      have hcard' : (U \ f x).card < card := hcard ▸ hlt
-      have hih := ih (U \ f x).card hcard' (f x) rfl hfxU
-      have hpad : ∀ n, (U \ f x).card ≤ n → f^[n] (f x) = f^[(U \ f x).card] (f x) := by
-        intro n hn
-        obtain ⟨k, rfl⟩ := Nat.le.dest hn
-        induction k with
-        | zero => rfl
-        | succ k ihk =>
-            have heqn : (U \ f x).card + (k+1) = ((U \ f x).card + k) + 1 := by omega
-            rw [heqn, Function.iterate_succ_apply', ihk (by omega), hih]
-      have hcardpos : 0 < card := by omega
-      obtain ⟨card', hcard'eq⟩ := Nat.exists_eq_succ_of_ne_zero (by omega : card ≠ 0)
-      subst hcard'eq
-      have hle : (U \ f x).card ≤ card' := by omega
-      rw [Function.iterate_succ_apply, hpad card' hle]
-      exact hih
 
 namespace ShexLean.Inheritance
 

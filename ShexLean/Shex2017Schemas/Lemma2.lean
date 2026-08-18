@@ -15,11 +15,11 @@ full, independent proof, built from the ground up:
   batch vs. two nested batches gives the same `maxAgree` result.
 - `combStrat` + `MTyping_combStrat`: a concrete "lex-combine"
   stratification and *refinement invariance* along it — not needed by the
-  final proof below, but a genuine, independently useful fact, and the
-  route originally attempted before it became clear that exact
-  checkpoint-alignment with an *arbitrary* second stratification is
-  mathematically impossible (two mutually-independent labels can be
-  ordered differently by different valid stratifications).
+  final proof below, but a genuine, independently useful fact. Exact
+  checkpoint-alignment with an *arbitrary* second stratification turns out
+  to be mathematically impossible (two mutually-independent labels can be
+  ordered differently by different valid stratifications), which is why
+  the general proof below takes a different approach.
 - `maxAgree_swap` ("Swap"): two batches that *each individually*
   only depend on a common base (not on each other) can be revealed in
   either order with the same result — two applications of Fusion.

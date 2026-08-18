@@ -30,24 +30,16 @@ theorem Satisfies.agree {G : Graph} {t t' : Typing} :
   | .valueDescr _, _, _ => Iff.rfl
   | .neigDescr E, hagree, n => Matches.agree (G := G) E hagree (neigh G n)
   | .and S1 S2, hagree, n => by
-      have h1 := Satisfies.agree (G := G) S1 (fun n L hL => hagree n L (by
-        simp only [ShExpr.posDeps, ShExpr.negDeps,
-          Finset.mem_union] at hL ⊢
-        tauto)) n
-      have h2 := Satisfies.agree (G := G) S2 (fun n L hL => hagree n L (by
-        simp only [ShExpr.posDeps, ShExpr.negDeps,
-          Finset.mem_union] at hL ⊢
-        tauto)) n
+      have h1 := Satisfies.agree (G := G) S1
+        (fun n L hL => hagree n L (ShExpr.and_deps_subset_left S1 S2 hL)) n
+      have h2 := Satisfies.agree (G := G) S2
+        (fun n L hL => hagree n L (ShExpr.and_deps_subset_right S1 S2 hL)) n
       exact and_congr h1 h2
   | .or S1 S2, hagree, n => by
-      have h1 := Satisfies.agree (G := G) S1 (fun n L hL => hagree n L (by
-        simp only [ShExpr.posDeps, ShExpr.negDeps,
-          Finset.mem_union] at hL ⊢
-        tauto)) n
-      have h2 := Satisfies.agree (G := G) S2 (fun n L hL => hagree n L (by
-        simp only [ShExpr.posDeps, ShExpr.negDeps,
-          Finset.mem_union] at hL ⊢
-        tauto)) n
+      have h1 := Satisfies.agree (G := G) S1
+        (fun n L hL => hagree n L (ShExpr.or_deps_subset_left S1 S2 hL)) n
+      have h2 := Satisfies.agree (G := G) S2
+        (fun n L hL => hagree n L (ShExpr.or_deps_subset_right S1 S2 hL)) n
       exact or_congr h1 h2
   | .not S, hagree, n => by
       have h := Satisfies.agree (G := G) S (fun n L hL => hagree n L (by
@@ -70,37 +62,23 @@ theorem Matches.agree {G : Graph} {t t' : Typing} :
         exact ⟨subj, pred, obj, hN, hP, (hagree obj L hL).mpr htyp⟩
   | .empty, _, _ => Iff.rfl
   | .someOf E1 E2, hagree, N => by
-      have h1 := Matches.agree (G := G) E1 (fun n L hL => hagree n L (by
-        simp only [TExpr.posDeps, TExpr.negDeps,
-          Finset.mem_union] at hL ⊢
-        tauto)) N
-      have h2 := Matches.agree (G := G) E2 (fun n L hL => hagree n L (by
-        simp only [TExpr.posDeps, TExpr.negDeps,
-          Finset.mem_union] at hL ⊢
-        tauto)) N
+      have h1 := Matches.agree (G := G) E1
+        (fun n L hL => hagree n L (TExpr.someOf_deps_subset_left E1 E2 hL)) N
+      have h2 := Matches.agree (G := G) E2
+        (fun n L hL => hagree n L (TExpr.someOf_deps_subset_right E1 E2 hL)) N
       exact or_congr h1 h2
   | .eachOf E1 E2, hagree, N => by
       constructor
       · rintro ⟨N1, N2, hdu, h1, h2⟩
-        have a1 := Matches.agree (G := G) E1 (fun n L hL => hagree n L (by
-          simp only [TExpr.posDeps, TExpr.negDeps,
-            Finset.mem_union] at hL ⊢
-          tauto)) N1
-        have a2 := Matches.agree (G := G) E2 (fun n L hL => hagree n L (by
-          simp only [TExpr.posDeps, TExpr.negDeps,
-            Finset.mem_union] at hL ⊢
-          tauto)) N2
-        exact ⟨N1, N2, hdu, a1.mp h1, a2.mp h2⟩
+        exact ⟨N1, N2, hdu, (Matches.agree (G := G) E1
+          (fun n L hL => hagree n L (TExpr.eachOf_deps_subset_left E1 E2 hL)) N1).mp h1,
+          (Matches.agree (G := G) E2
+          (fun n L hL => hagree n L (TExpr.eachOf_deps_subset_right E1 E2 hL)) N2).mp h2⟩
       · rintro ⟨N1, N2, hdu, h1, h2⟩
-        have a1 := Matches.agree (G := G) E1 (fun n L hL => hagree n L (by
-          simp only [TExpr.posDeps, TExpr.negDeps,
-            Finset.mem_union] at hL ⊢
-          tauto)) N1
-        have a2 := Matches.agree (G := G) E2 (fun n L hL => hagree n L (by
-          simp only [TExpr.posDeps, TExpr.negDeps,
-            Finset.mem_union] at hL ⊢
-          tauto)) N2
-        exact ⟨N1, N2, hdu, a1.mpr h1, a2.mpr h2⟩
+        exact ⟨N1, N2, hdu, (Matches.agree (G := G) E1
+          (fun n L hL => hagree n L (TExpr.eachOf_deps_subset_left E1 E2 hL)) N1).mpr h1,
+          (Matches.agree (G := G) E2
+          (fun n L hL => hagree n L (TExpr.eachOf_deps_subset_right E1 E2 hL)) N2).mpr h2⟩
   | .rep E _ _, hagree, N => by
       constructor
       · rintro ⟨Ns, hdu, hmin, hmax, hall⟩
@@ -132,25 +110,15 @@ theorem Satisfies.stratMono {G : Graph} {t t' : Typing} {Lo : Finset Label}
       Satisfies G t n S → Satisfies G t' n S
   | .valueDescr _, _, _, h => h
   | .neigDescr E, hle, n, h => Matches.stratMono (G := G) hsub hagree E hle (neigh G n) h
-  | .and S1 S2, hle, n, ⟨h1, h2⟩ => by
-      have le1 : S1.negDeps ⊆ Lo := by
-        simp only [ShExpr.negDeps, Finset.union_subset_iff] at hle
-        exact hle.1
-      have le2 : S2.negDeps ⊆ Lo := by
-        simp only [ShExpr.negDeps, Finset.union_subset_iff] at hle
-        exact hle.2
-      exact ⟨Satisfies.stratMono (G := G) hsub hagree S1 le1 n h1,
-        Satisfies.stratMono (G := G) hsub hagree S2 le2 n h2⟩
-  | .or S1 S2, hle, n, Or.inl h => by
-      have le1 : S1.negDeps ⊆ Lo := by
-        simp only [ShExpr.negDeps, Finset.union_subset_iff] at hle
-        exact hle.1
-      exact Or.inl (Satisfies.stratMono (G := G) hsub hagree S1 le1 n h)
-  | .or S1 S2, hle, n, Or.inr h => by
-      have le2 : S2.negDeps ⊆ Lo := by
-        simp only [ShExpr.negDeps, Finset.union_subset_iff] at hle
-        exact hle.2
-      exact Or.inr (Satisfies.stratMono (G := G) hsub hagree S2 le2 n h)
+  | .and S1 S2, hle, n, ⟨h1, h2⟩ =>
+      ⟨Satisfies.stratMono (G := G) hsub hagree S1 ((ShExpr.and_negDeps_subset_left S1 S2).trans hle) n h1,
+        Satisfies.stratMono (G := G) hsub hagree S2 ((ShExpr.and_negDeps_subset_right S1 S2).trans hle) n h2⟩
+  | .or S1 S2, hle, n, Or.inl h =>
+      Or.inl (Satisfies.stratMono (G := G) hsub hagree S1
+        ((ShExpr.or_negDeps_subset_left S1 S2).trans hle) n h)
+  | .or S1 S2, hle, n, Or.inr h =>
+      Or.inr (Satisfies.stratMono (G := G) hsub hagree S2
+        ((ShExpr.or_negDeps_subset_right S1 S2).trans hle) n h)
   | .not S, hle, n, h => by
       have hle' : S.posDeps ∪ S.negDeps ⊆ Lo := by
         rw [← ShExpr.not_negDeps]; exact hle
@@ -166,26 +134,19 @@ theorem Matches.stratMono {G : Graph} {t t' : Typing} {Lo : Finset Label}
   | .tPattern _ _, _, _, ⟨subj, pred, obj, hN, hP, htyp⟩ =>
       ⟨subj, pred, obj, hN, hP, hsub htyp⟩
   | .empty, _, _, h => h
-  | .someOf E1 E2, hle, N, Or.inl h => by
-      have le1 : E1.negDeps ⊆ Lo := by
-        simp only [TExpr.negDeps, Finset.union_subset_iff] at hle
-        exact hle.1
-      exact Or.inl (Matches.stratMono (G := G) hsub hagree E1 le1 N h)
-  | .someOf E1 E2, hle, N, Or.inr h => by
-      have le2 : E2.negDeps ⊆ Lo := by
-        simp only [TExpr.negDeps, Finset.union_subset_iff] at hle
-        exact hle.2
-      exact Or.inr (Matches.stratMono (G := G) hsub hagree E2 le2 N h)
-  | .eachOf E1 E2, hle, N, ⟨N1, N2, hdu, h1, h2⟩ => by
-      have le1 : E1.negDeps ⊆ Lo := by
-        simp only [TExpr.negDeps, Finset.union_subset_iff] at hle
-        exact hle.1
-      have le2 : E2.negDeps ⊆ Lo := by
-        simp only [TExpr.negDeps, Finset.union_subset_iff] at hle
-        exact hle.2
-      exact ⟨N1, N2, hdu, Matches.stratMono (G := G) hsub hagree E1 le1 N1 h1,
-        Matches.stratMono (G := G) hsub hagree E2 le2 N2 h2⟩
-  | .rep E _ _, hle, N, ⟨Ns, hdu, hmin, hmax, hall⟩ =>
+  | .someOf E1 E2, hle, N, Or.inl h =>
+      Or.inl (Matches.stratMono (G := G) hsub hagree E1
+        ((TExpr.someOf_negDeps_subset_left E1 E2).trans hle) N h)
+  | .someOf E1 E2, hle, N, Or.inr h =>
+      Or.inr (Matches.stratMono (G := G) hsub hagree E2
+        ((TExpr.someOf_negDeps_subset_right E1 E2).trans hle) N h)
+  | .eachOf E1 E2, hle, _N, ⟨N1, N2, hdu, h1, h2⟩ =>
+      ⟨N1, N2, hdu,
+        Matches.stratMono (G := G) hsub hagree E1
+          ((TExpr.eachOf_negDeps_subset_left E1 E2).trans hle) N1 h1,
+        Matches.stratMono (G := G) hsub hagree E2
+          ((TExpr.eachOf_negDeps_subset_right E1 E2).trans hle) N2 h2⟩
+  | .rep E _ _, hle, _N, ⟨Ns, hdu, hmin, hmax, hall⟩ =>
       ⟨Ns, hdu, hmin, hmax,
         fun Ni hNi => Matches.stratMono (G := G) hsub hagree E hle Ni (hall Ni hNi)⟩
 

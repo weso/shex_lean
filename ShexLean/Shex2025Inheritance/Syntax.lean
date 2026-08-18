@@ -117,8 +117,8 @@ Definition 3's own phrasing only mentions a label's *outermost*
 `extends X h [and u]` clause, but the grammar doesn't actually confine
 `extends` to that position — `u` (or, for that matter, a `Y`-label's
 unrestricted definition) can syntactically contain a further, nested
-`extends` under `or`/`and`/`not`, and Table 3's rule 18 (`ShexLean/
-Inheritance/Semantics.lean`) fires on *any* `.extends` node it structurally
+`extends` under `or`/`and`/`not`, and Table 3's rule 18
+(`ShexLean/Shex2025Inheritance/Semantics.lean`) fires on *any* `.extends` node it structurally
 reaches, regardless of nesting. Recursing through the whole tree here — the
 same way `ShapeExpr.depsAux` (`ShexLean/Shex2025Inheritance/Stratification.lean`)
 already has to for ordinary references — is what makes `Schema.extEdge`/

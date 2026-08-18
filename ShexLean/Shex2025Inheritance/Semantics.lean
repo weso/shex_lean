@@ -142,9 +142,8 @@ def SatisfiesMFuel : (Fuel : ℕ) → Schema → Graph → Typing → Finset Tri
   -- Rule 18 (`extends X h`): `M` splits into `M'` (satisfying `h` *as a
   -- shape* — Table 3 rule 17, respecting `h`'s own `closed`/`extra`, per
   -- the paper's own `M', τ ⊨ h`, not a bare Table 1 check on `h`'s triple
-  -- expression — see `ShexLean/Shex2025Inheritance/Termination.lean`'s
-  -- module docstring for the history of this fix) and one `Mx x` per
-  -- `x ∈ anc(X)` (satisfying `ext-te(x)`, and — if `restr(x)` is present —
+  -- expression) and one `Mx x` per `x ∈ anc(X)` (satisfying `ext-te(x)`,
+  -- and — if `restr(x)` is present —
   -- the union of `Mx z` over `z ∈ anc(x)` satisfies `restr(x)`).
   | fuel+1, S, G, τ, M, .extends xs h =>
       ∃ M' Mx, DisjointUnionOn M M' (S.ancSet xs) Mx ∧
@@ -177,10 +176,8 @@ triple constraint of `e`), `M` satisfying `e` (Table 1) lifts directly to
 `M` satisfying the trivial `[closed:=false][extra:=none]⟨e⟩` shape (Table
 3 rule 17) — `Mnotin` is forced empty since it's always `⊆ M \ Me = M \ M
 = ∅`. This is exactly what an `extends X h`'s own `M'` piece needs to
-satisfy (`M', τ ⊨ h`, Table 3 rule 18), now that it's checked against `h`
-as a shape rather than directly against `h.triples` (see
-`ShexLean/Shex2025Inheritance/Termination.lean`'s module docstring for
-why). -/
+satisfy: `M', τ ⊨ h` (Table 3 rule 18), checked against `h` as a shape
+rather than directly against `h.triples`. -/
 theorem ofShape_of_Me_eq_self {S : Schema} {G : Graph} {τ : Typing} {fuel : ℕ}
     {M : Finset Triple} {e : TripleExpr} (hMe : Me τ M e = M)
     (hE : SatisfiesEFuel fuel S G τ M e) :
@@ -220,9 +217,9 @@ the "extra" bucket), an `M, τ ⊨ [extra:=none]⟨e⟩` witness (Table 3 rule 1
 forces `Me τ M e = M`, i.e. `M` itself, not just some sub-multiset of it,
 is exactly what satisfies `e` (Table 1). Needed once a `M', τ ⊨ h`
 obligation (Table 3 rule 18's `.ofShape h` piece) must be turned back into
-a `SatisfiesEFuel` fact about the concrete `M'` at hand, now that rule 18
-no longer checks `h.triples` directly (see
-`ShexLean/Shex2025Inheritance/Termination.lean`'s module docstring). -/
+a `SatisfiesEFuel` fact about the concrete `M'` at hand, since rule 18
+checks `M'` against `h` as a shape rather than against `h.triples`
+directly. -/
 theorem Me_eq_self_of_props_subset {S : Schema} {G : Graph} {τ : Typing} {fuel : ℕ}
     {M : Finset Triple} {e : TripleExpr}
     (hM : SatisfiesMFuel (fuel + 1) S G τ M (.ofShape ⟨false, none, e⟩))

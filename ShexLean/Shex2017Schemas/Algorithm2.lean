@@ -83,12 +83,10 @@ theorem Matches.agreeLocal {G : Graph} {t t' : Typing} (N : Finset Triple)
         exact ⟨subj, pred, obj, hN, hP, (hagree obj L hobj hL).mpr htyp⟩
   | .empty, _ => exact Iff.rfl
   | .someOf E1 E2, hagree =>
-      have h1 := Matches.agreeLocal (G := G) N E1 (fun n' L hn' hL => hagree n' L hn' (by
-        simp only [TExpr.posDeps, TExpr.negDeps, Finset.mem_union] at hL ⊢
-        tauto))
-      have h2 := Matches.agreeLocal (G := G) N E2 (fun n' L hn' hL => hagree n' L hn' (by
-        simp only [TExpr.posDeps, TExpr.negDeps, Finset.mem_union] at hL ⊢
-        tauto))
+      have h1 := Matches.agreeLocal (G := G) N E1 (fun n' L hn' hL =>
+        hagree n' L hn' (TExpr.someOf_deps_subset_left E1 E2 hL))
+      have h2 := Matches.agreeLocal (G := G) N E2 (fun n' L hn' hL =>
+        hagree n' L hn' (TExpr.someOf_deps_subset_right E1 E2 hL))
       exact or_congr h1 h2
   | .eachOf E1 E2, hagree =>
       have hN1 : ∀ N1 N2 : Finset Triple, DisjointUnion N N1 N2 → N1 ⊆ N := by
@@ -98,23 +96,15 @@ theorem Matches.agreeLocal {G : Graph} {t t' : Typing} (N : Finset Triple)
       constructor
       · rintro ⟨N1, N2, hdu, h1, h2⟩
         have a1 := Matches.agreeLocal (G := G) N1 E1 (fun n' L hn' hL =>
-          hagree n' L (objsOf_mono (hN1 N1 N2 hdu) hn') (by
-            simp only [TExpr.posDeps, TExpr.negDeps, Finset.mem_union] at hL ⊢
-            tauto))
+          hagree n' L (objsOf_mono (hN1 N1 N2 hdu) hn') (TExpr.eachOf_deps_subset_left E1 E2 hL))
         have a2 := Matches.agreeLocal (G := G) N2 E2 (fun n' L hn' hL =>
-          hagree n' L (objsOf_mono (hN2 N1 N2 hdu) hn') (by
-            simp only [TExpr.posDeps, TExpr.negDeps, Finset.mem_union] at hL ⊢
-            tauto))
+          hagree n' L (objsOf_mono (hN2 N1 N2 hdu) hn') (TExpr.eachOf_deps_subset_right E1 E2 hL))
         exact ⟨N1, N2, hdu, a1.mp h1, a2.mp h2⟩
       · rintro ⟨N1, N2, hdu, h1, h2⟩
         have a1 := Matches.agreeLocal (G := G) N1 E1 (fun n' L hn' hL =>
-          hagree n' L (objsOf_mono (hN1 N1 N2 hdu) hn') (by
-            simp only [TExpr.posDeps, TExpr.negDeps, Finset.mem_union] at hL ⊢
-            tauto))
+          hagree n' L (objsOf_mono (hN1 N1 N2 hdu) hn') (TExpr.eachOf_deps_subset_left E1 E2 hL))
         have a2 := Matches.agreeLocal (G := G) N2 E2 (fun n' L hn' hL =>
-          hagree n' L (objsOf_mono (hN2 N1 N2 hdu) hn') (by
-            simp only [TExpr.posDeps, TExpr.negDeps, Finset.mem_union] at hL ⊢
-            tauto))
+          hagree n' L (objsOf_mono (hN2 N1 N2 hdu) hn') (TExpr.eachOf_deps_subset_right E1 E2 hL))
         exact ⟨N1, N2, hdu, a1.mpr h1, a2.mpr h2⟩
   | .rep E _ _, hagree =>
       constructor
@@ -143,20 +133,16 @@ theorem Satisfies.agreeLocal {G : Graph} {t t' : Typing} (n : RDFNode) (S : ShEx
   | .valueDescr V, _ => exact Iff.rfl
   | .neigDescr E, hagree => exact Matches.agreeLocal (G := G) (neigh G n) E hagree
   | .and S1 S2, hagree =>
-      have h1 := Satisfies.agreeLocal (G := G) n S1 (fun n' L hn' hL => hagree n' L hn' (by
-        simp only [ShExpr.posDeps, ShExpr.negDeps, Finset.mem_union] at hL ⊢
-        tauto))
-      have h2 := Satisfies.agreeLocal (G := G) n S2 (fun n' L hn' hL => hagree n' L hn' (by
-        simp only [ShExpr.posDeps, ShExpr.negDeps, Finset.mem_union] at hL ⊢
-        tauto))
+      have h1 := Satisfies.agreeLocal (G := G) n S1 (fun n' L hn' hL =>
+        hagree n' L hn' (ShExpr.and_deps_subset_left S1 S2 hL))
+      have h2 := Satisfies.agreeLocal (G := G) n S2 (fun n' L hn' hL =>
+        hagree n' L hn' (ShExpr.and_deps_subset_right S1 S2 hL))
       exact and_congr h1 h2
   | .or S1 S2, hagree =>
-      have h1 := Satisfies.agreeLocal (G := G) n S1 (fun n' L hn' hL => hagree n' L hn' (by
-        simp only [ShExpr.posDeps, ShExpr.negDeps, Finset.mem_union] at hL ⊢
-        tauto))
-      have h2 := Satisfies.agreeLocal (G := G) n S2 (fun n' L hn' hL => hagree n' L hn' (by
-        simp only [ShExpr.posDeps, ShExpr.negDeps, Finset.mem_union] at hL ⊢
-        tauto))
+      have h1 := Satisfies.agreeLocal (G := G) n S1 (fun n' L hn' hL =>
+        hagree n' L hn' (ShExpr.or_deps_subset_left S1 S2 hL))
+      have h2 := Satisfies.agreeLocal (G := G) n S2 (fun n' L hn' hL =>
+        hagree n' L hn' (ShExpr.or_deps_subset_right S1 S2 hL))
       exact or_congr h1 h2
   | .not S, hagree =>
       have h := Satisfies.agreeLocal (G := G) n S (fun n' L hn' hL => hagree n' L hn' (by
