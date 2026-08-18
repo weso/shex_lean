@@ -88,10 +88,9 @@ abbrev Graph := Finset Triple
 def Graph.nodes (G : Graph) : Finset RDFNode :=
   G.image (fun t => (t.subj : RDFNode)) ∪ G.image Triple.obj
 
-/-- `neigh_G(n)`: the triples of `G` that have `n` as subject. `n` ranges
-over all of `RDFNode` (not just `Subject`), since the neighbourhood of a
-literal is well-defined too — always `∅`, as no triple can have a literal
-subject. -/
+/-- `neigh_G(n)`: the triples of `G` that have `n` as subject.
+ `n` ranges over all of `RDFNode` (not just `Subject`), since the neighbourhood of a
+literal is well-defined too — always `∅`, as no triple can have a literal subject. -/
 def neigh (G : Graph) (n : RDFNode) : Finset Triple :=
   G.filter (fun t => (t.subj : RDFNode) = n)
 

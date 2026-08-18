@@ -161,7 +161,7 @@ literally every `Prop` trivially is under Mathlib's ambient axioms).
   `.constraint` is only decided at the node level (where it needs no
   `subjectOf` at all) — `ShapeExpr.MOk`/`FOk` name the resulting fragment
   explicitly, following this repo's existing `WellFormedX`/
-  `WellFormedExtends`-style precedent of naming restrictions rather than
+  `WellFormedExtra`-style precedent of naming restrictions rather than
   leaving them implicit. Verified to cost nothing in practice: none of the
   worked examples below ever hit the excluded case.
 - **2026 exploration side**
@@ -355,30 +355,20 @@ the 2017 side's own triple-expression semantics.
   **fully proved, no `sorry`** (`#print axioms lemma1` shows only
   `propext`/`Classical.choice`/`Quot.sound`): a large-enough `Fuel` makes
   `SatisfiesFuel`/`SatisfiesMFuel`/`SatisfiesEFuel` stop depending on
-  `Fuel` at all. Built in two layers:
-  - `Schema.ExtAcyclic` (`H_S` has no cycle) and `Schema.extRank` (`:=
-    (S.anc x).card`, the standard rank-function-on-a-DAG trick, strictly
-    decreasing along every `H_S` edge under acyclicity) — correct and
-    reusable, but *not* actually load-bearing for the theorem this file
-    ends up proving (see next point).
-  - `Schema.WellFormedExtends` — a documented *extra* hypothesis beyond
-    the paper's literal text, added after `ExtAcyclic`/`extRank` turned
-    out insufficient on their own: Definition 3 builds `H_S`'s edges only
-    from a label's *outermost* `extends X h [and u]` clause, but the
-    grammar technically allows `u` (`restr(x)`) to itself contain a
-    further, *unrelated* `extends`, invisible to that edge relation but
-    still something the runtime evaluator would chase. The paper's
-    one-sentence proof sketch doesn't address this case and none of its
-    own examples exercise it. `WellFormedExtends` rules it out directly
-    (every `extends` node, wherever nested, must itself be one of the two
-    shallow forms Definition 2 describes) — strictly stronger than mere
-    acyclicity, but enough to make every `extends`-hop's target provably
-    bounded by a fixed, schema-wide constant (`Schema.maxDefSize`), which
-    is what the actual stabilization induction (`stableE` → `stableM` →
-    `stableFuel`, following the same one-way dependency chain as the
-    definitions themselves) is built on. Packaged as fuel-free
-    `Satisfies`/`SatisfiesM`/`SatisfiesE` definitions plus the `lemma1`
-    theorem itself.
+  `Fuel` at all, exactly in the generality Lemma 1 itself claims — only
+  `WellFormedX` (Definition 2's shape of an `X`-label's own definition) and
+  `Schema.ExtAcyclic` (Definition 6's "`H_S` is acyclic" clause), no
+  further restriction on where `extends` nodes occur. Built on
+  `Schema.extRank` (`:= (S.anc x).card`, the standard rank-function-on-a-DAG
+  trick, strictly decreasing along every `H_S` edge under acyclicity) and
+  `Schema.RankOk`/`Schema.reqFuelR`: a rank-indexed fuel bound, paired with
+  a nested induction (ordinary structural induction on the shape expression,
+  wrapped in `ℕ`-induction on the rank) that lets an `.extends` node's
+  restriction clause be unfolded exactly as many times as its own
+  cascading `extends` chain needs. The stabilization argument itself
+  follows the same one-way dependency chain as the definitions
+  (`stableE` → `stableM_noExtends`/`stableMGen` → `stableFuel`), packaged
+  as the fuel-free `Satisfies` definition plus the `lemma1` theorem.
 - `ShexLean/Shex2025Inheritance/Stratification.lean` — Definitions 5-6: the
   dependency graph `D_S` (`Schema.dep`/`depExtends`/`depShapeNeg`/
   `depExtraNeg`, built from a single recursive walk over a label's
@@ -442,40 +432,37 @@ the 2017 side's own triple-expression semantics.
 - `ShexLean/Shex2025Inheritance/Proposition1.lean` — Definition 7
   (`Stratification`, edge-based, plus the path form the paper states it
   with), Definition 8 (`stratTypingSeq`/`Typing8`, the maximal typing
-  `τ_max(S,σ,G)`), and Proposition 1 itself, all proved, no `sorry`. Three
-  real subtleties surfaced and were fixed along the way (documented at
-  length in the file): Table 3's `Me`/`Mnotin` make `SatisfiesMFuel`
-  non-monotone in `τ` even without negation (a Lean-verified counterexample
-  is in the file's docstring), fixed via another paper-implicit invariant
-  (`Schema.WellFormedExtra`, "(*)" from the paper's own Proposition 1
-  appendix proof); `not` needs *latching* negative-dependency tracking
-  rather than the paper's literal "odd parity", plus a new restriction
-  that `not` never contains `extends` (`Schema.NotIsExtendsFree`); and —
-  unlike the 2017 formalization, where `Satisfies` never consults the
-  schema at all — lifting correctness across `stratRestrict`'s strata
-  needed a genuinely new schema-invariance argument
+  `τ_max(S,σ,G)`), and Proposition 1 itself, all proved, no `sorry`, with
+  only `WellFormedX`/`Schema.ExtAcyclic` plus two further paper-implicit
+  invariants: `Schema.WellFormedExtra` ("(*)" from the paper's own
+  Proposition 1 appendix proof — a shape's own triple constraints never
+  overlap its `extra` set, needed because Table 3's `Me`/`Mnotin` make
+  `SatisfiesMFuel` non-monotone in `τ` otherwise, even without negation —
+  a Lean-verified counterexample is in the file's docstring), and
+  `Schema.NotIsExtendsFree` (`not` never contains `extends`, needed
+  because `not` requires *latching* negative-dependency tracking rather
+  than the paper's literal "odd parity"). `Satisfies` genuinely depends on
+  the schema (via `.anc`/`.ancSet`), so lifting correctness across
+  `stratRestrict`'s strata needs its own schema-invariance argument
   (`Satisfies_stratRestrict_agree`, via a `schemaAgreeM`/`schemaAgreeFuel`
   pair mirroring `Termination.lean`'s `stableE`/`stableM`/`stableFuel`
-  chain, but varying the *schema* instead of the fuel) closing the gap
-  that blocked a direct 2017-style port of `stratTypingSeq_correct`'s
-  inductive step.
+  chain, but varying the *schema* instead of the fuel).
 - `ShexLean/Shex2025Inheritance/Lemma2.lean` — Lemma 2 (§4.3):
   `τ_max(S,σ,G)` does not depend on the stratification chosen, proved in
-  full, no `sorry`. Ports 2017's own `Lemma2.lean` (Fusion/Swap/a
-  schedule-agnostic `remainingMin`-batch-revealing process
-  `cont1`/Independence — the paper only sketches this proof), which
-  transfers almost unchanged in *shape*. What doesn't transfer for free:
-  2017's `Satisfies` never consults the schema, so "restrict to a
-  self-contained label set" was free; here it first generalizes
-  `Proposition1.lean`'s stratum-specific schema-invariance argument
-  (`Satisfies_stratRestrict_agree`) to an arbitrary `D_S`-closed label set
-  (`Schema.restrictLabels`, `Satisfies_restrictLabels_agree`), since
-  `cont1`'s schedule-agnostic batches aren't shaped like strata.
+  full, no `sorry`, via a Fusion lemma, a Swap lemma, a schedule-agnostic
+  `remainingMin`-batch-revealing process `cont1`, and an Independence
+  lemma (the paper only sketches this proof). Since `Satisfies` depends on
+  the schema, revealing labels in an arbitrary batch order needs its own
+  schema-invariance argument beyond `Proposition1.lean`'s stratum-specific
+  `Satisfies_stratRestrict_agree`: `Schema.restrictLabels` restricts a
+  schema to an arbitrary `D_S`-closed label set (not tied to a
+  stratification), with `Satisfies_restrictLabels_agree` as its
+  schema-invariance fact.
 - `ShexLean/Shex2025Inheritance/Algorithm1.lean` — the §5 validation/
-  refinement algorithm for ShEx with inheritance, ported from the 2017
-  formalism's own `Algorithm1.lean` the same way `Lemma2.lean` was: proved
-  fully correct (`algorithm1_correct : Algorithm1 = Typing8`,
-  `algorithm1_correctTyping`), no `sorry`.
+  refinement algorithm for ShEx with inheritance, proved fully correct
+  (`algorithm1_correct : Algorithm1 = Typing8`, `algorithm1_correctTyping`),
+  no `sorry`, built on the schema-invariance machinery `Lemma2.lean`
+  provides.
 - `ShexLean/Shex2025Inheritance/Decidable.lean`,
   `ShexLean/Shex2025Inheritance/Render.lean` — decidability and rendering
   for this formalism, see "Decidability" above.

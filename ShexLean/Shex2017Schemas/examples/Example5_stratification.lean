@@ -6,7 +6,7 @@ import Example
 /-!
 Example 5 from Boneva, Labra Gayo, Prud'hommeaux (2017), illustrating
 Definition 3 ("schema with stratified negation",
-`ShexLean.Stratification.Schema.StratNeg`) on a schema that mixes
+`ShexLean.Strat.Schema.StratNeg`) on a schema that mixes
 `NOT` and recursion, but *is* stratified (unlike `S₂` from Example 4,
 `Examples.NegationRecursion`).
 
@@ -88,20 +88,20 @@ theorem depPos_L3_L2 : DepPos S₃ L3 L2 := by rw [DepPos, shapeDef_L3]; decide
 
 /-- The stratification from the paper: `<L1>` on stratum 2, the other three
 labels on stratum 1. -/
-private def strat1 : Label → ℕ := fun L => if L = L1 then 2 else 1
+private def str1 : Label → ℕ := fun L => if L = L1 then 2 else 1
 
-/-- `S₃` is with stratified negation (Definition 3), witnessed by `strat1`. -/
+/-- `S₃` is with stratified negation (Definition 3), witnessed by `str1`. -/
 theorem S₃_stratified : S₃.StratNeg := by
-  refine ⟨2, strat1, ?_, ?_, ?_⟩
+  refine ⟨2, str1, ?_, ?_, ?_⟩
   · intro L hL
     simp only [Finset.mem_insert, Finset.mem_singleton] at hL
-    rcases hL with hL | hL | hL | hL <;> subst hL <;> simp [strat1, L1, L2, L3, Str]
+    rcases hL with hL | hL | hL | hL <;> subst hL <;> simp [str1, L1, L2, L3, Str]
   · intro L1' _ L2' hdep
     by_cases h1 : L1' = L1
     · subst h1
       rw [DepNeg, shapeDef_L1] at hdep
       simp [ShExpr.negDeps, TExpr.depsAux] at hdep
-      rcases hdep with hdep | hdep <;> subst hdep <;> simp [strat1, L1, L2, Str]
+      rcases hdep with hdep | hdep <;> subst hdep <;> simp [str1, L1, L2, Str]
     · by_cases h2 : L1' = L2
       · subst h2
         rw [DepNeg, shapeDef_L2] at hdep
@@ -121,12 +121,12 @@ theorem S₃_stratified : S₃.StratNeg := by
       · subst h2
         rw [DepPos, shapeDef_L2] at hdep
         simp [ShExpr.posDeps, ShExpr.depsAux, TExpr.depsAux] at hdep
-        subst hdep; simp [strat1, L1, L2, L3]
+        subst hdep; simp [str1, L1, L2, L3]
       · by_cases h3 : L1' = L3
         · subst h3
           rw [DepPos, shapeDef_L3] at hdep
           simp [ShExpr.posDeps, ShExpr.depsAux, TExpr.depsAux] at hdep
-          subst hdep; simp [strat1, L1, L2, L3]
+          subst hdep; simp [str1, L1, L2, L3]
         · rw [DepPos, shapeDef_other L1' h1 h2 h3] at hdep
           simp [ShExpr.posDeps] at hdep
 
@@ -140,7 +140,7 @@ open ShexLean (Schema.render renderDecide DepNeg DepPos)
 /-- Example 5: `S₃` mixes `NOT` and recursion but is with stratified
 negation. `schemaText` generated from the real `S₃`; the four dependency
 edges are each a genuine `Decidable` (`DepNeg`/`DepPos`) computation.
-`S₃.StratNeg` itself (`Nonempty (Stratification S₃)`) isn't
+`S₃.StratNeg` itself (`Nonempty (Strat S₃)`) isn't
 decidable — same reason as Example 4 — so that claim still names the
 witnessing theorem/stratification. -/
 def stratificationExample : Example where
@@ -156,6 +156,6 @@ def stratificationExample : Example where
     s!"dep⁺(<L2>,<L3>) = {renderDecide (inferInstance : Decidable (DepPos S₃ L2 L3))}, " ++
       s!"dep⁺(<L3>,<L2>) = {renderDecide (inferInstance : Decidable (DepPos S₃ L3 L2))}\n" ++
     "⇒ S₃ IS with stratified negation (`S₃_stratified`, witnessed by " ++
-    "`strat1`: <L1> on stratum 2, the rest on stratum 1)."
+    "`str1`: <L1> on stratum 2, the rest on stratum 1)."
 
 end Examples

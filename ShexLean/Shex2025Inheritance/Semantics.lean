@@ -2,19 +2,17 @@ import ShexLean.Shex2025Inheritance.Syntax
 import ShexLean.Common.DisjointUnion
 
 /-!
-Tables 1–3 (§4.1) of the 2025 "Shape Expressions with Inheritance" paper:
+Tables 1–3 (§4.1) of the paper:
 the three mutually-recursive satisfiability relations `M,τ ⊨ e`
 (`SatisfiesEFuel`, triple expressions), `n,τ ⊨ s` (`SatisfiesFuel`, a shape
 expression under a node), and `M,τ ⊨ s` (`SatisfiesMFuel`, a shape
 expression under a set of triples — new for ShEx with inheritance, needed
 for `extends`).
 
-**Why "mutually recursive" here needs a `Fuel` parameter, unlike the 2017
-formalization.** In `ShexLean/Shex2017Schemas/Semantics.lean`, a shape *reference* is
-resolved purely by consulting `typing` (Rule te-tpattern: `typing.has obj
-L`, no recursive call into `def(L)`), so `Satisfies`/`Matches` are
-well-founded by plain structural recursion on the finite AST. Here, Table
-3's rule 18 (`extends X h`) genuinely recurses into *other labels' own
+**Why "mutually recursive" here needs a `Fuel` parameter**
+In the 2017 version, a shape *reference* is resolved purely by consulting `typing`,
+so `Satisfies`/`Matches` are well-founded by plain structural recursion on the finite AST.
+Here, Table 3's rule 18 (`extends X h`) genuinely recurses into *other labels' own
 definitions* (`ext-te(x)`/`restr(x)` = `(S.shapeDef x).extTe`/`.restrOf`,
 for `x` ranging over ancestors) — a schema lookup, not a subterm of the
 current expression. The paper itself has to prove this terminates
@@ -24,12 +22,12 @@ acyclicity of the extension hierarchy `H_S` (Definition 3/6).
 So a plain structurally-recursive Lean definition of `Satisfies` is not
 just inconvenient here, it is actually false in general (an
 extends-cycle — `H_S` not acyclic — makes the relation genuinely
-non-terminating). The honest way to get a *total* Lean function first,
-before separately proving the real (paper's) Lemma 1, is the standard
-fuel idiom already used in `ShexLean/Shex2017Schemas/Algorithm1.lean`/`Algorithm2.lean`
-for similar well-founded-but-not-structural recursions: thread an explicit
-`Fuel : ℕ` argument through all three relations, decremented on *every*
-recursive call (not just extends-hops — this makes termination trivial,
+non-terminating).
+The honest way to get a *total* Lean function first,
+before separately proving the Lemma 1, is the standard
+fuel idiom for similar well-founded-but-not-structural recursions:
+thread an explicit `Fuel : ℕ` argument through all three relations,
+decremented on *every* recursive call (not just extends-hops — this makes termination trivial,
 literally `Nat`-structural recursion on `Fuel`, at the cost of `Fuel`
 being a conservative/pessimistic step-counter), and return `False` when
 `Fuel` runs out.

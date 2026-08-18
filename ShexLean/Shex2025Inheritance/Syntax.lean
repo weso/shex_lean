@@ -122,16 +122,11 @@ Inheritance/Semantics.lean`) fires on *any* `.extends` node it structurally
 reaches, regardless of nesting. Recursing through the whole tree here — the
 same way `ShapeExpr.depsAux` (`ShexLean/Shex2025Inheritance/Stratification.lean`)
 already has to for ordinary references — is what makes `Schema.extEdge`/
-`H_S`/`D_S` actually track everything the evaluator can dereference; the
-top-level-only version originally here undercounted edges out of any label
-whose `extends` isn't literally at the top (in particular every `Y`-label,
-since only `X`-labels are forced into the shallow top-level form by
-`Schema.WellFormedX`), which is unsound for anything reasoning about the
-*schema's* dependency structure (`ShexLean/Shex2025Inheritance/Proposition1.lean`'s
-agreement lemma) even though it happened not to matter for
-`ShexLean/Shex2025Inheritance/Termination.lean` (whose `Fuel` bookkeeping walks the
-whole tree independently via `ShapeExpr.reqFuel`, not through this
-function at all). -/
+`H_S`/`D_S` track everything the evaluator can dereference, including
+edges out of a `Y`-label (only `X`-labels are forced into the shallow
+top-level form by `Schema.WellFormedX`), which the *schema's* own
+dependency structure (`ShexLean/Shex2025Inheritance/Proposition1.lean`'s
+agreement lemma) needs. -/
 def ShapeExpr.extendsTargets : ShapeExpr → Finset Label
   | .extends xs _ => xs
   | .constraint _ => ∅

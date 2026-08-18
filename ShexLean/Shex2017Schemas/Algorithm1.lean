@@ -2,12 +2,12 @@ import ShexLean.Shex2017Schemas.Lemma2
 
 /-!
 §4.1: Algorithm 1 (`refine`), and its correctness — it computes
-`Typing(G, S, strat)` (Definition 4).
+`Typing(G, S, str)` (Definition 4).
 
 ```
-Input: G: a graph, S = (L, def): a schema, strat a stratification for S
+Input: G: a graph, S = (L, def): a schema, str a stratification for S
        with k strata
-Output: Typing(G, S, strat)
+Output: Typing(G, S, str)
 1  t ← ∅;
 2  for i from 1 to k do
      // Add all node-type associations for stratum i
@@ -32,7 +32,7 @@ strip out anything that currently fails `⊢`, until nothing more can be
 removed. This file formalizes that per-stratum computation
 (`refineStep`/`refine1`), proves it equals `maxAgree` (hence
 `Definition 4`'s own per-stratum construction), and chains that across all
-`k` strata to get `Algorithm1 G S strat = Typing4 G S strat`.
+`k` strata to get `Algorithm1 G S str = MTyping G S str`.
 -/
 
 namespace ShexLean
@@ -273,77 +273,77 @@ theorem refine1_eq_maxAgree {S : Schema} {G : Graph} {Ls' Lo : Finset Label}
   · exact maxAgree_subset_refine1 hLoLs' hTsub hTcorrect hLsneg
 
 /-!
-**Chaining across strata.** `refineAlg` mirrors `stratSeq`'s
+**Chaining across strata.** `refineAlg` mirrors `typ`'s
 recursion exactly, replacing `maxAgree` (the declarative "union of
 correct typings" description) with `refine1` (the actual procedure); the
 per-stratum core lemma above shows the two agree at every step, so the two
-recursions agree everywhere, and in particular at `strat.k`.
+recursions agree everywhere, and in particular at `str.k`.
 -/
 
-/-- The per-stratum recursion Algorithm 1 performs: `refineAlg S strat G 0
+/-- The per-stratum recursion Algorithm 1 performs: `refineAlg S str G 0
 := ∅`, and each successor stratum refines from `bigStart` (lines 3–5 of
 `refine`) down to a fixed point (lines 6–12), reusing the previous
 stratum's result as the "frozen" part of the initial guess. -/
-noncomputable def refineAlg (S : Schema) (strat : Label → ℕ) (G : Graph) : ℕ → Typing
+noncomputable def refineAlg (S : Schema) (str : Label → ℕ) (G : Graph) : ℕ → Typing
   | 0 => ∅
-  | i + 1 => refine1 (S.stratRestrict strat (i + 1)) G (S.stratum strat i) (refineAlg S strat G i)
+  | i + 1 => refine1 (S.stratRestrict str (i + 1)) G (S.stratum str i) (refineAlg S str G i)
 
-/-- Algorithm 1 (`refine`), run for all `strat.k` strata of `S`. -/
-noncomputable def Algorithm1 (G : Graph) (S : Schema) (strat : Stratification S) : Typing :=
-  refineAlg S strat.strat G strat.k
+/-- Algorithm 1 (`refine`), run for all `str.k` strata of `S`. -/
+noncomputable def Algorithm1 (G : Graph) (S : Schema) (str : Strat S) : Typing :=
+  refineAlg S str.str G str.k
 
-/-- `S.stratRestrict strat i` and `S.restrictLabels (S.stratum strat i)`
+/-- `S.stratRestrict str i` and `S.restrictLabels (S.stratum str i)`
 build the identical schema (same `labels`, same `shapeDef`) — this lets the
 per-stratum core lemma `refine1_eq_maxAgree` (stated in terms of
 the more general `restrictLabels`) apply directly to `stratRestrict`. -/
-theorem Schema.stratRestrict_eq_restrictLabels (S : Schema) (strat : Label → ℕ) (i : ℕ) :
-    S.stratRestrict strat i = S.restrictLabels (S.stratum strat i) := rfl
+theorem Schema.stratRestrict_eq_restrictLabels (S : Schema) (str : Label → ℕ) (i : ℕ) :
+    S.stratRestrict str i = S.restrictLabels (S.stratum str i) := rfl
 
 /-- Algorithm 1's per-stratum recursion computes exactly what
-`stratSeq` (Definition 4's declarative construction) computes, at
+`typ` (Definition 4's declarative construction) computes, at
 every stratum. Chains the per-stratum core lemma
 (`refine1_eq_maxAgree`) across all of `S`'s strata: the hypotheses
 it needs at each step come from `Schema.stratum_mono` (for `Lo ⊆ Ls'`),
-`Schema.stratum_self_contained` (for `hLoself`), `stratSeq_correct`
+`Schema.stratum_self_contained` (for `hLoself`), `typ_correct`
 (for `hTsub`/`hTcorrect`), and the stratification's `neg_strict` (for
-`hLsneg`, exactly as in `stratSeq_correct`'s own inductive step). -/
-theorem refineAlg_eq_stratSeq (S : Schema) (strat : Stratification S) (hClosed : S.Closed)
-    (G : Graph) : ∀ i : ℕ, refineAlg S strat.strat G i = stratSeq S strat.strat G i
+`hLsneg`, exactly as in `typ_correct`'s own inductive step). -/
+theorem refineAlg_eq_typ (S : Schema) (str : Strat S) (hClosed : S.Closed)
+    (G : Graph) : ∀ i : ℕ, refineAlg S str.str G i = typ S str.str G i
   | 0 => rfl
   | i + 1 => by
-      have ih := refineAlg_eq_stratSeq S strat hClosed G i
-      obtain ⟨hsub_i, hcorrect_i⟩ := stratSeq_correct S strat hClosed G i
-      have hLoLs' : S.stratum strat.strat i ⊆ S.stratum strat.strat (i + 1) :=
+      have ih := refineAlg_eq_typ S str hClosed G i
+      obtain ⟨hsub_i, hcorrect_i⟩ := typ_correct S str hClosed G i
+      have hLoLs' : S.stratum str.str i ⊆ S.stratum str.str (i + 1) :=
         Schema.stratum_mono (Nat.le_succ i)
-      have hLoself := S.stratum_self_contained strat hClosed i
-      have hTsub : stratSeq S strat.strat G i ⊆
-          (S.restrictLabels (S.stratum strat.strat i)).univTyping G := by
+      have hLoself := S.stratum_self_contained str hClosed i
+      have hTsub : typ S str.str G i ⊆
+          (S.restrictLabels (S.stratum str.str i)).univTyping G := by
         rw [← Schema.stratRestrict_eq_restrictLabels]; exact hsub_i
-      have hTcorrect : (S.restrictLabels (S.stratum strat.strat i)).CorrTyping G
-          (stratSeq S strat.strat G i) := by
+      have hTcorrect : (S.restrictLabels (S.stratum str.str i)).CorrTyping G
+          (typ S str.str G i) := by
         rw [← Schema.stratRestrict_eq_restrictLabels]; exact hcorrect_i
-      have hLsneg : ∀ L ∈ S.stratum strat.strat (i + 1),
-          (S.shapeDef L).negDeps ⊆ S.stratum strat.strat i := by
+      have hLsneg : ∀ L ∈ S.stratum str.str (i + 1),
+          (S.shapeDef L).negDeps ⊆ S.stratum str.str i := by
         intro L hL L2 hL2
         simp only [Schema.stratum, Finset.mem_filter] at hL
         obtain ⟨hLlabels, hLstrat⟩ := hL
         have hL2labels : L2 ∈ S.labels := hClosed L hLlabels (Finset.mem_union_right _ hL2)
-        have hstratlt := strat.neg_strict L hLlabels L2 hL2
+        have hstratlt := str.neg_strict L hLlabels L2 hL2
         simp only [Schema.stratum, Finset.mem_filter]
         exact ⟨hL2labels, by omega⟩
-      show refine1 (S.stratRestrict strat.strat (i + 1)) G (S.stratum strat.strat i)
-          (refineAlg S strat.strat G i) =
-        maxAgree (S.stratRestrict strat.strat (i + 1)) G (S.stratum strat.strat i)
-          (stratSeq S strat.strat G i)
+      show refine1 (S.stratRestrict str.str (i + 1)) G (S.stratum str.str i)
+          (refineAlg S str.str G i) =
+        maxAgree (S.stratRestrict str.str (i + 1)) G (S.stratum str.str i)
+          (typ S str.str G i)
       rw [ih, Schema.stratRestrict_eq_restrictLabels]
       exact refine1_eq_maxAgree hLoLs' hLoself hTsub hTcorrect hLsneg
 
 /-- **Algorithm 1's correctness.** The per-stratum refinement procedure,
-run for all `strat.k` strata, computes exactly `Typing(G, S, strat)`
+run for all `str.k` strata, computes exactly `Typing(G, S, str)`
 (Definition 4) — Algorithm 1 as described in §4.1 of the paper really does
 compute the semantics it claims to. -/
-theorem algorithm1_correct (G : Graph) (S : Schema) (strat : Stratification S)
-    (hClosed : S.Closed) : Algorithm1 G S strat = Typing4 G S strat :=
-  refineAlg_eq_stratSeq S strat hClosed G strat.k
+theorem algorithm1_correct (G : Graph) (S : Schema) (str : Strat S)
+    (hClosed : S.Closed) : Algorithm1 G S str = MTyping G S str :=
+  refineAlg_eq_typ S str hClosed G str.k
 
 end ShexLean

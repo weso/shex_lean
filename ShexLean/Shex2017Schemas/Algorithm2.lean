@@ -4,7 +4,7 @@ set_option maxHeartbeats 1000000
 
 /-!
 §4.2: Algorithm 2 (`prove`), and its correctness (Proposition 2) — it
-decides `(n, L) ∈ Typing(G, S, strat)` without constructing the whole
+decides `(n, L) ∈ Typing(G, S, str)` without constructing the whole
 typing, by recursively visiting only the portion of the dependency graph
 reachable from `(n, L)`.
 
@@ -304,16 +304,16 @@ theorem objsOf_neigh_subset_nodes (G : Graph) (n : RDFNode) : objsOf (neigh G n)
   simp only [Graph.nodes, Finset.mem_union]
   exact Or.inr (Finset.mem_image.mpr ⟨t, htG, rfl⟩)
 
-/-- `depSet S G n L` stays within `G.nodes ×ˢ S.stratum strat.strat (strat.strat L)` —
+/-- `depSet S G n L` stays within `G.nodes ×ˢ S.stratum str.str (str.str L)` —
 neighbors of `n` are graph nodes, and `def(L)`'s references are confined to
 `L`'s own stratum-checkpoint (`Schema.stratum_self_contained`). -/
-theorem depSet_subset_stratum {S : Schema} (strat : Stratification S) (hClosed : S.Closed)
+theorem depSet_subset_stratum {S : Schema} (str : Strat S) (hClosed : S.Closed)
     {G : Graph} {n : RDFNode} {L : Label} (hL : L ∈ S.labels) :
-    depSet S G n L ⊆ G.nodes ×ˢ S.stratum strat.strat (strat.strat L) := by
+    depSet S G n L ⊆ G.nodes ×ˢ S.stratum str.str (str.str L) := by
   intro p hp
   obtain ⟨hp1, hp2⟩ := mem_depSet.mp hp
   refine Finset.mem_product.mpr ⟨objsOf_neigh_subset_nodes G n hp1, ?_⟩
-  exact Schema.stratum_self_contained S strat hClosed (strat.strat L) L
+  exact Schema.stratum_self_contained S str hClosed (str.str L) L
     (by simp only [Schema.stratum, Finset.mem_filter]; exact ⟨hL, le_refl _⟩) hp2
 
 /-!
@@ -357,9 +357,9 @@ noncomputable def proveAux (S : Schema) (G : Graph) (U : Finset Assoc) :
     )
 
 /-- `prove(n, L, [])`: Algorithm 2 run from an empty hypothesis stack. The
-universe `G.nodes ×ˢ S.labels` is exactly `Typing4`'s own universe
+universe `G.nodes ×ˢ S.labels` is exactly `MTyping`'s own universe
 (`Schema.univTyping`) — if `n ∉ G.nodes`, `proveAux`'s own "outside `U`"
-base case correctly returns `false`, matching `(n, L) ∉ Typing4` (which
+base case correctly returns `false`, matching `(n, L) ∉ MTyping` (which
 always holds automatically for `n ∉ G.nodes`, since every correct typing
 is `⊆ G.nodes ×ˢ S.labels`), so no special-casing of "foreign" `n` is
 needed here. -/
@@ -464,15 +464,15 @@ theorem provSupp_subset_of_mem_dep {S : Schema} {G : Graph} {U : Finset Assoc}
     Finset.subset_union_right
 
 /-- Every pair `proveAux`/`provSupp` ever visits while processing
-`(n, L)` has stratum `≤ strat.strat L` — `depSet`'s labels never exceed
+`(n, L)` has stratum `≤ str.str L` — `depSet`'s labels never exceed
 the current label's own stratum (`Schema.stratum_self_contained`), and
 this bound is preserved at every recursive depth. Purely structural: no
 `outerIH` needed. -/
-theorem provSupp_stratum_le (S : Schema) (strat : Stratification S) (hClosed : S.Closed)
+theorem provSupp_stratum_le (S : Schema) (str : Strat S) (hClosed : S.Closed)
     (G : Graph) (U : Finset Assoc) :
     ∀ k : ℕ, ∀ Hyp : Finset Assoc, (U \ Hyp).card ≤ k →
       ∀ n L, L ∈ S.labels → n ∈ G.nodes → ∀ q ∈ provSupp S G U n L Hyp,
-        strat.strat q.2 ≤ strat.strat L ∧ q.2 ∈ S.labels ∧ q.1 ∈ G.nodes := by
+        str.str q.2 ≤ str.str L ∧ q.2 ∈ S.labels ∧ q.1 ∈ G.nodes := by
   intro k
   induction k using Nat.strong_induction_on with
   | _ k ih =>
@@ -481,7 +481,7 @@ theorem provSupp_stratum_le (S : Schema) (strat : Stratification S) (hClosed : S
     · rw [provSupp_of_mem hinHyp] at hq; simp at hq
     by_cases hinU : (n, L) ∈ U
     · rw [provSupp_unfold hinHyp hinU] at hq
-      have hLstratum : L ∈ S.stratum strat.strat (strat.strat L) :=
+      have hLstratum : L ∈ S.stratum str.str (str.str L) :=
         Finset.mem_filter.mpr ⟨hLlabels, le_refl _⟩
       simp only [Finset.mem_insert, Finset.mem_union, Finset.mem_biUnion] at hq
       rcases hq with rfl | hqDep | ⟨p, hpDep, hqSup⟩
@@ -491,15 +491,15 @@ theorem provSupp_stratum_le (S : Schema) (strat : Stratification S) (hClosed : S
         obtain ⟨hqdepSet', -⟩ := Finset.mem_inter.mp hqdepSet
         obtain ⟨hq1, hq2⟩ := mem_depSet.mp hqdepSet'
         have hqfact := Finset.mem_filter.mp
-          (Schema.stratum_self_contained S strat hClosed (strat.strat L) L hLstratum hq2)
+          (Schema.stratum_self_contained S str hClosed (str.str L) L hLstratum hq2)
         exact ⟨hqfact.2, hqfact.1, objsOf_neigh_subset_nodes G n hq1⟩
       · obtain ⟨hpmem, -⟩ := Finset.mem_filter.mp hpDep
         obtain ⟨hpdepSet, -⟩ := Finset.mem_sdiff.mp hpmem
         obtain ⟨hpdepSet', -⟩ := Finset.mem_inter.mp hpdepSet
         obtain ⟨hp1, hp2⟩ := mem_depSet.mp hpdepSet'
         have hpfact := Finset.mem_filter.mp
-          (Schema.stratum_self_contained S strat hClosed (strat.strat L) L hLstratum hp2)
-        have hple : strat.strat p.2 ≤ strat.strat L := hpfact.2
+          (Schema.stratum_self_contained S str hClosed (str.str L) L hLstratum hp2)
+        have hple : str.str p.2 ≤ str.str L := hpfact.2
         have hpLabels : p.2 ∈ S.labels := hpfact.1
         have hpNodes : p.1 ∈ G.nodes := objsOf_neigh_subset_nodes G n hp1
         have hmemUHyp : (n, L) ∈ U \ Hyp := Finset.mem_sdiff.mpr ⟨hinU, hinHyp⟩
@@ -518,24 +518,24 @@ theorem provSupp_stratum_le (S : Schema) (strat : Stratification S) (hClosed : S
 the paper's own proof sketch for Proposition 2 only covers termination,
 not correctness. `prove` is a coinductive-style algorithm (it trusts an
 ancestor on the call stack rather than re-deriving it), so relating it to
-`Typing4` needs the stratification made explicit, even though `proveAux`
-itself never consults `strat`.
+`MTyping` needs the stratification made explicit, even though `proveAux`
+itself never consults `str`.
 -/
 
-/-- `stratSeq j`, restricted to an earlier stratum's labels
-(`i ≤ j`), is exactly `stratSeq i` — Definition 4's `typing_i` never
+/-- `typ j`, restricted to an earlier stratum's labels
+(`i ≤ j`), is exactly `typ i` — Definition 4's `typing_i` never
 changes on labels already fixed by an earlier step. -/
-theorem stratSeq_restrictTo_stable (S : Schema) (strat : Stratification S)
+theorem typ_restrictTo_stable (S : Schema) (str : Strat S)
     (hClosed : S.Closed) (G : Graph) {i j : ℕ} (hij : i ≤ j) :
-    (stratSeq S strat.strat G j).restrictTo (S.stratum strat.strat i) =
-      stratSeq S strat.strat G i := by
+    (typ S str.str G j).restrictTo (S.stratum str.str i) =
+      typ S str.str G i := by
   obtain ⟨k, rfl⟩ : ∃ k, j = i + k := ⟨j - i, by omega⟩
   clear hij
   induction k with
   | zero =>
-      have hsub : ∀ p ∈ stratSeq S strat.strat G i, p.2 ∈ S.stratum strat.strat i := by
+      have hsub : ∀ p ∈ typ S str.str G i, p.2 ∈ S.stratum str.str i := by
         intro p hp
-        have hp' := (stratSeq_correct S strat hClosed G i).1 hp
+        have hp' := (typ_correct S str hClosed G i).1 hp
         simp only [Schema.univTyping, Schema.stratRestrict] at hp'
         exact (Finset.mem_product.mp hp').2
       apply Finset.ext
@@ -543,19 +543,19 @@ theorem stratSeq_restrictTo_stable (S : Schema) (strat : Stratification S)
       simp only [Typing.mem_restrictTo]
       exact ⟨fun h => h.1, fun h => ⟨h, hsub _ h⟩⟩
   | succ k ih =>
-      have step : (stratSeq S strat.strat G (i + k + 1)).restrictTo
-          (S.stratum strat.strat (i + k)) = stratSeq S strat.strat G (i + k) := by
-        obtain ⟨hsub_ik, hcorrect_ik⟩ := stratSeq_correct S strat hClosed G (i + k)
-        have hsub_ik' : stratSeq S strat.strat G (i + k) ⊆
-            (S.stratRestrict strat.strat (i + k + 1)).univTyping G := by
+      have step : (typ S str.str G (i + k + 1)).restrictTo
+          (S.stratum str.str (i + k)) = typ S str.str G (i + k) := by
+        obtain ⟨hsub_ik, hcorrect_ik⟩ := typ_correct S str hClosed G (i + k)
+        have hsub_ik' : typ S str.str G (i + k) ⊆
+            (S.stratRestrict str.str (i + k + 1)).univTyping G := by
           intro p hp
           have hp' := hsub_ik hp
           simp only [Schema.univTyping, Schema.stratRestrict] at hp' ⊢
           exact Finset.mem_product.mpr
             ⟨(Finset.mem_product.mp hp').1,
               Schema.stratum_mono (Nat.le_succ (i + k)) (Finset.mem_product.mp hp').2⟩
-        have hnoop : (stratSeq S strat.strat G (i + k)).restrictTo
-            (S.stratum strat.strat (i + k)) = stratSeq S strat.strat G (i + k) := by
+        have hnoop : (typ S str.str G (i + k)).restrictTo
+            (S.stratum str.str (i + k)) = typ S str.str G (i + k) := by
           apply Finset.ext
           rintro ⟨n, L⟩
           simp only [Typing.mem_restrictTo]
@@ -563,53 +563,53 @@ theorem stratSeq_restrictTo_stable (S : Schema) (strat : Stratification S)
           have hp' := hsub_ik h
           simp only [Schema.univTyping, Schema.stratRestrict] at hp'
           exact (Finset.mem_product.mp hp').2
-        show (maxAgree (S.stratRestrict strat.strat (i + k + 1)) G
-          (S.stratum strat.strat (i + k)) (stratSeq S strat.strat G (i + k))).restrictTo
-          (S.stratum strat.strat (i + k)) = _
+        show (maxAgree (S.stratRestrict str.str (i + k + 1)) G
+          (S.stratum str.str (i + k)) (typ S str.str G (i + k))).restrictTo
+          (S.stratum str.str (i + k)) = _
         rw [maxAgree_restrictTo hsub_ik' hcorrect_ik, hnoop]
-      have hsub : S.stratum strat.strat i ⊆ S.stratum strat.strat (i + k) :=
+      have hsub : S.stratum str.str i ⊆ S.stratum str.str (i + k) :=
         Schema.stratum_mono (by omega)
-      calc (stratSeq S strat.strat G (i + k + 1)).restrictTo (S.stratum strat.strat i)
-          = ((stratSeq S strat.strat G (i + k + 1)).restrictTo
-              (S.stratum strat.strat (i + k))).restrictTo (S.stratum strat.strat i) :=
+      calc (typ S str.str G (i + k + 1)).restrictTo (S.stratum str.str i)
+          = ((typ S str.str G (i + k + 1)).restrictTo
+              (S.stratum str.str (i + k))).restrictTo (S.stratum str.str i) :=
             (Typing.restrictTo_restrictTo hsub).symm
-        _ = (stratSeq S strat.strat G (i + k)).restrictTo (S.stratum strat.strat i) := by
+        _ = (typ S str.str G (i + k)).restrictTo (S.stratum str.str i) := by
             rw [step]
-        _ = stratSeq S strat.strat G i := ih
+        _ = typ S str.str G i := ih
 
 /-- The statement to establish at stratum `i`: for any `Hyp` whose own
 stratum-`≤ i` content is already known-correct, `proveAux` (run with that
-`Hyp`, on any `L` at exactly stratum `i`) decides `Typing4`-membership
+`Hyp`, on any `L` at exactly stratum `i`) decides `MTyping`-membership
 correctly. Named as a `Prop` so the two halves (`completeness_step`,
 `soundness_step` below) can each take "this already holds at every smaller
 stratum" as an explicit, reusable hypothesis. -/
-def MainProp (S : Schema) (strat : Stratification S) (G : Graph) (U : Finset Assoc)
+def MainProp (S : Schema) (str : Strat S) (G : Graph) (U : Finset Assoc)
     (i : ℕ) : Prop :=
   ∀ Hyp : Finset Assoc,
-    (∀ p ∈ Hyp, p.2 ∈ S.stratum strat.strat i → p ∈ stratSeq S strat.strat G i) →
-    ∀ n L, strat.strat L = i → L ∈ S.labels →
-      (proveAux S G U n L Hyp = true ↔ (n, L) ∈ stratSeq S strat.strat G i)
+    (∀ p ∈ Hyp, p.2 ∈ S.stratum str.str i → p ∈ typ S str.str G i) →
+    ∀ n L, str.str L = i → L ∈ S.labels →
+      (proveAux S G U n L Hyp = true ↔ (n, L) ∈ typ S str.str G i)
 
-/-- **Completeness**, at a fixed stratum `i`: `(n, L) ∈ stratSeq i` ⟹
+/-- **Completeness**, at a fixed stratum `i`: `(n, L) ∈ typ i` ⟹
 `proveAux` confirms it. Proved by induction on the well-founded measure
 alone (no circularity: the recursive step is *given* `(n, L) ∈
-stratSeq i`, so extending `Hyp` with it needs no further
+typ i`, so extending `Hyp` with it needs no further
 justification) — using `outerIH` only for negative (strictly lower
 stratum) dependencies, where `Hyp`'s stratum-`< i` part is always empty
 (every pair pushed onto `Hyp` while processing stratum `i` is itself at
 stratum `≥ i`, so it can never coincide with a stratum-`< i` target),
 hence trivially satisfies `MainProp`'s own hypothesis at that lower
 stratum. -/
-theorem completeness_step (S : Schema) (strat : Stratification S) (hClosed : S.Closed) (G : Graph)
+theorem completeness_step (S : Schema) (str : Strat S) (hClosed : S.Closed) (G : Graph)
     (U : Finset Assoc) (hU : G.nodes ×ˢ S.labels ⊆ U) (i : ℕ)
-    (outerIH : ∀ j < i, MainProp S strat G U j) :
+    (outerIH : ∀ j < i, MainProp S str G U j) :
     ∀ Hyp : Finset Assoc,
-      (∀ p ∈ Hyp, p.2 ∈ S.stratum strat.strat i → p ∈ stratSeq S strat.strat G i) →
-      ∀ n L, strat.strat L = i → L ∈ S.labels → (n, L) ∈ stratSeq S strat.strat G i →
+      (∀ p ∈ Hyp, p.2 ∈ S.stratum str.str i → p ∈ typ S str.str G i) →
+      ∀ n L, str.str L = i → L ∈ S.labels → (n, L) ∈ typ S str.str G i →
       proveAux S G U n L Hyp = true := by
   have key : ∀ k : ℕ, ∀ Hyp : Finset Assoc, (U \ Hyp).card ≤ k →
-      (∀ p ∈ Hyp, p.2 ∈ S.stratum strat.strat i → p ∈ stratSeq S strat.strat G i) →
-      ∀ n L, strat.strat L = i → L ∈ S.labels → (n, L) ∈ stratSeq S strat.strat G i →
+      (∀ p ∈ Hyp, p.2 ∈ S.stratum str.str i → p ∈ typ S str.str G i) →
+      ∀ n L, str.str L = i → L ∈ S.labels → (n, L) ∈ typ S str.str G i →
       proveAux S G U n L Hyp = true := by
     intro k
     induction k using Nat.strong_induction_on with
@@ -617,28 +617,28 @@ theorem completeness_step (S : Schema) (strat : Stratification S) (hClosed : S.C
       intro Hyp hk hHyp n L hLi hLlabels hmem
       by_cases hinHyp : (n, L) ∈ Hyp
       · exact proveAux_of_mem hinHyp
-      have hLstratum : L ∈ S.stratum strat.strat i := by
+      have hLstratum : L ∈ S.stratum str.str i := by
         simp only [Schema.stratum, Finset.mem_filter]; exact ⟨hLlabels, hLi.le⟩
       have hLU : (n, L) ∈ U := by
         apply hU
-        have h' := (stratSeq_correct S strat hClosed G i).1 hmem
+        have h' := (typ_correct S str hClosed G i).1 hmem
         simp only [Schema.univTyping, Schema.stratRestrict] at h'
         exact Finset.mem_product.mpr ⟨(Finset.mem_product.mp h').1, hLlabels⟩
-      have hSat : Satisfies G (stratSeq S strat.strat G i) n (S.shapeDef L) :=
-        (stratSeq_correct S strat hClosed G i).2 n L hmem
-      -- Any dep target of L already in `stratSeq i` is confirmed by
+      have hSat : Satisfies G (typ S str.str G i) n (S.shapeDef L) :=
+        (typ_correct S str hClosed G i).2 n L hmem
+      -- Any dep target of L already in `typ i` is confirmed by
       -- `proveAux`: same-stratum targets via `innerIH` (measure strictly
       -- decreases), strictly-lower-stratum ones via `outerIH` (stability
       -- carries `hHyp`'s invariant down to that stratum for free).
       have hrec : ∀ n' L', L' ∈ (S.shapeDef L).posDeps ∪ (S.shapeDef L).negDeps →
-          n' ∈ objsOf (neigh G n) → (n', L') ∈ stratSeq S strat.strat G i →
+          n' ∈ objsOf (neigh G n) → (n', L') ∈ typ S str.str G i →
           proveAux S G U n' L' (insert (n, L) Hyp) = true := by
         intro n' L' hL'deps hn' hp'mem
-        have hL'stratumL : L' ∈ S.stratum strat.strat i :=
-          Schema.stratum_self_contained S strat hClosed i L
+        have hL'stratumL : L' ∈ S.stratum str.str i :=
+          Schema.stratum_self_contained S str hClosed i L
             (by simp only [Schema.stratum, Finset.mem_filter]; exact ⟨hLlabels, hLi.le⟩) hL'deps
         have hL'labels : L' ∈ S.labels := (Finset.mem_filter.mp hL'stratumL).1
-        have hL'le : strat.strat L' ≤ i := (Finset.mem_filter.mp hL'stratumL).2
+        have hL'le : str.str L' ≤ i := (Finset.mem_filter.mp hL'stratumL).2
         by_cases hp'Hyp : (n', L') ∈ insert (n, L) Hyp
         · exact proveAux_of_mem hp'Hyp
         · rcases eq_or_lt_of_le hL'le with heq | hlt
@@ -647,36 +647,36 @@ theorem completeness_step (S : Schema) (strat : Stratification S) (hClosed : S.C
               ext p; simp only [Finset.mem_sdiff, Finset.mem_insert, Finset.mem_erase]; tauto
             have hcard : (U \ insert (n, L) Hyp).card < k := by
               rw [heqset]; exact lt_of_lt_of_le (Finset.card_erase_lt_of_mem hmemUHyp) hk
-            have hHyp' : ∀ p ∈ insert (n, L) Hyp, p.2 ∈ S.stratum strat.strat i →
-                p ∈ stratSeq S strat.strat G i := by
+            have hHyp' : ∀ p ∈ insert (n, L) Hyp, p.2 ∈ S.stratum str.str i →
+                p ∈ typ S str.str G i := by
               intro p hp hp2
               rcases Finset.mem_insert.mp hp with rfl | hpHyp
               · exact hmem
               · exact hHyp p hpHyp hp2
             exact innerIH (U \ insert (n, L) Hyp).card hcard (insert (n, L) Hyp) le_rfl hHyp'
               n' L' heq hL'labels hp'mem
-          · have hp'memj : (n', L') ∈ stratSeq S strat.strat G (strat.strat L') := by
-              rw [← stratSeq_restrictTo_stable S strat hClosed G hlt.le]
+          · have hp'memj : (n', L') ∈ typ S str.str G (str.str L') := by
+              rw [← typ_restrictTo_stable S str hClosed G hlt.le]
               exact Typing.mem_restrictTo.mpr
                 ⟨hp'mem, Finset.mem_filter.mpr ⟨hL'labels, le_refl _⟩⟩
-            have hHypj : ∀ p ∈ insert (n, L) Hyp, p.2 ∈ S.stratum strat.strat (strat.strat L') →
-                p ∈ stratSeq S strat.strat G (strat.strat L') := by
+            have hHypj : ∀ p ∈ insert (n, L) Hyp, p.2 ∈ S.stratum str.str (str.str L') →
+                p ∈ typ S str.str G (str.str L') := by
               intro p hp hp2
               rcases Finset.mem_insert.mp hp with rfl | hpHyp
               · exact absurd hp2 (by
                   simp only [Schema.stratum, Finset.mem_filter]; omega)
-              · have hp2i : p.2 ∈ S.stratum strat.strat i := by
+              · have hp2i : p.2 ∈ S.stratum str.str i := by
                   simp only [Schema.stratum, Finset.mem_filter] at hp2 ⊢
                   exact ⟨hp2.1, hp2.2.trans hlt.le⟩
-                rw [← stratSeq_restrictTo_stable S strat hClosed G hlt.le]
+                rw [← typ_restrictTo_stable S str hClosed G hlt.le]
                 exact Typing.mem_restrictTo.mpr ⟨hHyp p hpHyp hp2i, hp2⟩
-            exact ((outerIH (strat.strat L') hlt) (insert (n, L) Hyp) hHypj n' L' rfl
+            exact ((outerIH (str.str L') hlt) (insert (n, L) Hyp) hHypj n' L' rfl
               hL'labels).mpr hp'memj
       have hn'U : ∀ n' L', L' ∈ (S.shapeDef L).posDeps ∪ (S.shapeDef L).negDeps →
           n' ∈ objsOf (neigh G n) → (n', L') ∈ U := by
         intro n' L' hL'deps hn'
         exact hU (Finset.mem_product.mpr ⟨objsOf_neigh_subset_nodes G n hn',
-          (Finset.mem_filter.mp (Schema.stratum_self_contained S strat hClosed i L
+          (Finset.mem_filter.mp (Schema.stratum_self_contained S str hClosed i L
             (by simp only [Schema.stratum, Finset.mem_filter]; exact ⟨hLlabels, hLi.le⟩)
             hL'deps)).1⟩)
       rw [proveAux_unfold hinHyp hLU]
@@ -693,13 +693,13 @@ theorem completeness_step (S : Schema) (strat : Stratification S) (hClosed : S.C
       · rintro ⟨n', L'⟩ hp
         simp only [Finset.mem_product] at hp
         obtain ⟨hn', hL'neg⟩ := hp
-        have hL'lt : strat.strat L' < i := hLi ▸ strat.neg_strict L hLlabels L' hL'neg
+        have hL'lt : str.str L' < i := hLi ▸ str.neg_strict L hLlabels L' hL'neg
         have hL'labels : L' ∈ S.labels :=
-          (Finset.mem_filter.mp (Schema.stratum_self_contained S strat hClosed i L
+          (Finset.mem_filter.mp (Schema.stratum_self_contained S str hClosed i L
             (by simp only [Schema.stratum, Finset.mem_filter]; exact ⟨hLlabels, hLi.le⟩)
             (Finset.mem_union_right _ hL'neg))).1
         by_cases hp'Hyp : (n', L') ∈ insert (n, L) Hyp
-        · have hmemTyping : (n', L') ∈ stratSeq S strat.strat G i := by
+        · have hmemTyping : (n', L') ∈ typ S str.str G i := by
             rcases Finset.mem_insert.mp hp'Hyp with heq | hpHyp
             · exfalso
               have hLeq : L' = L := (Prod.ext_iff.mp heq).2
@@ -715,33 +715,33 @@ theorem completeness_step (S : Schema) (strat : Stratification S) (hClosed : S.C
                 hn'U n' L' (Finset.mem_union_right _ hL'neg) hn'⟩, hp'Hyp⟩, htrue⟩)
           · intro hdep
             rcases Finset.mem_union.mp hdep with hd | hh
-            · have hp'memj : (n', L') ∈ stratSeq S strat.strat G (strat.strat L') := by
-                have hHypj : ∀ p ∈ insert (n, L) Hyp, p.2 ∈ S.stratum strat.strat (strat.strat L') →
-                    p ∈ stratSeq S strat.strat G (strat.strat L') := by
+            · have hp'memj : (n', L') ∈ typ S str.str G (str.str L') := by
+                have hHypj : ∀ p ∈ insert (n, L) Hyp, p.2 ∈ S.stratum str.str (str.str L') →
+                    p ∈ typ S str.str G (str.str L') := by
                   intro p hp hp2
                   rcases Finset.mem_insert.mp hp with rfl | hpHyp
                   · exact absurd hp2 (by simp only [Schema.stratum, Finset.mem_filter]; omega)
-                  · have hp2i : p.2 ∈ S.stratum strat.strat i := by
+                  · have hp2i : p.2 ∈ S.stratum str.str i := by
                       simp only [Schema.stratum, Finset.mem_filter] at hp2 ⊢
                       exact ⟨hp2.1, hp2.2.trans hL'lt.le⟩
-                    rw [← stratSeq_restrictTo_stable S strat hClosed G hL'lt.le]
+                    rw [← typ_restrictTo_stable S str hClosed G hL'lt.le]
                     exact Typing.mem_restrictTo.mpr ⟨hHyp p hpHyp hp2i, hp2⟩
-                exact ((outerIH (strat.strat L') hL'lt) (insert (n, L) Hyp) hHypj n' L' rfl
+                exact ((outerIH (str.str L') hL'lt) (insert (n, L) Hyp) hHypj n' L' rfl
                   hL'labels).mp (Finset.mem_filter.mp hd).2
-              rw [← stratSeq_restrictTo_stable S strat hClosed G hL'lt.le] at hp'memj
+              rw [← typ_restrictTo_stable S str hClosed G hL'lt.le] at hp'memj
               exact (Typing.mem_restrictTo.mp hp'memj).1
             · exact absurd hh hp'Hyp
   exact fun Hyp hHyp n L hLi hLlabels hmem =>
     key (U \ Hyp).card Hyp le_rfl hHyp n L hLi hLlabels hmem
 
 /-- **Soundness**, at a fixed stratum `i`: `proveAux` confirming `(n, L)`
-implies `(n, L) ∈ stratSeq i`. The hard direction — `proveAux` is a
+implies `(n, L) ∈ typ i`. The hard direction — `proveAux` is a
 coinductive-style algorithm (trusting an ancestor already on the call
-stack, to allow positive cycles), so relating it to `Typing4`'s
+stack, to allow positive cycles), so relating it to `MTyping`'s
 greatest-fixed-point characterization needs a genuine witness:
-`T := stratSeq i ∪ (support of the whole computation, restricted to
+`T := typ i ∪ (support of the whole computation, restricted to
 same-stratum content)` is shown to be a correct, agreeing typing, hence
-`⊆ stratSeq i` via `subset_maxAgree`; since `(n, L)` is in
+`⊆ typ i` via `subset_maxAgree`; since `(n, L)` is in
 the support, this gives the result. The device that avoids circularity
 when a descendant's dependency chain loops back to `(n, L)` itself (a
 genuine positive cycle): `T` is fixed *once* from the outermost call and
@@ -750,22 +750,22 @@ arguments, closed over before the well-founded induction on `k` even
 starts) — an in-progress element's membership in `T` is always immediate
 (structural, `⊆ T` by hypothesis), never needing its `Satisfies` fact to
 be re-established first. -/
-theorem soundness_step (S : Schema) (strat : Stratification S) (hClosed : S.Closed) (G : Graph)
+theorem soundness_step (S : Schema) (str : Strat S) (hClosed : S.Closed) (G : Graph)
     (U : Finset Assoc) (hU : U = G.nodes ×ˢ S.labels) (i : ℕ)
-    (outerIH : ∀ j < i, MainProp S strat G U j) :
+    (outerIH : ∀ j < i, MainProp S str G U j) :
     ∀ Hyp : Finset Assoc,
-      (∀ p ∈ Hyp, p.2 ∈ S.stratum strat.strat i → p ∈ stratSeq S strat.strat G i) →
-      ∀ n L, strat.strat L = i → L ∈ S.labels → proveAux S G U n L Hyp = true →
-      (n, L) ∈ stratSeq S strat.strat G i := by
-  have key : ∀ (T : Typing), stratSeq S strat.strat G i ⊆ T →
-      (∀ p : Assoc, strat.strat p.2 < i →
-        (p ∈ T ↔ p ∈ stratSeq S strat.strat G i)) →
+      (∀ p ∈ Hyp, p.2 ∈ S.stratum str.str i → p ∈ typ S str.str G i) →
+      ∀ n L, str.str L = i → L ∈ S.labels → proveAux S G U n L Hyp = true →
+      (n, L) ∈ typ S str.str G i := by
+  have key : ∀ (T : Typing), typ S str.str G i ⊆ T →
+      (∀ p : Assoc, str.str p.2 < i →
+        (p ∈ T ↔ p ∈ typ S str.str G i)) →
       ∀ k : ℕ, ∀ Hyp : Finset Assoc, (U \ Hyp).card ≤ k →
-      (∀ p ∈ Hyp, p.2 ∈ S.stratum strat.strat i → p ∈ T) →
-      ∀ n L, strat.strat L = i → L ∈ S.labels → n ∈ G.nodes → (n, L) ∉ Hyp → (n, L) ∈ U →
+      (∀ p ∈ Hyp, p.2 ∈ S.stratum str.str i → p ∈ T) →
+      ∀ n L, str.str L = i → L ∈ S.labels → n ∈ G.nodes → (n, L) ∉ Hyp → (n, L) ∈ U →
       proveAux S G U n L Hyp = true →
-      (provSupp S G U n L Hyp).filter (fun q => strat.strat q.2 = i) ⊆ T →
-      ∀ q ∈ (provSupp S G U n L Hyp).filter (fun q => strat.strat q.2 = i),
+      (provSupp S G U n L Hyp).filter (fun q => str.str q.2 = i) ⊆ T →
+      ∀ q ∈ (provSupp S G U n L Hyp).filter (fun q => str.str q.2 = i),
         Satisfies G T q.1 (S.shapeDef q.2) := by
     intro T hSTsubT hTneg k
     induction k using Nat.strong_induction_on with
@@ -773,7 +773,7 @@ theorem soundness_step (S : Schema) (strat : Stratification S) (hClosed : S.Clos
       intro Hyp hk hHyp n L hLi hLlabels hnnodes hinHyp hinU htrue hWisubT q hqWi
       have hnLT : (n, L) ∈ T :=
         hWisubT (Finset.mem_filter.mpr ⟨mem_provSupp_self hinHyp hinU, hLi⟩)
-      have hLstratum : L ∈ S.stratum strat.strat i := Finset.mem_filter.mpr ⟨hLlabels, hLi.le⟩
+      have hLstratum : L ∈ S.stratum str.str i := Finset.mem_filter.mpr ⟨hLlabels, hLi.le⟩
       -- Any dep target of L confirmed true lands in `T` — either already
       -- known (`hHyp`/`hnLT`), freshly confirmed same-stratum (structural
       -- membership in `T` via `hWisubT`), or strictly-lower-stratum
@@ -782,10 +782,10 @@ theorem soundness_step (S : Schema) (strat : Stratification S) (hClosed : S.Clos
           n' ∈ objsOf (neigh G n) → proveAux S G U n' L' (insert (n, L) Hyp) = true →
           (n', L') ∈ T := by
         intro n' L' hL'deps hn' hp'true
-        have hL'stratumL : L' ∈ S.stratum strat.strat i :=
-          Schema.stratum_self_contained S strat hClosed i L hLstratum hL'deps
+        have hL'stratumL : L' ∈ S.stratum str.str i :=
+          Schema.stratum_self_contained S str hClosed i L hLstratum hL'deps
         have hL'labels : L' ∈ S.labels := (Finset.mem_filter.mp hL'stratumL).1
-        have hL'le : strat.strat L' ≤ i := (Finset.mem_filter.mp hL'stratumL).2
+        have hL'le : str.str L' ≤ i := (Finset.mem_filter.mp hL'stratumL).2
         by_cases hp'Hyp : (n', L') ∈ insert (n, L) Hyp
         · rcases Finset.mem_insert.mp hp'Hyp with heq | hpHyp
           · simp only [Prod.mk.injEq] at heq
@@ -801,43 +801,43 @@ theorem soundness_step (S : Schema) (strat : Stratification S) (hClosed : S.Clos
             have hdep : (n', L') ∈ proveDep S G U n L Hyp := Finset.mem_filter.mpr ⟨hcand, hp'true⟩
             exact hWisubT (Finset.mem_filter.mpr
               ⟨dep_subset_provSupp hinHyp hinU hdep, heq⟩)
-          · have hHypj : ∀ p ∈ insert (n, L) Hyp, p.2 ∈ S.stratum strat.strat (strat.strat L') →
-                p ∈ stratSeq S strat.strat G (strat.strat L') := by
+          · have hHypj : ∀ p ∈ insert (n, L) Hyp, p.2 ∈ S.stratum str.str (str.str L') →
+                p ∈ typ S str.str G (str.str L') := by
               intro p hp hp2
               rcases Finset.mem_insert.mp hp with rfl | hpHyp
               · exact absurd hp2 (by simp only [Schema.stratum, Finset.mem_filter]; omega)
-              · have hp2lt : strat.strat p.2 < i := by
+              · have hp2lt : str.str p.2 < i := by
                   simp only [Schema.stratum, Finset.mem_filter] at hp2; omega
-                have hp2i : p.2 ∈ S.stratum strat.strat i :=
+                have hp2i : p.2 ∈ S.stratum str.str i :=
                   Finset.mem_filter.mpr ⟨(Finset.mem_filter.mp hp2).1, hp2lt.le⟩
-                have hpST : p ∈ stratSeq S strat.strat G i :=
+                have hpST : p ∈ typ S str.str G i :=
                   (hTneg p hp2lt).mp (hHyp p hpHyp hp2i)
-                rw [← stratSeq_restrictTo_stable S strat hClosed G hlt.le]
+                rw [← typ_restrictTo_stable S str hClosed G hlt.le]
                 exact Typing.mem_restrictTo.mpr ⟨hpST, hp2⟩
-            have hp'memj : (n', L') ∈ stratSeq S strat.strat G (strat.strat L') :=
-              ((outerIH (strat.strat L') hlt) (insert (n, L) Hyp) hHypj n' L' rfl
+            have hp'memj : (n', L') ∈ typ S str.str G (str.str L') :=
+              ((outerIH (str.str L') hlt) (insert (n, L) Hyp) hHypj n' L' rfl
                 hL'labels).mp hp'true
-            have hp'memi : (n', L') ∈ stratSeq S strat.strat G i := by
-              rw [← stratSeq_restrictTo_stable S strat hClosed G hlt.le] at hp'memj
+            have hp'memi : (n', L') ∈ typ S str.str G i := by
+              rw [← typ_restrictTo_stable S str hClosed G hlt.le] at hp'memj
               exact (Typing.mem_restrictTo.mp hp'memj).1
             exact hSTsubT hp'memi
       have handleP : ∀ p ∈ proveDep S G U n L Hyp,
-          ∀ q' ∈ provSupp S G U p.1 p.2 (insert (n, L) Hyp), strat.strat q'.2 = i →
+          ∀ q' ∈ provSupp S G U p.1 p.2 (insert (n, L) Hyp), str.str q'.2 = i →
           Satisfies G T q'.1 (S.shapeDef q'.2) := by
         intro p hpDep q' hq'Sup hq'i
         obtain ⟨hpcand, hptrue⟩ := Finset.mem_filter.mp hpDep
         obtain ⟨hpdepSet, hpnotHyp⟩ := Finset.mem_sdiff.mp hpcand
         obtain ⟨hpdepSet', hpU⟩ := Finset.mem_inter.mp hpdepSet
         obtain ⟨hp1, hp2⟩ := mem_depSet.mp hpdepSet'
-        have hpLstratum : p.2 ∈ S.stratum strat.strat i :=
-          Schema.stratum_self_contained S strat hClosed i L hLstratum hp2
+        have hpLstratum : p.2 ∈ S.stratum str.str i :=
+          Schema.stratum_self_contained S str hClosed i L hLstratum hp2
         have hpLlabels : p.2 ∈ S.labels := (Finset.mem_filter.mp hpLstratum).1
         have hpnodes : p.1 ∈ G.nodes := objsOf_neigh_subset_nodes G n hp1
-        have hp2le : strat.strat p.2 ≤ i := (Finset.mem_filter.mp hpLstratum).2
-        have hp2eq : strat.strat p.2 = i := by
+        have hp2le : str.str p.2 ≤ i := (Finset.mem_filter.mp hpLstratum).2
+        have hp2eq : str.str p.2 = i := by
           by_contra hne
-          have hp2lt : strat.strat p.2 < i := lt_of_le_of_ne hp2le hne
-          have hbound := (provSupp_stratum_le S strat hClosed G U
+          have hp2lt : str.str p.2 < i := lt_of_le_of_ne hp2le hne
+          have hbound := (provSupp_stratum_le S str hClosed G U
             (U \ insert (n, L) Hyp).card (insert (n, L) Hyp) le_rfl p.1 p.2 hpLlabels hpnodes
             q' hq'Sup).1
           omega
@@ -846,13 +846,13 @@ theorem soundness_step (S : Schema) (strat : Stratification S) (hClosed : S.Clos
           ext r; simp only [Finset.mem_sdiff, Finset.mem_insert, Finset.mem_erase]; tauto
         have hcard : (U \ insert (n, L) Hyp).card < k := by
           rw [heqset]; exact lt_of_lt_of_le (Finset.card_erase_lt_of_mem hmemUHyp) hk
-        have hHyp' : ∀ r ∈ insert (n, L) Hyp, r.2 ∈ S.stratum strat.strat i → r ∈ T := by
+        have hHyp' : ∀ r ∈ insert (n, L) Hyp, r.2 ∈ S.stratum str.str i → r ∈ T := by
           intro r hr hr2
           rcases Finset.mem_insert.mp hr with rfl | hrHyp
           · exact hnLT
           · exact hHyp r hrHyp hr2
         have hWisubT' : (provSupp S G U p.1 p.2 (insert (n, L) Hyp)).filter
-            (fun r => strat.strat r.2 = i) ⊆ T := by
+            (fun r => str.str r.2 = i) ⊆ T := by
           intro r hr
           obtain ⟨hrmem, hri⟩ := Finset.mem_filter.mp hr
           exact hWisubT (Finset.mem_filter.mpr
@@ -873,15 +873,15 @@ theorem soundness_step (S : Schema) (strat : Stratification S) (hClosed : S.Clos
           · rcases Finset.mem_insert.mp hh with heq | hpHyp
             · simp only [Prod.mk.injEq] at heq; obtain ⟨rfl, rfl⟩ := heq; exact hnLT
             · exact hHyp (n', L') hpHyp
-                (Schema.stratum_self_contained S strat hClosed i L hLstratum
+                (Schema.stratum_self_contained S str hClosed i L hLstratum
                   (Finset.mem_union_left _ hp.2))
         · rintro ⟨n', L'⟩ hp
           simp only [Finset.mem_product] at hp
           obtain ⟨hn', hL'neg⟩ := hp
-          have hL'lt : strat.strat L' < i := hLi ▸ strat.neg_strict L hLlabels L' hL'neg
+          have hL'lt : str.str L' < i := hLi ▸ str.neg_strict L hLlabels L' hL'neg
           have hL'labels : L' ∈ S.labels :=
             (Finset.mem_filter.mp
-              (Schema.stratum_self_contained S strat hClosed i L hLstratum
+              (Schema.stratum_self_contained S str hClosed i L hLstratum
                 (Finset.mem_union_right _ hL'neg))).1
           constructor
           · intro hmem
@@ -891,28 +891,28 @@ theorem soundness_step (S : Schema) (strat : Stratification S) (hClosed : S.Clos
               · simp only [Prod.mk.injEq] at heq; obtain ⟨rfl, rfl⟩ := heq; exact hnLT
               · exact hHyp (n', L') hpHyp (Finset.mem_filter.mpr ⟨hL'labels, hL'lt.le⟩)
           · intro hT
-            have hST : (n', L') ∈ stratSeq S strat.strat G i := (hTneg (n', L') hL'lt).mp hT
+            have hST : (n', L') ∈ typ S str.str G i := (hTneg (n', L') hL'lt).mp hT
             by_cases hp'Hyp : (n', L') ∈ insert (n, L) Hyp
             · exact Finset.mem_union_right _ hp'Hyp
-            · have hp'memj : (n', L') ∈ stratSeq S strat.strat G (strat.strat L') := by
-                rw [← stratSeq_restrictTo_stable S strat hClosed G hL'lt.le]
+            · have hp'memj : (n', L') ∈ typ S str.str G (str.str L') := by
+                rw [← typ_restrictTo_stable S str hClosed G hL'lt.le]
                 exact Typing.mem_restrictTo.mpr
                   ⟨hST, Finset.mem_filter.mpr ⟨hL'labels, le_refl _⟩⟩
-              have hHypj : ∀ p ∈ insert (n, L) Hyp, p.2 ∈ S.stratum strat.strat (strat.strat L') →
-                  p ∈ stratSeq S strat.strat G (strat.strat L') := by
+              have hHypj : ∀ p ∈ insert (n, L) Hyp, p.2 ∈ S.stratum str.str (str.str L') →
+                  p ∈ typ S str.str G (str.str L') := by
                 intro p hp hp2
                 rcases Finset.mem_insert.mp hp with rfl | hpHyp
                 · exact absurd hp2 (by simp only [Schema.stratum, Finset.mem_filter]; omega)
-                · have hp2lt : strat.strat p.2 < i := by
+                · have hp2lt : str.str p.2 < i := by
                     simp only [Schema.stratum, Finset.mem_filter] at hp2; omega
-                  have hp2i : p.2 ∈ S.stratum strat.strat i :=
+                  have hp2i : p.2 ∈ S.stratum str.str i :=
                     Finset.mem_filter.mpr ⟨(Finset.mem_filter.mp hp2).1, hp2lt.le⟩
-                  have hpST : p ∈ stratSeq S strat.strat G i :=
+                  have hpST : p ∈ typ S str.str G i :=
                     (hTneg p hp2lt).mp (hHyp p hpHyp hp2i)
-                  rw [← stratSeq_restrictTo_stable S strat hClosed G hL'lt.le]
+                  rw [← typ_restrictTo_stable S str hClosed G hL'lt.le]
                   exact Typing.mem_restrictTo.mpr ⟨hpST, hp2⟩
               have htr : proveAux S G U n' L' (insert (n, L) Hyp) = true :=
-                ((outerIH (strat.strat L') hL'lt) (insert (n, L) Hyp) hHypj n' L' rfl
+                ((outerIH (str.str L') hL'lt) (insert (n, L) Hyp) hHypj n' L' rfl
                   hL'labels).mpr hp'memj
               have hn'U : (n', L') ∈ U :=
                 hU ▸ Finset.mem_product.mpr ⟨objsOf_neigh_subset_nodes G n hn', hL'labels⟩
@@ -929,11 +929,11 @@ theorem soundness_step (S : Schema) (strat : Stratification S) (hClosed : S.Clos
   · exact hHyp (n, L) hinHyp (Finset.mem_filter.mpr ⟨hLlabels, hLi.le⟩)
   by_cases hinU : (n, L) ∈ U
   · have hnnodes : n ∈ G.nodes := (Finset.mem_product.mp (hU ▸ hinU)).1
-    set T0 := stratSeq S strat.strat G i ∪
-      (provSupp S G U n L Hyp).filter (fun q => strat.strat q.2 = i) with hT0def
-    have hSTsubT0 : stratSeq S strat.strat G i ⊆ T0 := Finset.subset_union_left
-    have hTneg0 : ∀ p : Assoc, strat.strat p.2 < i →
-        (p ∈ T0 ↔ p ∈ stratSeq S strat.strat G i) := by
+    set T0 := typ S str.str G i ∪
+      (provSupp S G U n L Hyp).filter (fun q => str.str q.2 = i) with hT0def
+    have hSTsubT0 : typ S str.str G i ⊆ T0 := Finset.subset_union_left
+    have hTneg0 : ∀ p : Assoc, str.str p.2 < i →
+        (p ∈ T0 ↔ p ∈ typ S str.str G i) := by
       intro p hplt
       constructor
       · intro h
@@ -941,48 +941,48 @@ theorem soundness_step (S : Schema) (strat : Stratification S) (hClosed : S.Clos
         · exact h1
         · exact absurd (Finset.mem_filter.mp h2).2 (by omega)
       · exact fun h => Finset.mem_union_left _ h
-    have hWisubT0 : (provSupp S G U n L Hyp).filter (fun q => strat.strat q.2 = i) ⊆ T0 :=
+    have hWisubT0 : (provSupp S G U n L Hyp).filter (fun q => str.str q.2 = i) ⊆ T0 :=
       Finset.subset_union_right
     have hmemT0 : (n, L) ∈ T0 :=
       hWisubT0 (Finset.mem_filter.mpr ⟨mem_provSupp_self hinHyp hinU, hLi⟩)
     obtain ⟨j, hj⟩ : ∃ j, i = j + 1 := ⟨i - 1, by
-      have := strat.mem_range L hLlabels; omega⟩
-    have hCorrect : (S.stratRestrict strat.strat i).CorrTyping G T0 := by
+      have := str.mem_range L hLlabels; omega⟩
+    have hCorrect : (S.stratRestrict str.str i).CorrTyping G T0 := by
       intro n' L' hmem'
       rcases Finset.mem_union.mp hmem' with hmemST | hmemWi
-      · have hL'stratum : L' ∈ S.stratum strat.strat i := by
-          have h' := (stratSeq_correct S strat hClosed G i).1 hmemST
+      · have hL'stratum : L' ∈ S.stratum str.str i := by
+          have h' := (typ_correct S str hClosed G i).1 hmemST
           simp only [Schema.univTyping, Schema.stratRestrict] at h'
           exact (Finset.mem_product.mp h').2
         have hL'labels : L' ∈ S.labels := (Finset.mem_filter.mp hL'stratum).1
-        have hL'le : strat.strat L' ≤ i := (Finset.mem_filter.mp hL'stratum).2
-        have hSat' := (stratSeq_correct S strat hClosed G i).2 n' L' hmemST
+        have hL'le : str.str L' ≤ i := (Finset.mem_filter.mp hL'stratum).2
+        have hSat' := (typ_correct S str hClosed G i).2 n' L' hmemST
         refine Satisfies.stratMono_depSet ?_ ?_ hSat'
         · exact fun p hp hpin => Finset.mem_union_left _ hpin
         · rintro ⟨n'', L''⟩ hp
           simp only [Finset.mem_product] at hp
-          have hlt : strat.strat L'' < strat.strat L' := strat.neg_strict L' hL'labels L'' hp.2
+          have hlt : str.str L'' < str.str L' := str.neg_strict L' hL'labels L'' hp.2
           exact (hTneg0 (n'', L'') (lt_of_lt_of_le hlt hL'le)).symm
       · exact key T0 hSTsubT0 hTneg0 (U \ Hyp).card Hyp le_rfl
           (fun p hp hp2 => hSTsubT0 (hHyp p hp hp2)) n L hLi hLlabels hnnodes
           hinHyp hinU htrue hWisubT0 (n', L') hmemWi
-    have hSubUniv : T0 ⊆ (S.stratRestrict strat.strat i).univTyping G := by
+    have hSubUniv : T0 ⊆ (S.stratRestrict str.str i).univTyping G := by
       intro p hp
       rcases Finset.mem_union.mp hp with h1 | h2
-      · have := (stratSeq_correct S strat hClosed G i).1 h1
+      · have := (typ_correct S str hClosed G i).1 h1
         simpa only [Schema.univTyping, Schema.stratRestrict] using this
       · obtain ⟨hpmem, hpi⟩ := Finset.mem_filter.mp h2
-        have hbound := provSupp_stratum_le S strat hClosed G U (U \ Hyp).card Hyp le_rfl n L
+        have hbound := provSupp_stratum_le S str hClosed G U (U \ Hyp).card Hyp le_rfl n L
           hLlabels hnnodes p hpmem
         simp only [Schema.univTyping, Schema.stratRestrict]
         refine Finset.mem_product.mpr ⟨hbound.2.2, ?_⟩
         simp only [Schema.stratum, Finset.mem_filter]
         exact ⟨hbound.2.1, hpi.le⟩
     have hj_le : j ≤ i := by omega
-    have hAgree : T0.restrictTo (S.stratum strat.strat j) =
-        (stratSeq S strat.strat G j).restrictTo (S.stratum strat.strat j) := by
-      have step1 : T0.restrictTo (S.stratum strat.strat j) =
-          (stratSeq S strat.strat G i).restrictTo (S.stratum strat.strat j) := by
+    have hAgree : T0.restrictTo (S.stratum str.str j) =
+        (typ S str.str G j).restrictTo (S.stratum str.str j) := by
+      have step1 : T0.restrictTo (S.stratum str.str j) =
+          (typ S str.str G i).restrictTo (S.stratum str.str j) := by
         apply Finset.ext
         rintro ⟨n', L'⟩
         simp only [Typing.mem_restrictTo, hT0def, Finset.mem_union]
@@ -990,24 +990,24 @@ theorem soundness_step (S : Schema) (strat : Stratification S) (hClosed : S.Clos
         · rintro ⟨h1 | h2, hL'j⟩
           · exact ⟨h1, hL'j⟩
           · exfalso
-            have hi : strat.strat L' = i := (Finset.mem_filter.mp h2).2
+            have hi : str.str L' = i := (Finset.mem_filter.mp h2).2
             simp only [Schema.stratum, Finset.mem_filter] at hL'j
             omega
         · rintro ⟨h1, hL'j⟩
           exact ⟨Or.inl h1, hL'j⟩
-      rw [step1, stratSeq_restrictTo_stable S strat hClosed G hj_le]
+      rw [step1, typ_restrictTo_stable S str hClosed G hj_le]
       apply Finset.ext
       rintro ⟨n', L'⟩
       simp only [Typing.mem_restrictTo]
       constructor
       · intro h
-        have hp' := (stratSeq_correct S strat hClosed G j).1 h
+        have hp' := (typ_correct S str hClosed G j).1 h
         simp only [Schema.univTyping, Schema.stratRestrict] at hp'
         exact ⟨h, (Finset.mem_product.mp hp').2⟩
       · exact fun h => h.1
-    have hival : stratSeq S strat.strat G i =
-        maxAgree (S.stratRestrict strat.strat i) G (S.stratum strat.strat j)
-          (stratSeq S strat.strat G j) := by
+    have hival : typ S str.str G i =
+        maxAgree (S.stratRestrict str.str i) G (S.stratum str.str j)
+          (typ S str.str G j) := by
       subst hj; rfl
     have hsub := subset_maxAgree hSubUniv hCorrect hAgree
     rw [← hival] at hsub
@@ -1018,36 +1018,36 @@ theorem soundness_step (S : Schema) (strat : Stratification S) (hClosed : S.Clos
 
 /-- Combines `completeness_step` and `soundness_step`, at every stratum,
 into `MainProp` holding everywhere: `proveAux` correctly decides
-`stratSeq i`-membership at stratum `i`, for any `Hyp` whose own
+`typ i`-membership at stratum `i`, for any `Hyp` whose own
 stratum-`≤ i` content is already known-correct. -/
-theorem mainThm (S : Schema) (strat : Stratification S) (hClosed : S.Closed) (G : Graph)
+theorem mainThm (S : Schema) (str : Strat S) (hClosed : S.Closed) (G : Graph)
     (U : Finset Assoc) (hU : U = G.nodes ×ˢ S.labels) :
-    ∀ i : ℕ, MainProp S strat G U i := by
+    ∀ i : ℕ, MainProp S str G U i := by
   intro i
   induction i using Nat.strong_induction_on with
   | _ i outerIH =>
     intro Hyp hHyp n L hLi hLlabels
-    exact ⟨soundness_step S strat hClosed G U hU i outerIH Hyp hHyp n L hLi hLlabels,
-      completeness_step S strat hClosed G U (le_of_eq hU.symm) i outerIH Hyp hHyp n L hLi
+    exact ⟨soundness_step S str hClosed G U hU i outerIH Hyp hHyp n L hLi hLlabels,
+      completeness_step S str hClosed G U (le_of_eq hU.symm) i outerIH Hyp hHyp n L hLi
         hLlabels⟩
 
 /-- **Proposition 2** (§4.2): Algorithm 2 (`prove`) really does decide
-`Typing(G, S, strat)` (Definition 4) — the correctness the paper only
+`Typing(G, S, str)` (Definition 4) — the correctness the paper only
 asserts (its own proof sketch covers termination only). -/
-theorem prove_correct (S : Schema) (strat : Stratification S) (hClosed : S.Closed) (G : Graph)
+theorem prove_correct (S : Schema) (str : Strat S) (hClosed : S.Closed) (G : Graph)
     (n : RDFNode) (L : Label) (hLlabels : L ∈ S.labels) :
-    prove S G n L = true ↔ (n, L) ∈ Typing4 G S strat := by
-  have hmain := mainThm S strat hClosed G (G.nodes ×ˢ S.labels) rfl (strat.strat L) ∅ (by simp)
+    prove S G n L = true ↔ (n, L) ∈ MTyping G S str := by
+  have hmain := mainThm S str hClosed G (G.nodes ×ˢ S.labels) rfl (str.str L) ∅ (by simp)
     n L rfl hLlabels
-  have hstable := stratSeq_restrictTo_stable S strat hClosed G (strat.mem_range L hLlabels).2
-  show proveAux S G (G.nodes ×ˢ S.labels) n L ∅ = true ↔ (n, L) ∈ Typing4 G S strat
+  have hstable := typ_restrictTo_stable S str hClosed G (str.mem_range L hLlabels).2
+  show proveAux S G (G.nodes ×ˢ S.labels) n L ∅ = true ↔ (n, L) ∈ MTyping G S str
   rw [hmain]
-  show (n, L) ∈ stratSeq S strat.strat G (strat.strat L) ↔
-    (n, L) ∈ stratSeq S strat.strat G strat.k
+  show (n, L) ∈ typ S str.str G (str.str L) ↔
+    (n, L) ∈ typ S str.str G str.k
   constructor
   · intro h
-    have hr : (n, L) ∈ (stratSeq S strat.strat G strat.k).restrictTo
-        (S.stratum strat.strat (strat.strat L)) := by rw [hstable]; exact h
+    have hr : (n, L) ∈ (typ S str.str G str.k).restrictTo
+        (S.stratum str.str (str.str L)) := by rw [hstable]; exact h
     exact (Typing.mem_restrictTo.mp hr).1
   · intro h
     rw [← hstable]

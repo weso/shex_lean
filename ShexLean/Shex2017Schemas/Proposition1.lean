@@ -6,7 +6,7 @@ import Mathlib.Data.Finset.Powerset
 import Mathlib.Data.Finset.Lattice.Fold
 
 /-!
-Building blocks for §3.3's Proposition 1 (soundness of `Typing(G,S,strat)`
+Building blocks for §3.3's Proposition 1 (soundness of `Typing(G,S,str)`
 for stratified schemas), beyond what Lemma 1 (`ShexLean/Shex2017Schemas/MaximalTyping.lean`)
 covers for the negation-free case.
 
@@ -240,20 +240,20 @@ theorem Typing.restrictTo_agree {t t' : Typing} {Lo : Finset Label}
     rw [← h] at hin
     exact (Typing.mem_restrictTo.mp hin).1
 
-/-- `L_i = {L ∈ L | strat(L) ≤ i}`. -/
-def Schema.stratum (S : Schema) (strat : Label → ℕ) (i : ℕ) : Finset Label :=
-  S.labels.filter (fun L => strat L ≤ i)
+/-- `L_i = {L ∈ L | str(L) ≤ i}`. -/
+def Schema.stratum (S : Schema) (str : Label → ℕ) (i : ℕ) : Finset Label :=
+  S.labels.filter (fun L => str L ≤ i)
 
-theorem Schema.stratum_mono {S : Schema} {strat : Label → ℕ} {i j : ℕ} (h : i ≤ j) :
-    S.stratum strat i ⊆ S.stratum strat j := by
+theorem Schema.stratum_mono {S : Schema} {str : Label → ℕ} {i j : ℕ} (h : i ≤ j) :
+    S.stratum str i ⊆ S.stratum str j := by
   intro L hL
   simp only [Schema.stratum, Finset.mem_filter] at hL ⊢
   exact ⟨hL.1, hL.2.trans h⟩
 
 /-- `S_i = (L_i, def_i)` with `def_i(L) = def(L)`: the restriction of `S`
 to the shape labels of stratum `≤ i`, keeping the same definitions. -/
-def Schema.stratRestrict (S : Schema) (strat : Label → ℕ) (i : ℕ) : Schema where
-  labels := S.stratum strat i
+def Schema.stratRestrict (S : Schema) (str : Label → ℕ) (i : ℕ) : Schema where
+  labels := S.stratum str i
   shapeDef := S.shapeDef
 
 /-- `maxAgree S' G Lo fixed`: the union of all correct typings of
@@ -334,71 +334,71 @@ theorem maxAgree_correct {S' : Schema} {G : Graph} {Lo : Finset Label}
 
 /-- The `typing_i` sequence of Definition 4, unified into a single
 `ℕ`-recursion: `typing_0 := ∅` (vacuously correct for `S_0`, the empty
-schema — `L_0 = ∅` since every label has `strat ≥ 1`) and `typing_{i+1}` is
+schema — `L_0 = ∅` since every label has `str ≥ 1`) and `typing_{i+1}` is
 the union of all correct typings of `G` by `S_{i+1}` agreeing with
 `typing_i` on `L_i`. This is exactly the paper's recursion once `typing_1`
 (defined there directly as Lemma 1's negation-free maximal typing) is seen
 as the special case `Lo = L_0 = ∅` of the general step — Lemma 1 itself is
 `maxAgree`'s correctness with a vacuous agreement condition. -/
-noncomputable def stratSeq (S : Schema) (strat : Label → ℕ) (G : Graph) : ℕ → Typing
+noncomputable def typ (S : Schema) (str : Label → ℕ) (G : Graph) : ℕ → Typing
   | 0 => ∅
-  | i + 1 => maxAgree (S.stratRestrict strat (i + 1)) G (S.stratum strat i)
-      (stratSeq S strat G i)
+  | i + 1 => maxAgree (S.stratRestrict str (i + 1)) G (S.stratum str i)
+      (typ S str G i)
 
 /-- Definition 4: the stratification-maximal correct typing of `G` by `S`
-with stratification `strat`. -/
-noncomputable def Typing4 (G : Graph) (S : Schema) (strat : Stratification S) : Typing :=
-  stratSeq S strat.strat G strat.k
+with stratification `str`. -/
+noncomputable def MTyping (G : Graph) (S : Schema) (str : Strat S) : Typing :=
+  typ S str.str G str.k
 
-/-- The two invariants `stratSeq` maintains at every stratum `i`: it
+/-- The two invariants `typ` maintains at every stratum `i`: it
 is a subset of `S_i`'s universe of typings, and it is a correct typing of
 `G` by `S_i`. Proved together by induction on `i`, mirroring the paper's
 Proposition 1 proof: the base case (`i = 0`, standing for the paper's "base
-case is Lemma 1" — `L_0 = ∅` since every label has `strat ≥ 1`, exactly
+case is Lemma 1" — `L_0 = ∅` since every label has `str ≥ 1`, exactly
 Lemma 1's `Lo = ∅`) is vacuous; the inductive step is
 `maxAgree_correct` with `Lo = L_i`, using `Schema.Closed` together
 with the stratification's `neg_strict` to show `S_{i+1}`'s negative
 dependencies stay within `L_i`. -/
-theorem stratSeq_correct (S : Schema) (strat : Stratification S) (hClosed : S.Closed)
+theorem typ_correct (S : Schema) (str : Strat S) (hClosed : S.Closed)
     (G : Graph) : ∀ i : ℕ,
-      stratSeq S strat.strat G i ⊆ (S.stratRestrict strat.strat i).univTyping G ∧
-      (S.stratRestrict strat.strat i).CorrTyping G (stratSeq S strat.strat G i)
+      typ S str.str G i ⊆ (S.stratRestrict str.str i).univTyping G ∧
+      (S.stratRestrict str.str i).CorrTyping G (typ S str.str G i)
   | 0 => by
-      refine ⟨by simp [stratSeq], ?_⟩
+      refine ⟨by simp [typ], ?_⟩
       intro n L hmem
-      simp [stratSeq] at hmem
+      simp [typ] at hmem
   | i + 1 => by
-      obtain ⟨hsub_i, hcorrect_i⟩ := stratSeq_correct S strat hClosed G i
-      have hsub_i' : stratSeq S strat.strat G i ⊆
-          (S.stratRestrict strat.strat (i + 1)).univTyping G := by
+      obtain ⟨hsub_i, hcorrect_i⟩ := typ_correct S str hClosed G i
+      have hsub_i' : typ S str.str G i ⊆
+          (S.stratRestrict str.str (i + 1)).univTyping G := by
         intro p hp
         have hp' := hsub_i hp
         simp only [Schema.univTyping, Schema.stratRestrict] at hp' ⊢
         exact Finset.mem_product.mpr
           ⟨(Finset.mem_product.mp hp').1,
             Schema.stratum_mono (Nat.le_succ i) (Finset.mem_product.mp hp').2⟩
-      have hcorrect_i' : (S.stratRestrict strat.strat (i + 1)).CorrTyping G
-          (stratSeq S strat.strat G i) := hcorrect_i
-      have hLo : ∀ L ∈ (S.stratRestrict strat.strat (i + 1)).labels,
-          (S.shapeDef L).negDeps ⊆ S.stratum strat.strat i := by
+      have hcorrect_i' : (S.stratRestrict str.str (i + 1)).CorrTyping G
+          (typ S str.str G i) := hcorrect_i
+      have hLo : ∀ L ∈ (S.stratRestrict str.str (i + 1)).labels,
+          (S.shapeDef L).negDeps ⊆ S.stratum str.str i := by
         intro L hL L2 hL2
         simp only [Schema.stratRestrict, Schema.stratum, Finset.mem_filter] at hL
         obtain ⟨hLlabels, hLstrat⟩ := hL
         have hL2labels : L2 ∈ S.labels := hClosed L hLlabels (Finset.mem_union_right _ hL2)
-        have hstratlt := strat.neg_strict L hLlabels L2 hL2
+        have hstratlt := str.neg_strict L hLlabels L2 hL2
         simp only [Schema.stratum, Finset.mem_filter]
         exact ⟨hL2labels, by omega⟩
       refine ⟨maxAgree_subset _ G _ _, ?_⟩
-      show (S.stratRestrict strat.strat (i + 1)).CorrTyping G
-        (maxAgree (S.stratRestrict strat.strat (i + 1)) G (S.stratum strat.strat i)
-          (stratSeq S strat.strat G i))
+      show (S.stratRestrict str.str (i + 1)).CorrTyping G
+        (maxAgree (S.stratRestrict str.str (i + 1)) G (S.stratum str.str i)
+          (typ S str.str G i))
       exact maxAgree_correct hsub_i' hcorrect_i' hLo
 
 /-- Proposition 1. For any schema `S` that is well-formed (`Schema.Closed`)
-and admits a stratification `strat`, and any graph `G`, `Typing(G, S,
-strat)` (Definition 4) is a correct typing of `G` by `S`. -/
-theorem proposition1 (S : Schema) (strat : Stratification S) (hClosed : S.Closed) (G : Graph) :
-    S.CorrTyping G (Typing4 G S strat) :=
-  (stratSeq_correct S strat hClosed G strat.k).2
+and admits a stratification `str`, and any graph `G`, `Typing(G, S,
+str)` (Definition 4) is a correct typing of `G` by `S`. -/
+theorem proposition1 (S : Schema) (str : Strat S) (hClosed : S.Closed) (G : Graph) :
+    S.CorrTyping G (MTyping G S str) :=
+  (typ_correct S str hClosed G str.k).2
 
 end ShexLean
