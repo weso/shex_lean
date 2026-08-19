@@ -2,20 +2,23 @@
 
 Using Lean, it is possible to automatically verify the different 
 lemmas that relate the semantics of the ShEx language variants. 
-The resulting repository can be used as a first approach to explore 
-  more design decisions about the ShEx language.
-Future work includes a more extensive exploration of the 
- design space for RDF validation languages including extending ShEx 
- for RDF 1.2 features or other language features~\cite{L24}.
-
-The Lean development is available at \url{https://anonymous.4open.science/r/shex_lean-B1A5/} and it contains:
+The resulting github repository~\footnote{\url{https://anonymous.4open.science/r/shex_lean-B1A5/}}
+contains:
 \begin{itemize}
-\item the 2017 semantics and its proofs,
+\item the 2017 paper semantics and its proofs,
 \item the inheritance extension and its proofs
 \item all the examples from both papers associated with their corresponding numbers in the paper
 \item an executable main with two command-line options: \lean{list} to show all 
  the propositions and examples that can be checked, and \lean{run} to check a specific one 
  by its name.
 \end{itemize}
+We consider that this development can be used as a first approach to explore 
+  more design decisions about the ShEx language. 
+Future work includes a more extensive exploration of the 
+ design space for RDF validation languages including extending ShEx 
+ for RDF 1.2 features or other language features~\cite{L24} as well as developing 
+  a Semantic web library of lean tactics that can be used to shorten the proofs and 
+  verify the correctness of other Semantic Web languages and algorithms. 
+
 
 
