@@ -1,27 +1,33 @@
 \section{Representing semantic rules} \label{sec:semantics_lean}
 
-The basic semantics of ShEx formalizes the \lean{Satisfies} ($\vdash$) and \lean{Matches} ($\vDash$) 
- relations of Fig. 2 in~\cite{BGP17}. 
-both parameterized by a typing t. 
-The two relations are mutually recursive, 
- a shape expression's neighbourhood description invokes \lean{Matches} 
- on the node's outgoing triples, 
- and a triple expression's shape reference invokes \lean{Satisfies} 
- indirectly, through membership in \lean{t} 
- so they are declared together as a single mutual block, 
- \lean{Satisfies} and \lean{Matches}, 
- mirroring the paper's joint Fig. 2a/2b presentation.
+The basic semantics of ShEx formalizes the \lean{Satisfies} ($\vdash$) and \lean{Matches} ($\vDash$)
+ relations of Fig. 2 in~\cite{BGP17}, both parameterized by a typing \lean{t}.
+The two relations are mutually recursive: a shape expression's neighbourhood
+ description invokes \lean{Matches} on the node's outgoing triples, and a
+ triple expression's shape reference invokes \lean{Satisfies} indirectly,
+ through membership in \lean{t}.
+Because each relation calls the other, they are declared together as a
+ single \lean{mutual} block, mirroring the paper's joint Fig. 2a/2b
+ presentation.
 
-Although \lean{Satisfies} and \lean{Matches} look like a classic mutually 
- inductive derivability relation, 
-  they are encoded as ordinary Prop-valued recursive functions 
-  rather than a mutual inductive family. 
-  This is necessary because the premise in the rule involving negation 
-  is a negative occurrence of \lean{Satisfies}, 
-  which Lean's positivity checker rejects for an inductive definition 
-  but accepts for a function.
-  
-\lean{Satisfies} and \lean{Matches} are defined case by case. Each equation corresponds to one (or a disjunction of two) rules.
+Although \lean{Satisfies} and \lean{Matches} look like a classic mutually
+ inductive derivability relation, they are encoded as ordinary
+ \lean{Prop}-valued recursive functions rather than a mutual inductive
+ family (an inductive family would declare each rule as a constructor of
+ the relation, rather than as a case of a function returning that relation).
+ This is necessary because the premise in the rule for negation
+ uses \lean{Satisfies} negatively, i.e. under a $\neg$: Lean's positivity
+ checker requires every recursive occurrence in an inductive definition to
+ appear only positively (never to the left of an implication or under a
+ $\neg$), since otherwise the definition could be used to derive a
+ contradiction. Ordinary recursive functions are not subject to this
+ restriction, so defining \lean{Satisfies} as a function sidesteps it.
+
+\lean{Satisfies} and \lean{Matches} are defined case by case, using Lean's
+ equational function syntax: each \lean{| .constructor args => body} line
+ supplies the definition for one constructor of the input type. Each such
+ equation below corresponds to one (or a disjunction of two) rules from the
+ paper.
 
 \begin{leanlisting}
 mutual

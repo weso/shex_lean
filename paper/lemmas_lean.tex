@@ -37,7 +37,10 @@ structure Strat (S : Schema) where
                  str L2 ≤ str L1
 \end{leanlisting}
 
-\lean{S} is a schema with stratified negation if it admits a stratification
+\lean{S} is a schema with stratified negation if it admits a stratification,
+ i.e. if some term of type \lean{Strat S} exists; Lean's \lean{Nonempty T}
+ expresses exactly this ``a witness of type \lean{T} exists'' without
+ naming one:
 
 \begin{leanlisting}
 def Schema.StratNeg (S : Schema) : Prop := Nonempty (Strat S)
@@ -45,8 +48,8 @@ def Schema.StratNeg (S : Schema) : Prop := Nonempty (Strat S)
 
 \subsection{Maximal Correct typing}
 
-Lemma 1 covers the base case where negation is entirely absent: 
-  for a negation-free schema \lean{S} (\lean{Schema.NegFree}, 
+Lemma 1 covers the base case where negation is absent:
+  for a negation-free schema \lean{S} (\lean{Schema.NegFree}:
   every label's definition uses no NOT) 
   and any graph \lean{G}, 
   there is a correct typing that contains every other correct 

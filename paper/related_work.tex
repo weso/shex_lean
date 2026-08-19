@@ -16,10 +16,9 @@ the seL4 microkernel~\cite{KleinEtAl2009},
 and by more recent industrial applications such as AWS's Cedar authorization language, 
 formalized in Lean~\cite{CutlerEtAl2024}.
 
-There have been several approaches to formally verify large parts of mathematics using interactive theorem provers like Lean, Rocq or Isabelle.
-The application of those techniques in the context of Knowledge Graphs and Semantic web is still not mature compared with other branches of mathematics. 
-Some earlier work was developed using Isabelle/HOL to formalize OWL semantics 
- in \cite{TurnerCarrol07}. More recently, 
+The application of these techniques to Knowledge Graphs and the Semantic Web is still less mature than in other branches of mathematics.
+Some earlier work used Isabelle/HOL to formalize OWL semantics
+ in \cite{TurnerCarrol07}, and
  \cite{tantow_et_al:LIPIcs.ITP.2025.36} verifies Datalog using Lean.
 
 ShEx was initially introduced in~\cite{PGS14} in an informal way based on an implementation. 
@@ -27,11 +26,11 @@ Later,~\cite{SBG15} established the complexity of Shape Expressions without nega
 and presented a formal semantics for them based on regular bag expressions. An implementation based on regular expression derivatives was proposed in~\cite{labragayo2015towards}.
  The formal semantics of the ShEx language including negation and recursion was presented in~\cite{BGP17} 
   and published as a W3C Community Group Report~\cite{shex_standard}. 
- More recently,~\cite{ShExInheritance} presented an extension of ShEx with inheritance, 
+ More recently,~\cite{ShExInheritance} presented an extension of ShEx with inheritance,
   which is currently developed by the IEEE P3330 Shape Expression Schemas Working Group.
-  More recently, there was an interest in comparing ShEx with other validation approaches, 
- such as SHACL~\cite{KK17} and PGSchema~\cite{ABDF23}, 
- and in formalizing the common foundations of these three languages:
-  ~\cite{www25} formally compared ShEx, SHACL and PGSchema without considering recursion,
-  and~\cite{recursive_shapes} compares ShEx and SHACL with recursion. None of those languages employed an automatic theorem prover to verify 
+  Subsequent work has compared ShEx with other validation approaches,
+ such as SHACL~\cite{SHACL} and PGSchema~\cite{ABDF23},
+ and formalized the common foundations of the three languages:
+  ~\cite{www25} compares ShEx, SHACL and PGSchema without considering recursion,
+  and~\cite{recursive_shapes} compares ShEx and SHACL with recursion. None of these works employed an automatic theorem prover to verify
   the correctness of their semantics and algorithms.

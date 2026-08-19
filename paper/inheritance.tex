@@ -1,8 +1,8 @@
 \section{Adding inheritance} \label{sec:inheritance}
 
  
-The latest version of ShEx added the notion of shape \emph{inheritance} and was presented in \cite{ShExInheritance}: 
-a shape can \lean{extend} one or more other (abstract) labels, 
+The latest version of ShEx added the notion of shape \emph{inheritance} and was presented in \cite{ShExInheritance}:
+a shape can \lean{extends} one or more other (abstract) labels,
 and validation against an abstract label succeeds 
 if the node matches \emph{some} concrete
 descendant of it. 
@@ -33,22 +33,44 @@ inductive ShapeExpr where
   | not (s : ShapeExpr) : ShapeExpr
 \end{leanlisting}
 
-The `extends` case is what breaks the 2017 proof pattern at its foundation.
+A \lean{Shape}'s \lean{triples} field is itself a triple expression,
+\lean{TripleExpr}, the inheritance formalism's counterpart to
+\lean{TExpr} from Section~\ref{sec:shex_lean}: the empty expression, a
+single triple constraint (property \lean{p}, target label \lean{z}), a
+choice or sequence of two triple expressions, or a repeated triple
+expression:
+
+\begin{leanlisting}
+inductive TripleExpr where
+  | empty  : TripleExpr
+  | tc (p : IRI) (z : Label) : TripleExpr
+  | choice (e1 e2 : TripleExpr) : TripleExpr
+  | seq (e1 e2 : TripleExpr) : TripleExpr
+  | star (e : TripleExpr) : TripleExpr
+\end{leanlisting}
+
+The \lean{extends} case is what breaks the 2017 proof pattern at its foundation.
 In the 2017 semantics, a shape reference is resolved purely by consulting
 the typing, so \lean{Satisfies}/\lean{Matches} are
-well-founded by ordinary structural recursion on the finite syntax tree. 
-An `extends` clause instead recurses into \emph{other labels' own
-definitions}, which implies a schema lookup, 
-not a subterm of the current expression, 
-so a plain structurally-recursive Lean definition 
-is not just inconvenient here, 
+well-founded by ordinary structural recursion on the finite syntax tree.
+An \lean{extends} clause instead recurses into \emph{other labels' own
+definitions}, which implies a schema lookup,
+not a subterm of the current expression,
+so a plain structurally-recursive Lean definition
+is not just inconvenient here,
 it would be outright \emph{false} if the schema's extension hierarchy
-happened to be cyclic. 
+happened to be cyclic.
 The paper handles this with its own Lemma 1
 (termination, proved separately from the semantics), so the Lean
-development follows the same shape: \lean{Satisfies} 
+development follows the same shape: \lean{Satisfies}
 is first defined as a
-total, \lean{Fuel}-indexed under-approximation:
+total, \lean{Fuel}-indexed under-approximation. This is a standard technique
+for giving a structurally-terminating definition to a recursion whose
+termination is not otherwise obvious to Lean: an extra \lean{Fuel : ℕ}
+argument is decremented on every recursive call, the recursion returns
+\lean{False} outright once \lean{Fuel} reaches \lean{0}, and it is this
+decrease in \lean{Fuel} — not the shape of the schema — that Lean accepts
+as structural:
 
 \begin{leanlisting}
 def SatisfiesFuel : (Fuel : ℕ) → Schema → Graph → Typing → RDFNode →
@@ -58,16 +80,16 @@ def SatisfiesFuel : (Fuel : ℕ) → Schema → Graph → Typing → RDFNode →
 \end{leanlisting}
 
 and a separate file, \lean{Termination.lean}, proves that for a
-well-defined schema some large-enough, 
-canonical fuel value makes the answer stop depending on 
+well-defined schema some large-enough,
+canonical fuel value makes the answer stop depending on
 \lean{Fuel} at all, recovering the paper's real,
-fuel-free \lean{Satisfies}. 
+fuel-free \lean{Satisfies}.
 Turning the paper's one-sentence termination
 argument ("the tree of recursive calls is finite due to the acyclic nature
 of the extension hierarchy") into a Lean proof needs an actual rank
 function on labels witnessing that acyclicity, combined into a single
-measure that decreases on both kinds of recursive step: 
-ordinary AST descent and `extends`-hops.
+measure that decreases on both kinds of recursive step:
+ordinary AST descent and \lean{extends}-hops.
 
 Definition 4 (correct typing) also gains a genuinely new case beyond a
 direct port of the 2017 statement: an abstract label is satisfied not by
@@ -87,12 +109,12 @@ idea for the algorithm, same Fusion/Swap/Independence argument for Lemma 2
 (whose own paper proof, again, is only sketched as "Proof. (Idea)...") —
 but none of them transfer \emph{mechanically}. 
 The 2017 monotonicity and schema-agreement lemmas these all lean on go through by plain structural
-recursion, because 2017's `Satisfies` never dereferences the schema.
-Inheritance's `Satisfies` does, via ancestor lookups, so every one of those
+recursion, because 2017's \lean{Satisfies} never dereferences the schema.
+Inheritance's \lean{Satisfies} does, via ancestor lookups, so every one of those
 lemmas first had to be re-proved against the schema's dependency structure
 and then generalized from a single stratification-tied restriction
-(`stratRestrict`) to an arbitrary dependency-closed label set
-(`Schema.restrictLabels`), before Lemma 2's schedule-agnostic argument and
+(\lean{stratRestrict}) to an arbitrary dependency-closed label set
+(\lean{Schema.restrictLabels}), before Lemma 2's schedule-agnostic argument and
 Algorithm 1's per-stratum schema-swapping could reuse it. Algorithm 2
 (\emph{prove}) has not yet been ported to this formalism.
 
@@ -113,14 +135,4 @@ an invariant it calls "(*)": a shape's triple-constraint properties
 never overlap its own \lean{extra} set. That definition was not defined as a standalone definition 
 in the main text: we named it explicitly as \lean{Schema.WellFormedExtra} and 
 added it as a hypothesis everywhere Proposition 1 and its descendants need it.
-
-The Lean development is available at \url{https://anonymous.4open.science/r/shex_lean-B1A5/} and it contains:
-\begin{itemize}
-\item the 2017 semantics and its proofs,
-\item the inheritance extension and its proofs
-\item all the examples from both papers associated with their corresponding numbers in the paper
-\item an executable main with two command-line options: \lean{list} to show all 
- the propositions and examples that can be checked, and \lean{run} to check a specific one 
- by its name.
-\end{itemize}
 
