@@ -9,10 +9,10 @@ import Example
 /-!
 Example 3 from the 2025 "Shape Expressions with Inheritance" paper (§4.1,
 Table 1): the triple expression `e = p @T_even ; (p @T_<5* | p @T_str)`,
-matched/not matched against four example sets of triples. Also hosts the
-ambient schema `S_ex5` (Example 5's own schema, §4.2) and node constraints
-`T_even`/`T_<5`/`T_>5`/`T_str`, since Examples 3-5 all state their claims
-against this same schema — `Example4_closed_extra.lean`/
+matched or not matched against four example sets of triples. This file
+also hosts the ambient schema `S_ex5` (Example 5's schema, §4.2) and node
+constraints `T_even`/`T_<5`/`T_>5`/`T_str`, since Examples 3-5 all state
+their claims against this same schema. `Example4_closed_extra.lean` and
 `Example5_extends.lean` both import this file to reuse them, along with
 the `M24`/`M246`/`M2a`/`M24a` triple sets. The generic `ofShape`-lifting
 helper lemmas both files also need (`ofShape_of_Me_eq_self`/
@@ -46,8 +46,7 @@ def cStr : NodeConstraint
   | _ => False
 
 /-- Example 5's schema `S = (Y, X, def, ∅)`, with `Y = {T_even, T_<5,
-T_>5}`, `X = {x0,...,x6}` (see the module docstring for why `x0` is
-included), `def` as listed in the paper. -/
+T_>5}`, `X = {x0,...,x6}`, `def` as listed in the paper. -/
 def S_ex5 : Schema where
   Y := {"T_even", "T_lt5", "T_gt5"}
   X := {"x0", "x1", "x2", "x3", "x4", "x5", "x6"}
@@ -101,9 +100,9 @@ def M24a : Finset Triple :=
 def e_ex3 : TripleExpr :=
   .seq (.tc "p" "T_even") (.choice (.star (.tc "p" "T_lt5")) (.tc "p" "T_str"))
 
-/-- A fuel bound generous enough for every proof in Examples 3-5 (`e_ex3`
-has depth 4, and the deepest `extends` chain used below, `x4 → x6 → x3 →
-x0`, is 4 levels; `10` is comfortably more than either needs). -/
+/-- A fuel bound sufficient for every proof in Examples 3-5: `e_ex3` has
+depth 4, and the deepest `extends` chain used below, `x4 → x6 → x3 → x0`,
+is 4 levels. -/
 def bigFuel : ℕ := 10
 
 /-- `M24, τ ⊨ e` (Example 3): split into `{(n,p,2)}` (satisfying
@@ -138,8 +137,8 @@ theorem M2a_satisfies_e : SatisfiesEFuel bigFuel S_ex5 default τ_ex3 M2a e_ex3 
   · exact ⟨n_ex3, .lit (.int 2), rfl, by decide⟩
   · exact Or.inr ⟨n_ex3, .lit (.str "a"), rfl, by decide⟩
 
-/-- `x` belongs to some piece of a `List.foldr (· ∪ ·) ∅` union — the
-converse of `RepBound.lean`'s `mem_subset_foldr_union`. -/
+/-- `x` belongs to some piece of a `List.foldr (· ∪ ·) ∅` union. Converse
+of `RepBound.lean`'s `mem_subset_foldr_union`. -/
 private theorem mem_of_mem_foldr_union {α : Type*} [DecidableEq α] (l : List (Finset α))
     {x : α} (hx : x ∈ l.foldr (· ∪ ·) ∅) : ∃ N ∈ l, x ∈ N := by
   induction l with
@@ -151,8 +150,8 @@ private theorem mem_of_mem_foldr_union {α : Type*} [DecidableEq α] (l : List (
       · obtain ⟨N', hN', hxN'⟩ := ih hx
         exact ⟨N', List.mem_cons_of_mem _ hN', hxN'⟩
 
-/-- `M24a, τ ¬⊨ e` (Example 3's fourth fact): unlike `M24`/`M246`/`M2a`,
-`M24a` cannot be split to satisfy `e`. -/
+/-- `M24a, τ ¬⊨ e` (Example 3's fourth fact): `M24a` cannot be split to
+satisfy `e`, unlike `M24`/`M246`/`M2a`. -/
 theorem M24a_not_satisfies_e : ¬ SatisfiesEFuel bigFuel S_ex5 default τ_ex3 M24a e_ex3 := by
   rintro ⟨N1, N2, ⟨hdisj, hunion⟩, ⟨n1, o1, hN1eq, hty1⟩, hN2⟩
   have ha_mem : tp "p" (.lit (.str "a")) ∈ M24a := by decide
@@ -202,12 +201,12 @@ open ShexLean.Inheritance (e_ex3 M24 M246 M2a M24a S_ex5 τ_ex3 bigFuel satisfie
 open ShexLean (Graph.render Typing.render renderDecide)
 
 /-- Example 3's triple expression, matched against `M24`/`M246`/`M2a`/`M24a`.
-`graphText`/`typingText`'s typing line are rendered from the real
-`Finset Triple`/`Typing` values; every `M,τ ⊨ e` claim is a `native_decide`
-computation via `satisfiesEFuel_decidable` (unconditionally decidable —
+`graphText`/`typingText` render the actual `Finset Triple`/`Typing` values;
+every `M,τ ⊨ e` claim is a `native_decide` computation via
+`satisfiesEFuel_decidable`. This is unconditionally decidable because
 Table 1 never touches `NodeConstraint`/`extends`, so no `XClosed`/`RestrOk`/
 `FOk` witnesses are needed here, unlike the `SatisfiesFuel` claims in the
-other 2025 examples). -/
+other 2025 examples. -/
 def inheritance2025TripleMatch : Example where
   name := "inheritance2025-example3-triple-match"
   summary := "Triple expression p@T_even;(p@T_<5*|p@T_str) matched against three sets."

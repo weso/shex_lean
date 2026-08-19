@@ -99,7 +99,7 @@ structure Strat (S : Schema) where
   mem_range : ∀ L ∈ S.labels, 1 ≤ str L ∧ str L ≤ k
   /-- If `dep⁻(L1, L2)`, then `str(L1) > str(L2)`. Scoped to `L1 ∈
   S.labels`, matching the paper: "the dependency graph of `S` is a graph
-  whose set of nodes is `L`" (§3.2) — `dep⁻`/`dep⁺` edges are only ever
+  whose set of nodes is `L`" (§3.2). `dep⁻`/`dep⁺` edges are only ever
   considered between declared labels. -/
   neg_strict : ∀ L1 ∈ S.labels, ∀ L2, DepNeg S L1 L2 → str L2 < str L1
   /-- If `dep⁺(L1, L2)`, then `str(L1) ≥ str(L2)`. Scoped to `L1 ∈

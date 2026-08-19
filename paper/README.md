@@ -26,8 +26,10 @@ Requires `latexmk` and a LaTeX distribution (TeX Live/MacTeX) with
 
 ## Structure
 
-- `main.tex` — the paper (single file; split into `sections/*.tex` with
-  `\input` if it grows unwieldy).
-- `references.bib` — seeded with the two papers this repo formalizes
-  (`shex2017`, `shex2025`); add further citations here.
-- `figures/` — figures/diagrams referenced from `main.tex`.
+- `main.tex` — top-level document, `\input`s the sections below.
+- `introduction.tex`, `related_work.tex`, `rdf_lean.tex`, `shex_lean.tex`,
+  `semantics_lean.tex`, `lemmas_lean.tex`, `algorithms_lean.tex`,
+  `inheritance.tex`, `conclusions.tex` — paper sections.
+- `references.bib` — bibliography, including the two papers this repo
+  formalizes (`shex2017`, `shex2025`).
+- `figures/` — figures referenced from the sections.

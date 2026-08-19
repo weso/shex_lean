@@ -4,48 +4,45 @@ import Mathlib.Data.Finset.Powerset
 
 /-!
 Makes `Satisfies`/`Matches` (`ShexLean.Shex2017Schemas.Semantics`, Fig. 2 of
-Boneva, Labra Gayo, Prud'hommeaux 2017) genuinely `Decidable` — for every
-`ShExpr`/`TExpr`, no restricted fragment needed — so they can
-actually be *run* (`decide`/`native_decide`), not just reasoned about.
+Boneva, Labra Gayo, Prud'hommeaux 2017) `Decidable` for every `ShExpr`/
+`TExpr`, with no restriction to a fragment, so they can be run via
+`decide`/`native_decide` instead of only reasoned about.
 
 **How.** As stated, a few cases quantify over infinite types (`∃ subj pred
 obj, …` over all of `RDFNode × IRI × RDFNode`, `∃ N1 N2, …` over all of
 `Finset Triple × Finset Triple`, `∃ Ns : List (Finset Triple), …` over
-arbitrary-length lists), even though every witness that could actually
-satisfy the constraint is already forced — by an equation in the same
-clause — to lie inside the finite graph/typing at hand. This file proves
-each such case equivalent to a bounded search instead:
+arbitrary-length lists), even though any witness that could satisfy the
+constraint is already forced, by an equation in the same clause, to lie
+inside the finite graph/typing at hand. This file proves each such case
+equivalent to a bounded search:
 
 * `te-tpattern` (`matches_tPattern_iff`): the witness is forced to be `N`'s
   own (at most one) element.
 * `te-each-of` (`matches_eachOf_iff`): `N1`/`N2` are forced `⊆ N`, i.e.
   `∈ N.powerset`.
-* `te-repet` (`RepBound.lean`'s `matches_rep_iff_bounded`): the one
-  genuinely unbounded case — no static list length caps it — shown that any
-  witness can always be shrunk/padded to length `≤ N.card + min`.
+* `te-repet` (`RepBound.lean`'s `matches_rep_iff_bounded`): the one case
+  with no static length cap; any witness can be shrunk/padded to length
+  `≤ N.card + min`.
 
 Every other case (`.valueDescr`/`.and`/`.or`/`.not`/`.someOf`/`.empty`) is
-already plain structural recursion over decidable pieces. Combining all of
-this gives `satisfies_decidable`/`matches_decidable` at the bottom of the
-file.
+already structural recursion over decidable pieces. Combining all of this
+gives `satisfies_decidable`/`matches_decidable` at the bottom of the file.
 
-**What's good for:** `ShexLean/Shex2017Schemas/Render.lean` (and, through
-it, `ShexLean/Shex2025Inheritance/Render.lean`) builds every worked
-example's displayed `true`/`false` claims directly on these instances via
-`renderDecide`/`native_decide`, rather than transcribing hand-proved facts
-as strings — see the "Decidability" section of the top-level `README.md`.
+`ShexLean/Shex2017Schemas/Render.lean` (and, through it,
+`ShexLean/Shex2025Inheritance/Render.lean`) builds every worked example's
+displayed `true`/`false` claims directly on these instances via
+`renderDecide`/`native_decide`, instead of transcribing hand-proved facts
+as strings; see the "Decidability" section of the top-level `README.md`.
 
-**Note on what's actually being claimed.** Every instance here is built via
-`Classical`-free, structural recursion into genuine `Finset`/`Fintype`
-search, so it's reducible by the kernel and `decide`/`native_decide`
-actually run — not merely "exists as a classical fact" (under Mathlib's
-ambient classical axioms, *every* `Prop` trivially has *some* `Decidable`
-instance via `Classical.propDecidable`, which is a different, much weaker
-claim than what's proved here).
+Every instance here is built by `Classical`-free structural recursion into
+`Finset`/`Fintype` search, so it reduces in the kernel and
+`decide`/`native_decide` actually run. This is stronger than "decidable in
+the classical sense": under Mathlib's ambient classical axioms, every
+`Prop` trivially has some `Decidable` instance via `Classical.propDecidable`,
+which does not reduce.
 
-This file itself doesn't depend on any example file (kept import-free of
-`examples/` so those files — and the rendering layer built on top of this
-file — can import *it* without a cycle).
+This file doesn't depend on any example file, so `examples/` files (and the
+rendering layer built on this file) can import it without a cycle.
 -/
 
 namespace ShexLean
@@ -77,8 +74,8 @@ theorem matches_eachOf_iff (G : Graph) (t : Typing) (N : Finset Triple)
   · rintro ⟨N1, -, N2, -, hdisj, hm1, hm2⟩
     exact ⟨N1, N2, hdisj, hm1, hm2⟩
 
-/-- `∀ m', max = some m' → k ≤ m'` — the `.rep` upper-bound side condition
-— is decidable: `max : Option ℕ` has only two shapes, and each reduces the
+/-- `∀ m', max = some m' → k ≤ m'`, the `.rep` upper-bound side condition,
+is decidable: `max : Option ℕ` has only two shapes, and each reduces the
 statement to something already decidable (`True`, resp. `k ≤ m'`). -/
 instance decidableRepUpperBound (max : Option ℕ) (k : ℕ) :
     Decidable (∀ m', max = some m' → k ≤ m') :=
@@ -88,11 +85,11 @@ instance decidableRepUpperBound (max : Option ℕ) (k : ℕ) :
       ⟨fun h _ heq => (Option.some.inj heq) ▸ h, fun h => h m' rfl⟩
 
 /-- `Matches _ N (.eachOf E1 E2)` is decidable given `E1`/`E2`'s own
-decidability at every possible sub-neighbourhood (not just `N` — the search
+decidability at every possible sub-neighbourhood, not just `N`: the search
 below tries every `N1 ∈ N.powerset` against `E1`, and `N \ N1` against
-`E2`), via `matches_eachOf_iff`'s bounded reformulation. Shared by
-`matches_decidable`'s own `.eachOf` case and `repExactDecidableAux` (whose
-`.eachOf E (repExact E k)` unfolding is exactly this shape). -/
+`E2`, via `matches_eachOf_iff`'s bounded reformulation. Shared by
+`matches_decidable`'s `.eachOf` case and `repExactDecidableAux` (whose
+`.eachOf E (repExact E k)` unfolding has the same shape). -/
 def eachOfDecidableAux (G : Graph) (t : Typing) (N : Finset Triple) (E1 E2 : TExpr)
     (hE1 : ∀ N1 : Finset Triple, Decidable (Matches G t N1 E1))
     (hE2 : ∀ N2 : Finset Triple, Decidable (Matches G t N2 E2)) :
@@ -112,10 +109,10 @@ def eachOfDecidableAux (G : Graph) (t : Typing) (N : Finset Triple) (E1 E2 : TEx
     (@Finset.decidableExistsAndFinset (Finset Triple) N.powerset _ hd1)
 
 /-- `Matches _ N (repExact E k)` is decidable given `E`'s own decidability
-(at every possible sub-neighbourhood, not just `N` — the `.eachOf`
-unfolding at each step of the chain needs it at a *new* Finset each time),
-by structural recursion on `k` alone: `repExact E (k+1) = .eachOf E
-(repExact E k)` routes through `eachOfDecidableAux`. -/
+at every possible sub-neighbourhood, not just `N` (the `.eachOf` unfolding
+at each step of the chain needs it at a new `Finset` each time), by
+structural recursion on `k`: `repExact E (k+1) = .eachOf E (repExact E k)`
+routes through `eachOfDecidableAux`. -/
 def repExactDecidableAux (G : Graph) (t : Typing) (E : TExpr)
     (hE : ∀ N' : Finset Triple, Decidable (Matches G t N' E)) :
     ∀ (k : ℕ) (N : Finset Triple), Decidable (Matches G t N (repExact E k))
@@ -138,15 +135,15 @@ instance decidableBNodeInV : ∀ (n : RDFNode) (V : ValueDescr),
   | .lit _, _ => inferInstanceAs (Decidable False)
 
 mutual
-/-- **`Satisfies` is decidable — for every `ShExpr`, no restriction.**
+/-- `Satisfies` is decidable for every `ShExpr`, with no restriction.
 Proved by structural recursion mirroring `Satisfies`'s own mutual
-definition — every case was already decidable except `.neigDescr`, which
+definition: every case was already decidable except `.neigDescr`, which
 routes through `matches_decidable`. `show`s are needed throughout since
-`Satisfies`/`Matches` are plain (non-`@[reducible]`) `def`s: instance
-search won't unfold them on its own to see the underlying `∨`/`∧`/`Finset`
-proposition, even though the kernel reduction `decide` itself relies on
-later isn't restricted that way (see `ShexLean.Common.Typing`'s
-`Typing.has` for the same gotcha elsewhere in this project). -/
+`Satisfies`/`Matches` are plain (non-`@[reducible]`) `def`s, so instance
+search won't unfold them to see the underlying `∨`/`∧`/`Finset`
+proposition, even though the kernel reduction `decide` relies on later
+isn't restricted that way (see `ShexLean.Common.Typing`'s `Typing.has` for
+the same gotcha elsewhere in this project). -/
 def satisfies_decidable (G : Graph) (t : Typing) (n : RDFNode) :
     ∀ S : ShExpr, Decidable (Satisfies G t n S)
   | .valueDescr V => by
@@ -170,7 +167,7 @@ def satisfies_decidable (G : Graph) (t : Typing) (n : RDFNode) :
       haveI := satisfies_decidable G t n S
       infer_instance
 
-/-- **`Matches` is decidable — for every `TExpr`, no restriction.**
+/-- `Matches` is decidable for every `TExpr`, with no restriction.
 `.tPattern`/`.eachOf` go through the bounded reformulations above; `.rep`
 goes through `matches_rep_iff_bounded` (`RepBound.lean`), which bounds
 even the `max = none` case. -/

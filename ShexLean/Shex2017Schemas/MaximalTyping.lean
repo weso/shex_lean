@@ -17,12 +17,12 @@ up to and including Lemma 1.
 
 Since (Definition 1) a typing of `G` by `S` is, by convention, a subset of
 `Nodes(G) × L`, "the union of all correct typings" is a union of finitely
-many finite sets — a subset of the finite set `Nodes(G) × L` itself — so it
-is again a `Typing`. We build it as `Finset.sup` over the `Finset` of
-correct typings among the (finitely many) subsets of `Nodes(G) × L`, using
-classical choice to decide `CorrTyping` (which is not decidable in
-general, e.g. across `TExpr.rep`'s existential over `List (Finset
-Triple)`) — Lemma 1 is a pure existence statement, so this is harmless.
+many finite sets, itself a subset of `Nodes(G) × L`, so it is again a
+`Typing`. We build it as `Finset.sup` over the `Finset` of correct typings
+among the (finitely many) subsets of `Nodes(G) × L`, using classical choice
+to decide `CorrTyping` (not decidable in general, e.g. across
+`TExpr.rep`'s existential over `List (Finset Triple)`). Lemma 1 is a pure
+existence statement, so this is fine.
 -/
 
 namespace ShexLean
@@ -91,14 +91,14 @@ theorem Matches.mono {G : Graph} {t t' : Typing} (hsub : t ⊆ t') :
 end
 
 /-- The finite set of all node-type associations, standing for `Nodes(G) ×
-L` in Definition 1 — every typing of `G` by `S` is, by convention, a subset
+L` in Definition 1: every typing of `G` by `S` is, by convention, a subset
 of this set. -/
 def Schema.univTyping (S : Schema) (G : Graph) : Typing := G.nodes ×ˢ S.labels
 
 /-- `typing_g` from Lemma 1: the union of all correct typings of `G` by `S`
 among the subsets of `Schema.univTyping`. Uses classical choice to decide
-`CorrTyping` (see the module docstring); Lemma 1 is a pure existence
-statement, so this is harmless. -/
+`CorrTyping` (see the module docstring); fine since Lemma 1 is a pure
+existence statement. -/
 noncomputable def Schema.maximalTyping (S : Schema) (G : Graph) : Typing :=
   haveI := Classical.decPred (S.CorrTyping G)
   ((S.univTyping G).powerset.filter (fun t => S.CorrTyping G t)).sup id
