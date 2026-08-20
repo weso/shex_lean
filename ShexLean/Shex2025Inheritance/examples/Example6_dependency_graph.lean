@@ -15,12 +15,11 @@ namespace ShexLean.Inheritance
 
 /-- `S1 = (Y1,∅,def,∅)` (Example 6): `y1 → ⟨p@y2⟩ and ⟨q@y3⟩`,
 `y2 → ⟨q@y1⟩`, `y3 → extra{r} ⟨p@y1⟩`. `shapeDef` is written as an
-explicit `if`-chain (rather than `|`-pattern matching, used everywhere
-else in this file) so that `S1_wellDefined`'s proof — which needs to
-case-split on an *arbitrary* label, not just the three named ones — can
-resolve each branch by `simp`-ing the `if`s directly (see
-`ShexLean/Shex2025Inheritance/Proposition1.lean`'s own memory notes on
-this trick). -/
+explicit `if`-chain rather than `|`-pattern matching (used elsewhere in
+this file) so that `S1_wellDefined`'s proof, which case-splits on an
+arbitrary label rather than just the three named ones, can resolve each
+branch by `simp`-ing the `if`s directly; see
+`ShexLean/Shex2025Inheritance/Proposition1.lean` for this trick. -/
 def S1 : Schema where
   Y := {"y1", "y2", "y3"}
   X := ∅
@@ -64,10 +63,10 @@ def S3 : Schema where
     | "y8" => .constraint (fun _ => True)
     | _ => .constraint (fun _ => False)
 
-/-! Example 6's own 13 enumerated dependency-relation facts (the paper's own table,
-page 10), checked individually here on top of the aggregate well-definedness verdicts
-in `Example7_well_defined.lean` (`S1_wellDefined`/`S2_not_wellDefined`/
-`S3_not_wellDefined`, which only ever need *some* of these as intermediate steps). -/
+/-! Example 6's 13 enumerated dependency-relation facts (the paper's table,
+page 10), checked individually here. `Example7_well_defined.lean`'s
+aggregate well-definedness verdicts (`S1_wellDefined`/`S2_not_wellDefined`/
+`S3_not_wellDefined`) only need some of these as intermediate steps. -/
 
 theorem dep_S1_y1_y2 : S1.dep "y1" "y2" := by
   show "y2" ∈ ((S1.shapeDef "y1").depsAux false).refs; decide
@@ -100,11 +99,11 @@ theorem depExtends_S3_x2_x1 : S3.depExtends "x2" "x1" := by
   show S3.extEdge "x2" "x1" ∨ S3.extEdge "x1" "x2"
   left; show "x1" ∈ (S3.shapeDef "x2").extendsTargets; decide
 
-/-- `renderDecide`'s `native_decide`-computed verdict for `S.dep z z'` —
+/-- `renderDecide`'s `native_decide`-computed verdict for `S.dep z z'`.
 `Schema.dep` unfolds to a plain `Finset`/`List` membership check
-(`ShapeExpr.depsAux`, structural on the AST, no `Classical`/fuel involved
-at all), so `unfold`-then-`infer_instance` is all a `Decidable` instance
-needs, unlike `Satisfies*`. -/
+(`ShapeExpr.depsAux`, structural on the AST, no `Classical`/fuel
+involved), so `unfold`-then-`infer_instance` suffices for the `Decidable`
+instance, unlike `Satisfies*`. -/
 def renderDepG (S : Schema) (z z' : Label) : String :=
   renderDecide (show Decidable (S.dep z z') by unfold Schema.dep; infer_instance)
 
@@ -126,7 +125,7 @@ open ShexLean.Inheritance (S1 S2 S3 renderDepG renderDepShapeNeg renderDepExtraN
 
 /-- Example 6's three schemas `S1`, `S2`, `S3` and their dependency facts.
 Every `dep*` claim in `typingText` is a `native_decide` computation on the
-real `S1`/`S2`/`S3`, not prose. -/
+actual `S1`/`S2`/`S3`. -/
 def inheritance2025DependencyGraph : Example where
   name := "inheritance2025-example6-dependency-graph"
   summary := "S1/S2/S3's dependency-relation facts (dep/dep-shape-neg/dep-extends)."

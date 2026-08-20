@@ -9,21 +9,20 @@ Table 3 rule 18): a chain of `extends`-related shapes `x0..x6` (schema
 partition over `anc(X)`.
 
 Example 5's schema is stated in the paper as `S = (Y, {x1,...,x6}, def,
-∅)`, but `def(x1)` and `def(x3)` both use `extends x0`, i.e. `x0`
-genuinely needs to be a member of the extendable-label set `X` for
-`Schema.anc`/`Schema.WellFormedX` to see it as a node of `H_S` at all
-(Definition 3: `H_S`'s vertex set *is* `X`). This looks like a minor
-omission in the paper's own statement of the example (`x0`'s own
-definition, `extends _ ⟨p @Teven⟩`, is exactly the form Definition 2
-requires of an `X`-label). `Example3_triple_match.lean`'s `S_ex5.X`
-includes `x0`.
+∅)`, but `def(x1)` and `def(x3)` both use `extends x0`, so `x0` needs to
+be a member of the extendable-label set `X` for `Schema.anc`/
+`Schema.WellFormedX` to see it as a node of `H_S` at all (Definition 3:
+`H_S`'s vertex set is `X`). This appears to be a minor omission in the
+paper's statement of the example: `x0`'s own definition, `extends _ ⟨p
+@Teven⟩`, is exactly the form Definition 2 requires of an `X`-label.
+`Example3_triple_match.lean`'s `S_ex5.X` includes `x0`.
 -/
 
 namespace ShexLean.Inheritance
 
 /-- `M24, τ ⊨ def(x1)` (Example 5): `def(x1) = extends x0 ⟨p @T_even⟩`,
 so `anc({x0}) = {x0}` and `M24` splits into `M'` (satisfying `⟨p
-@T_even⟩`) and `Mx0` (satisfying `ext-te(x0) = p @T_even`, `x0` having no
+@T_even⟩`) and `Mx0` (satisfying `ext-te(x0) = p @T_even`; `x0` has no
 restriction of its own). -/
 theorem M24_satisfies_defx1 :
     SatisfiesMFuel bigFuel S_ex5 default τ_ex3 M24 (S_ex5.shapeDef "x1") := by
@@ -208,9 +207,9 @@ theorem M24_not_satisfies_defx2 :
   omega
 
 /-- `M2a, τ ⊨ def(x5)` (Example 5): `def(x5) = extends x0 extra {p} ⟨ε⟩`,
-so `M'` must satisfy the *shape* `[extra {p}]⟨ε⟩` — allowing the leftover
-`"a"`-triple, which a bare `⟨ε⟩` (forcing `M' = ∅`) would not — and
-`Mx0={2}` satisfies `ext-te(x0) = p @T_even`. -/
+so `M'` must satisfy the shape `[extra {p}]⟨ε⟩`, which allows the leftover
+`"a"`-triple (a bare `⟨ε⟩` would force `M' = ∅`); `Mx0={2}` satisfies
+`ext-te(x0) = p @T_even`. -/
 theorem M2a_satisfies_defx5 :
     SatisfiesMFuel bigFuel S_ex5 default τ_ex3 M2a (S_ex5.shapeDef "x5") := by
   have hx5shape : S_ex5.shapeDef "x5" = .extends {"x0"} ⟨false, some {"p"}, .empty⟩ := rfl
@@ -261,15 +260,15 @@ theorem M2a_satisfies_defx5 :
     simp only [Finset.mem_singleton] at hx; subst hx
     rw [hx0shape] at hu; simp [ShapeExpr.restrOf] at hu
 
-/-- `M24a, τ ¬⊨ def(x6)` (Example 5): `def(x6) = extends x3 ⟨p @T_even⟩`,
-and `x3`'s own `extra {p}` (from `x5`'s sibling definition, *not* an
-ancestor of `x6` at all) plays no role here — `x6` extends `x3` (whose own
-`h` is `⟨p @T_even⟩ and ⟨(p@T_>5)*⟩`, no `extra`), so nothing licenses
-`M24a`'s leftover `"a"`-triple, and (as `M24_not_satisfies_defx2` already
-shows for a similarly-shaped chain) the underlying cardinality doesn't
-even work out — `x3` itself needs 2 further p-triples beyond `x6`'s own,
-none of which the paper's four sets provide without reuse. We only check
-the specific `"a"`-triple obstruction the paper's own claim highlights. -/
+/-- `M24a, τ ¬⊨ def(x6)` (Example 5): `def(x6) = extends x3 ⟨p @T_even⟩`.
+`x3`'s own `extra {p}` (from `x5`'s sibling definition) is not an ancestor
+of `x6` and plays no role: `x6` extends `x3`, whose `h` is `⟨p @T_even⟩
+and ⟨(p@T_>5)*⟩` with no `extra`, so nothing licenses `M24a`'s leftover
+`"a"`-triple. As `M24_not_satisfies_defx2` shows for a similarly-shaped
+chain, the cardinality doesn't work out either: `x3` needs 2 further
+p-triples beyond `x6`'s own, which the paper's four sets don't provide
+without reuse. This proof only checks the `"a"`-triple obstruction the
+paper's claim highlights. -/
 theorem M24a_not_satisfies_defx6 :
     ¬ SatisfiesMFuel bigFuel S_ex5 default τ_ex3 M24a (S_ex5.shapeDef "x6") := by
   have hx6shape : S_ex5.shapeDef "x6" = .extends {"x3"} ⟨false, none, .tc "p" "T_even"⟩ := rfl
@@ -357,7 +356,7 @@ def satMEx5 (M : Finset Triple) (L : Label)
   renderDecide (satisfiesMFuel_decidable S_ex5 default τ_ex3 S_ex5_XClosed S_ex5_RestrOk
     bigFuel M (S_ex5.shapeDef L) hOk)
 
-/-- Example 5's `extends` chain. `schemaText` is generated from the real
+/-- Example 5's `extends` chain. `schemaText` is generated from the actual
 `S_ex5`; every `M ⊨ def(L)` claim in `typingText` is a `native_decide`
 computation via `satisfiesMFuel_decidable`, including `M24, τ ⊨ def(x1)`
 (proved above via `x1`'s rule-18 partition against its ancestor `x0`) and

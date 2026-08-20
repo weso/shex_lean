@@ -11,9 +11,9 @@ Example 3 lists four typings of `G₂` by `S₁` and states which are correct:
 `typing_1` (Example 2's own claim, proved there since Example 3's other
 typings reuse everything that file defines) and `typing_4` are correct,
 `typing_2` is correct too (the paper says so explicitly: "typing_1 and
-typing_2 are correct"), whereas `typing_3` is not — it types
-`<i1>`/`<i2>` as `<IssueSh>` without also typing `"Ren"`/`"Bob"` as
-`<Str>`, which `<IssueSh>`'s own definition requires.
+typing_2 are correct"). `typing_3` is not: it types `<i1>`/`<i2>` as
+`<IssueSh>` without also typing `"Ren"`/`"Bob"` as `<Str>`, which
+`<IssueSh>`'s own definition requires.
 -/
 
 namespace ShexLean.Examples
@@ -82,10 +82,10 @@ namespace Examples
 open ShexLean.Examples (S₁ G₂ typing1 typing2 typing3 typing4)
 open ShexLean (Schema.render Graph.render Typing.render renderDecide corrTyping_decidable)
 
-/-- Example 3's four typings of `G₂` by `S₁`, and their correctness —
-`schemaText`/`graphText` generated from `S₁`/`G₂`, `typingText`'s four
-correctness verdicts each a genuine `Decidable` computation, not
-hand-typed "(correct)"/"(not correct)". -/
+/-- Example 3's four typings of `G₂` by `S₁`, and their correctness.
+`schemaText`/`graphText` are generated from `S₁`/`G₂`; `typingText`'s four
+correctness verdicts are each a `Decidable` computation, not hand-typed
+"(correct)"/"(not correct)". -/
 def exampleTypings : Example where
   name := "schemas2017-example3-typings"
   summary := "Four typings of G₂ by S₁ from Ex. 2; which are correct (Def. 2)."

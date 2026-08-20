@@ -9,54 +9,43 @@ Lemma 1 (§4.2) of the 2025 "Shape Expressions with Inheritance" paper:
 > every schema `S = (Y, X, def, A)`, graph `G`, node `n` of `G`, typing `τ`
 > of `G` by `S`, and label `z ∈ Y ∪ X`.
 
-`ShexLean/Shex2025Inheritance/Semantics.lean` sidesteps termination by threading an
-explicit `Fuel : ℕ` through `SatisfiesFuel`/`SatisfiesMFuel`/
-`SatisfiesEFuel`, decremented on *every* recursive call, returning `False`
-on exhaustion — a total Lean function by construction, but not yet the
-paper's real (fuel-independent) relation. This file's job is to show that,
-for a well-defined schema, a large-enough `Fuel` makes the answer stop
-depending on `Fuel` at all — i.e. that the fuel-bounded under-approximation
-*is*, eventually, the real thing.
+`Semantics.lean` sidesteps termination by threading an explicit
+`Fuel : ℕ` through `SatisfiesFuel`/`SatisfiesMFuel`/`SatisfiesEFuel`,
+decremented on every recursive call, returning `False` on exhaustion —
+a total Lean function by construction, but not yet the paper's real
+(fuel-independent) relation. This file shows that, for a well-defined
+schema, a large-enough `Fuel` makes the answer stop depending on `Fuel`:
+the fuel-bounded approximation eventually equals the real relation.
 
-## Why this is genuinely harder than anything the 2017 formalization needed
-
-In `ShexLean/Shex2017Schemas/Semantics.lean`, a shape reference is resolved purely by
-consulting `typing` (no recursive call into `def(L)`), so termination is
-free structural recursion on the AST. Here, Table 3's `extends` rule
-recurses into *other labels' own definitions*
+Unlike the 2017 formalization, where a shape reference is resolved purely
+via `typing` so termination is free structural recursion on the AST, here
+Table 3's `extends` rule recurses into other labels' own definitions
 (`(S.shapeDef x).extTe`/`.restrOf`, `x` ranging over ancestors) — a schema
 lookup, not a subterm of the current expression. The paper's own
-termination argument (Lemma 1's proof sketch, appendix) is exactly one
-sentence: the tree of recursive calls is finite "due to the acyclic nature
-of the extension hierarchy". Turning that sentence into a Lean proof needs
-an actual *rank function* on labels witnessing `H_S`'s acyclicity, and a
-combined measure that decreases on every recursive call (both the
-`extends`-hop ones — governed by the rank — and the ordinary
-AST-structural ones): `Schema.extRank` below, and the rank-indexed fuel
-bound `Schema.reqFuelR`/`Schema.reqFuelGen` built from it.
+termination argument (Lemma 1's proof sketch) is one sentence: the tree of
+recursive calls is finite "due to the acyclic nature of the extension
+hierarchy". Making this precise needs a rank function on labels witnessing
+`H_S`'s acyclicity (`Schema.extRank` below) and a combined measure that
+decreases on every recursive call, both `extends`-hops (governed by the
+rank) and ordinary AST-structural ones (`Schema.reqFuelR`/
+`Schema.reqFuelGen`).
 
-This is stated and proved in exactly the generality the paper's own Lemma 1
-claims: only `WellFormedX` (Definition 2's shape of an `X`-label's own
-definition) and `ExtAcyclic` (Definition 6's "`H_S` is acyclic" clause) are
-needed — no further syntactic restriction on where `extends` nodes may
-occur, including inside a restriction `u` (`extends X h and u`), which the
-grammar never actually confines to be `extends`-free.
+This is proved at the generality the paper's Lemma 1 claims: only
+`WellFormedX` (Definition 2) and `ExtAcyclic` (Definition 6) are assumed,
+with no restriction on where `extends` nodes occur, including inside a
+restriction `u` (`extends X h and u`).
 -/
 
 namespace ShexLean.Inheritance
 
 /-! ### Extension-hierarchy acyclicity -/
 
-/-- `S.anc` strictly shrinks along every `H_S` edge, for an acyclic `S`
-(`Schema.ExtAcyclic`, the termination-relevant half of Definition 6's
-well-definedness condition, `ShexLean/Shex2025Inheritance/Stratification.lean`):
-if `x` (directly) extends `y`, then everything `y` (transitively) extends
-is also something `x` (transitively) extends, but `x` itself witnesses the
-converse failing (`x ∈ S.anc x` always; `x ∈ S.anc y` would — combined
-with the edge `x → y` — close a cycle through `x`). This is the standard
-"descendant/ancestor count as a rank function on a DAG" trick, and is the
-whole reason `Schema.ExtAcyclic` is enough to guarantee termination: it
-turns "no cycle" into a genuine well-founded measure. -/
+/-- `S.anc` strictly shrinks along every `H_S` edge, given `S.ExtAcyclic`
+(Definition 6's acyclicity clause): if `x` extends `y`, everything `y`
+transitively extends is also extended by `x`, but `x ∈ S.anc x` while
+`x ∈ S.anc y` would close a cycle through the edge `x → y`. The standard
+ancestor-count-as-rank-function argument on a DAG; this is why
+`ExtAcyclic` alone gives a well-founded measure. -/
 theorem Schema.anc_ssubset_of_extEdge {S : Schema} (hAcyclic : S.ExtAcyclic)
     {x y : Label} (hxX : x ∈ S.X) (hxy : S.extEdge x y) :
     S.anc y ⊂ S.anc x := by
@@ -83,10 +72,10 @@ theorem Schema.anc_ssubset_of_extEdge {S : Schema} (hAcyclic : S.ExtAcyclic)
   · exact hAcyclic x hxX (Relation.TransGen.single (heq.symm ▸ hxy))
   · exact hAcyclic x hxX (Relation.TransGen.head hxy htrans)
 
-/-- `S.extRank x := (S.anc x).card`: a concrete `ℕ`-valued rank witnessing
-`H_S`'s acyclicity, strictly decreasing along every edge
-(`extRank_lt_of_extEdge` below) — the well-founded measure the rest of
-this file's termination argument is built on. -/
+/-- `S.extRank x := (S.anc x).card`: a `ℕ`-valued rank witnessing `H_S`'s
+acyclicity, strictly decreasing along every edge (`extRank_lt_of_extEdge`
+below). The well-founded measure the rest of this file's termination
+argument uses. -/
 noncomputable def Schema.extRank (S : Schema) (x : Label) : ℕ := (S.anc x).card
 
 /-- The rank form of `anc_ssubset_of_extEdge`: `extRank` strictly decreases
@@ -96,9 +85,9 @@ theorem Schema.extRank_lt_of_extEdge {S : Schema} (hAcyclic : S.ExtAcyclic)
     S.extRank y < S.extRank x :=
   Finset.card_lt_card (S.anc_ssubset_of_extEdge hAcyclic hxX hxy)
 
-/-- `extRank` doesn't increase along an ancestor path: every `x' ∈ S.anc x`
-has `extRank x' ≤ extRank x` (not strict — `x ∈ S.anc x` reflexively, the
-`= x'` case). Used to bound the rank of *every* label reached by a rule-18
+/-- `extRank` does not increase along an ancestor path: `x' ∈ S.anc x`
+gives `extRank x' ≤ extRank x` (not strict, since `x ∈ S.anc x`
+reflexively). Used to bound the rank of every label reached by a rule-18
 partition (`x' ∈ S.ancSet xs`), not just the direct targets `xs`. -/
 theorem Schema.extRank_le_of_mem_anc {S : Schema} {x x' : Label} (hx' : x' ∈ S.anc x) :
     S.extRank x' ≤ S.extRank x := by
@@ -124,18 +113,14 @@ def ShapeExpr.NoExtends : ShapeExpr → Prop
 
 /-! ### The stabilization argument
 
-The proof follows the same one-way dependency chain as the definitions
-themselves (`ShexLean/Shex2025Inheritance/Semantics.lean`'s own module
-docstring): `SatisfiesEFuel` stabilizes on its own (no schema lookups at
-all); then `SatisfiesMFuel` stabilizes using that fact (plus a
-`NoExtends`-only version of itself, proved first — needed as the base case
-of the rank-indexed induction below, since a shape reachable at rank `0`
-has, by construction, no further `.extends` node to unfold); then
-`SatisfiesFuel` stabilizes using `SatisfiesMFuel`'s result for the
-`.ofShape`/`.extends` same-shape judgment switch. -/
+Follows the dependency chain of the definitions themselves
+(`Semantics.lean`'s module docstring): `SatisfiesEFuel` stabilizes on its
+own (no schema lookups); `SatisfiesMFuel` stabilizes using that, plus a
+`NoExtends`-only base case; `SatisfiesFuel` stabilizes using
+`SatisfiesMFuel`. -/
 
-/-- Structural size of a triple expression — a generous (not tight)
-sufficient-fuel bound: every recursive call `SatisfiesEFuel` makes is on a
+/-- Structural size of a triple expression: a generous, not tight,
+sufficient-fuel bound. Every recursive call `SatisfiesEFuel` makes is on a
 strictly smaller sub-expression, so this decreases by at least 1 at every
 step. -/
 def TripleExpr.size : TripleExpr → ℕ
@@ -145,11 +130,10 @@ def TripleExpr.size : TripleExpr → ℕ
   | .seq e1 e2 => e1.size + e2.size + 1
   | .star e => e.size + 1
 
-/-- `SatisfiesEFuel` stabilizes once `Fuel ≥ e.size`: any two sufficiently
-large fuel values agree. Table 1 never performs a schema lookup at all
-(`.tc`'s label is resolved purely via `τ`, see `Semantics.lean`'s module
-docstring), so this needs no hypothesis on `S` whatsoever — plain
-structural induction on `e`. -/
+/-- `SatisfiesEFuel` stabilizes once `Fuel ≥ e.size`. Table 1 never
+performs a schema lookup (`.tc`'s label is resolved via `τ`, see
+`Semantics.lean`'s module docstring), so no hypothesis on `S` is needed —
+plain structural induction on `e`. -/
 theorem stableE (e : TripleExpr) :
     ∀ fuel1 fuel2, e.size ≤ fuel1 → e.size ≤ fuel2 →
       ∀ (S : Schema) (G : Graph) (τ : Typing) (M : Finset Triple),
@@ -225,12 +209,10 @@ def ShapeExpr.size : ShapeExpr → ℕ
   | .not s => s.size + 1
 
 /-- `SatisfiesMFuel` stabilizes on any `NoExtends` shape once
-`Fuel ≥ s.size` — no schema hypothesis needed, since a `NoExtends` shape
-never triggers rule 18 (no schema lookup possible), only `stableE`. Proved
-*before* the general `stableMGen` below because `restr(x)`'s evaluation
-inside its `.extends` case needs exactly this fact applied to a shape
-(`restr(x)`) that is *not* a subterm of the shape the general induction is
-on. -/
+`Fuel ≥ s.size`; no schema hypothesis needed, since such a shape never
+triggers rule 18. Proved before the general `stableMGen` below because it
+is also needed for `restr(x)`, which is not a subterm of the shape the
+general induction runs on. -/
 theorem stableM_noExtends (u : ShapeExpr) (hu : u.NoExtends) :
     ∀ fuel1 fuel2, u.size ≤ fuel1 → u.size ≤ fuel2 →
       ∀ (S : Schema) (G : Graph) (τ : Typing) (M : Finset Triple),
@@ -293,32 +275,22 @@ theorem stableM_noExtends (u : ShapeExpr) (hu : u.NoExtends) :
 
 /-! ### The rank-indexed fuel bound and its sufficiency
 
-`ShapeExpr.reqFuelAt S lower s` computes a fuel bound for `s`, where an
-`.extends` node's ancestors' *restrictions* are bounded by an explicit
-`lower : ShapeExpr → ℕ` function. `Schema.reqFuelR S r` supplies that
-`lower` recursively, indexed by a rank budget `r` consumed by one each time
-a restriction is itself unfolded: `reqFuelR S 0 := ShapeExpr.size` (sound
-at rank `0`, where — see `RankOk` below — every reachable shape is
-`NoExtends`) and `reqFuelR S (r+1) := reqFuelAt S (reqFuelR S r)`. This is
-well-founded by ordinary `ℕ`-recursion on `r` alone (`reqFuelAt`'s own
-recursion on `s` is plain structural recursion, calling `lower` — not
-itself — on `restr`), so it needs no custom well-founded-recursion
-machinery.
+`ShapeExpr.reqFuelAt S lower s` computes a fuel bound for `s`, taking an
+`.extends` node's ancestors' restrictions as bounded by `lower`.
+`Schema.reqFuelR S r` supplies `lower` recursively, indexed by a rank
+budget `r`: `reqFuelR S 0 := ShapeExpr.size` (sound at rank 0, where every
+reachable shape is `NoExtends`), and `reqFuelR S (r+1) := reqFuelAt S
+(reqFuelR S r)`.
 
-**Why rank `r` has to be tied to `s`.** `reqFuelR S r s` is only a valid
-bound if `r` actually covers every extends-target reachable from `s`
-(directly, or transitively through cascading restrictions) — `Schema.RankOk
-S r s` names that side condition, built the same way as `reqFuelR`
-(`RankOkAt` structurally, indexed by rank via the same `0`/`r+1` split,
-`RankOk S 0 := NoExtends`). `Schema.rankOk_shapeDef` is the heart of the
-acyclicity argument: for `x ∈ S.X`, `RankOk S (extRank x) (S.shapeDef x)`
-holds, by strong induction on `extRank x` — every extends-target `x`'s own
-definition (or its restriction) reaches has strictly smaller rank
-(`extRank_lt_of_extEdge`), so the induction hypothesis applies to it.
-`Schema.rankOk_any` then lifts this to *any* `ShapeExpr` (not just some
-`S.shapeDef x`) at the single global rank bound `S.X.sup S.extRank + 1` —
-covering ordinary top-level queries `S.shapeDef z` for `z` a *simple*
-label too, which need not be in `S.X` at all. -/
+`Schema.RankOk S r s` is the side condition that rank `r` actually covers
+every extends-target reachable from `s`, built the same way as `reqFuelR`.
+`Schema.rankOk_shapeDef` is the acyclicity argument: for `x ∈ S.X`,
+`RankOk S (extRank x) (S.shapeDef x)` holds by strong induction on
+`extRank x`, since every extends-target reachable from `x`'s definition
+has strictly smaller rank (`extRank_lt_of_extEdge`). `Schema.rankOk_any`
+lifts this to any `ShapeExpr`, not just some `S.shapeDef x`, at the single
+global rank bound `S.X.sup S.extRank + 1`, covering top-level queries
+`S.shapeDef z` for a simple label `z` not in `S.X` too. -/
 
 noncomputable def ShapeExpr.reqFuelAt (S : Schema) (lower : ShapeExpr → ℕ) : ShapeExpr → ℕ
   | .constraint _ => 1
@@ -342,10 +314,8 @@ noncomputable def Schema.reqFuelR (S : Schema) : ℕ → ShapeExpr → ℕ
   | r + 1 => ShapeExpr.reqFuelAt S (Schema.reqFuelR S r)
 
 /-- The rank-`r` analogue of `ShapeExpr.NoExtends`: every `.extends` node's
-ancestors' restrictions, unfolded down through `r` further cascading
-`.extends` hops, are accounted for. `RankOk S 0` coincides with plain
-`NoExtends` (rank `0` can only be reached by a shape with no further
-extends-hops at all). -/
+ancestors' restrictions, unfolded through `r` further cascading `.extends`
+hops, are accounted for. `RankOk S 0` coincides with `NoExtends`. -/
 def Schema.RankOkAt (S : Schema) (lowerOk : ShapeExpr → Prop) : ShapeExpr → Prop
   | .constraint _ => True
   | .ofShape _ => True
@@ -435,8 +405,7 @@ theorem Schema.ancSet_subset_X {S : Schema} {xs : Finset Label} : S.ancSet xs �
   exact hx'z.1
 
 /-- From `RankOk` of `x`'s own definition (`extends xs h [and u]`), extract
-`RankOk` of its restriction `u` — one `and`-conjunct away, exactly matching
-`restrOf`'s own pattern. -/
+`RankOk` of its restriction `u`. -/
 theorem Schema.RankOk_restrOf {S : Schema} (hWFX : S.WellFormedX) {x : Label} (hx : x ∈ S.X)
     {u : ShapeExpr} (hu : (S.shapeDef x).restrOf = some u)
     (hRank : Schema.RankOk S (S.extRank x) (S.shapeDef x)) :
@@ -454,14 +423,12 @@ theorem Schema.RankOk_restrOf {S : Schema} (hWFX : S.WellFormedX) {x : Label} (h
     unfold Schema.RankOk at hRank'
     exact hRank'.2
 
-/-- The acyclicity argument proper: any `ShapeExpr` `e` all of whose direct
-`.extends` targets are genuine `H_S`-edges out of `x` is `RankOkAt` at rank
-`m := extRank x - 1`, given the induction hypothesis that every `x' ∈ S.X`
-of strictly smaller rank already has `RankOk` of its own definition.
-Applied to `e := S.shapeDef x` itself, this closes the induction (see
-`Schema.rankOk_shapeDef`); it's stated for general `e` since `x`'s own
-restriction `u` (part of `def x`, not itself `S.shapeDef` of anything) needs
-the very same fact. -/
+/-- Any `ShapeExpr` `e` whose direct `.extends` targets are all genuine
+`H_S`-edges out of `x` is `RankOkAt` at rank `m := extRank x - 1`, given
+that every `x' ∈ S.X` of strictly smaller rank already has `RankOk` of its
+own definition. Applied to `e := S.shapeDef x`, this closes the induction
+in `rankOk_shapeDef`; stated for general `e` since `x`'s own restriction
+`u` needs the same fact. -/
 theorem Schema.RankOkAt_of_edges {S : Schema} (hAcyclic : S.ExtAcyclic) (hWFX : S.WellFormedX)
     {x : Label} (hx : x ∈ S.X)
     (IH : ∀ x' ∈ S.X, S.extRank x' < S.extRank x → Schema.RankOk S (S.extRank x') (S.shapeDef x'))
@@ -501,11 +468,10 @@ theorem Schema.RankOkAt_of_edges {S : Schema} (hAcyclic : S.ExtAcyclic) (hWFX : 
       intro hst
       exact ih (fun z hz => hst z (by simpa [ShapeExpr.extendsTargets] using hz))
 
-/-- For `x ∈ S.X`, `x`'s own definition is `RankOk` at exactly `x`'s rank —
-by strong induction on `extRank x`, using `RankOkAt_of_edges` for the
-inductive step. This is the paper's Lemma 1 termination argument made
-precise: the acyclicity of `H_S` (`ExtAcyclic`) is genuinely enough, with
-no further syntactic restriction on where `extends` nodes may occur. -/
+/-- For `x ∈ S.X`, `x`'s own definition is `RankOk` at exactly `x`'s rank,
+by strong induction on `extRank x` using `RankOkAt_of_edges`. This is
+Lemma 1's termination argument made precise: `ExtAcyclic` alone suffices,
+with no further restriction on where `extends` nodes may occur. -/
 theorem Schema.rankOk_shapeDef {S : Schema} (hAcyclic : S.ExtAcyclic) (hWFX : S.WellFormedX) :
     ∀ x ∈ S.X, Schema.RankOk S (S.extRank x) (S.shapeDef x) := by
   have key : ∀ n x, x ∈ S.X → S.extRank x = n → Schema.RankOk S (S.extRank x) (S.shapeDef x) := by
@@ -525,10 +491,9 @@ theorem Schema.rankOk_shapeDef {S : Schema} (hAcyclic : S.ExtAcyclic) (hWFX : S.
   intro x hx
   exact key (S.extRank x) x hx rfl
 
-/-- Lifting `rankOk_shapeDef` from a specific `x ∈ S.X` to *any* `ShapeExpr`
-(in particular, `S.shapeDef z` for `z` a simple label, not necessarily in
-`S.X` at all): the single global bound `S.X.sup S.extRank + 1` always
-suffices. -/
+/-- Lifts `rankOk_shapeDef` from a specific `x ∈ S.X` to any `ShapeExpr`
+(in particular `S.shapeDef z` for a simple label `z` not in `S.X`): the
+global bound `S.X.sup S.extRank + 1` always suffices. -/
 theorem Schema.rankOk_any {S : Schema} (hAcyclic : S.ExtAcyclic) (hWFX : S.WellFormedX) :
     ∀ e : ShapeExpr, Schema.RankOk S (S.X.sup S.extRank + 1) e := by
   intro e
@@ -548,10 +513,9 @@ theorem Schema.rankOk_any {S : Schema} (hAcyclic : S.ExtAcyclic) (hWFX : S.WellF
   | not s ih => exact ih
 
 /-- `SatisfiesMFuel` stabilizes at rank-`r` fuel `reqFuelR S r s`, given
-`RankOk S r s`. Proved by induction on `r`: rank `0` is exactly
-`stableM_noExtends`; each further rank reproduces the same case structure,
-but discharges a restriction's stabilization via the rank-`r'` induction
-hypothesis (`ihr`) instead. -/
+`RankOk S r s`. Proved by induction on `r`: rank 0 is `stableM_noExtends`;
+each further rank discharges a restriction's stabilization via the
+rank-`r'` induction hypothesis. -/
 theorem stableMGen (S : Schema) (_hWFX : S.WellFormedX) :
     ∀ r s, Schema.RankOk S r s →
       ∀ fuel1 fuel2, Schema.reqFuelR S r s ≤ fuel1 → Schema.reqFuelR S r s ≤ fuel2 →
@@ -687,9 +651,9 @@ theorem stableMGen (S : Schema) (_hWFX : S.WellFormedX) :
           show ¬ SatisfiesMFuel f1 S G τ M s ↔ ¬ SatisfiesMFuel f2 S G τ M s
           rw [ih hRank f1 f2 (by omega) (by omega) G τ M]
 
-/-- The global (rank-independent) fuel bound, using the largest rank the
-schema can ever need — `reqFuelR` at `S.X.sup S.extRank + 1`, which
-`rankOk_any` proves is always enough for *any* shape. -/
+/-- The rank-independent fuel bound: `reqFuelR` at the largest rank the
+schema can ever need, `S.X.sup S.extRank + 1`, which `rankOk_any` shows is
+always enough for any shape. -/
 noncomputable def Schema.reqFuelGen (S : Schema) (s : ShapeExpr) : ℕ :=
   Schema.reqFuelR S (S.X.sup S.extRank + 1) s
 
@@ -775,21 +739,19 @@ theorem stableFuel {S : Schema} (hWFX : S.WellFormedX) (hAcyclic : S.ExtAcyclic)
 
 /-! ### Packaging: the real `Satisfies`, and Lemma 1 itself -/
 
-/-- The real `n, τ ⊨_S def(z)` (no `Fuel` in sight): evaluate at a
-canonical, concretely-sufficient fuel amount. Well-defined (independent of
-this particular choice) by `stableFuel`, recorded as `lemma1` below. -/
+/-- The real `n, τ ⊨_S def(z)` (no `Fuel` parameter): evaluate at a
+canonical, concretely-sufficient fuel amount. Independent of that choice
+by `stableFuel`, recorded as `lemma1` below. -/
 noncomputable def Satisfies (S : Schema) (G : Graph) (τ : Typing) (n : RDFNode)
     (s : ShapeExpr) : Prop :=
   SatisfiesFuel (Schema.reqFuelGen S s + 1) S G τ n s
 
-/-- **Lemma 1.** For a schema `S` satisfying `WellFormedX`/`ExtAcyclic` —
-exactly the paper's own hypotheses, with no restriction on where `extends`
-nodes may occur — `n, τ ⊨_S def(z)`'s evaluation "always terminates": any
-sufficiently large `Fuel` computes the same, `Fuel`-independent answer that
-`Satisfies` (defined above at one canonical such `Fuel`) gives — i.e. the
-`Fuel`-bounded relations of `Semantics.lean` really do converge to a
-well-defined limit, for every node `n`, typing `τ`, and label
-`z ∈ Y ∪ X` (`def(z) := S.shapeDef z`, any `ShapeExpr`). -/
+/-- Lemma 1. For a schema `S` satisfying `WellFormedX`/`ExtAcyclic` (the
+paper's own hypotheses, with no restriction on where `extends` nodes may
+occur), `n, τ ⊨_S def(z)`'s evaluation terminates: any sufficiently large
+`Fuel` gives the same answer as `Satisfies` (defined above at one
+canonical fuel value), for every node `n`, typing `τ`, and label
+`z ∈ Y ∪ X`. -/
 theorem lemma1 {S : Schema} (hWFX : S.WellFormedX) (hAcyclic : S.ExtAcyclic)
     (G : Graph) (τ : Typing) (n : RDFNode) (z : Label) (fuel : ℕ)
     (hfuel : Schema.reqFuelGen S (S.shapeDef z) + 1 ≤ fuel) :

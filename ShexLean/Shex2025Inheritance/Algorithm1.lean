@@ -1,9 +1,10 @@
+import ShexLean.Common.FixedPoint
 import ShexLean.Shex2025Inheritance.Lemma2
 
 /-!
 §5: the validation/refinement algorithm (`refine`), and its correctness for
-ShEx with inheritance — it computes `Typing8 G S strat` (Definition 8,
-`τ_max(S,σ,G)`), for a well-formed schema `S` (`WellFormedX`/
+ShEx with inheritance. Computes `Typing8 G S strat` (Definition 8,
+`τ_max(S,σ,G)`) for a well-formed schema `S` (`WellFormedX`/
 `ExtAcyclic`/`WellFormedExtra`/`NotIsExtendsFree`/`DClosed`) and
 stratification `strat`.
 
@@ -29,50 +30,15 @@ Output: τ_max(S,strat,G)
 ```
 
 Per stratum, this is a greatest-fixed-point computation: start from every
-possible node-type guess for the new stratum, frozen agreement with the
-previous stratum, then repeatedly strip out anything currently failing
-`⊨_S` (Definition 4) until nothing more can be removed. `Satisfies`
-depends on the schema (via `.anc`/`.ancSet`), so crossing between
-differently-restricted schemas (`S.restrictLabels Lo` vs
-`S.restrictLabels Ls'`) needs the schema-invariance machinery `ShexLean/
-Shex2025Inheritance/Lemma2.lean` provides
+node-type guess for the new stratum, keeping the previous stratum fixed,
+then repeatedly drop pairs failing `⊨_S` (Definition 4) until stable.
+`Satisfies` depends on the schema (via `.anc`/`.ancSet`), so crossing
+between differently-restricted schemas (`S.restrictLabels Lo` vs
+`S.restrictLabels Ls'`) needs the schema-invariance lemmas in
+`ShexLean/Shex2025Inheritance/Lemma2.lean`
 (`Satisfies_restrictLabels_agree`, `Schema.correctTyping_stratRestrict_mono`). -/
 
 namespace ShexLean.Inheritance
-
-/-- A purely order-theoretic fact used to show the per-stratum refinement
-loop actually reaches a fixed point: iterating any *decreasing* self-map of
-a finite type stabilizes within `x.card` steps (pure `Finset`/
-`Function.iterate` reasoning, no schema content). -/
-theorem Finset.decreasing_iterate_fixed {α : Type*} [DecidableEq α] (f : Finset α → Finset α)
-    (hf : ∀ t, f t ⊆ t) (x : Finset α) : f (f^[x.card] x) = f^[x.card] x := by
-  have hfix : ∀ (y : Finset α), f y = y → ∀ n, f^[n] y = y := by
-    intro y hy n
-    induction n with
-    | zero => rfl
-    | succ n ihn => rw [Function.iterate_succ_apply', ihn, hy]
-  induction hcard : x.card using Nat.strong_induction_on generalizing x with
-  | _ card ih =>
-    by_cases heq : f x = x
-    · rw [hfix x heq card]
-      exact heq
-    · have hsub := hf x
-      have hlt : (f x).card < x.card := Finset.card_lt_card (hsub.ssubset_of_ne heq)
-      have hcard' : (f x).card < card := hcard ▸ hlt
-      have hxne : x ≠ ∅ := by rintro rfl; exact heq (by simpa using hf (∅ : Finset α))
-      have hcardpos : 0 < card := by
-        rw [← hcard]; exact Finset.card_pos.mpr (Finset.nonempty_iff_ne_empty.mpr hxne)
-      have hih := ih (f x).card hcard' (f x) rfl
-      have hpad : ∀ n, (f x).card ≤ n → f^[n] (f x) = f^[(f x).card] (f x) := by
-        intro n hn
-        obtain ⟨k, rfl⟩ : ∃ k, n = k + (f x).card := ⟨n - (f x).card, by omega⟩
-        rw [Function.iterate_add_apply]
-        exact hfix (f^[(f x).card] (f x)) hih k
-      have hstep : f^[card] x = f^[card - 1] (f x) := by
-        conv_lhs => rw [show card = (card - 1) + 1 by omega]
-        rw [Function.iterate_succ_apply]
-      rw [hstep, hpad (card - 1) (by omega)]
-      exact hih
 
 /-- The initial guess for stratum `S'` relative to the previous stratum's
 `(Lo, T)`: keep `T`'s contribution on `Lo` exactly, and guess every possible
@@ -95,14 +61,12 @@ theorem bigStart_restrictTo {S' : Schema} {G : Graph} {Lo : Finset Label} {T : T
   · rintro ⟨h, hL⟩; exact ⟨⟨hTsub h, fun _ => h⟩, hL⟩
 
 /-- One refinement pass: drop any node-type association for a label
-outside `Lo` that doesn't currently satisfy `⊨_S`. Lines 9-12 of `refine`
-(one full pass over the loop body — the paper's `while changing` repeats
-this until nothing more changes, i.e. iterates this to a fixed point). The
-per-pair keep-condition mirrors `Schema.CorrectTyping`'s own two-bullet
-shape exactly — line 10's "not `typing, n ⊨_S def(L)`" really means "not
-locally correct at `(n,L)`", not just "not `Satisfies ... def(L)`" (an
-abstract `L` is never itself directly `Satisfies`-checked; Definition 4
-instead requires some *descendant* to be). -/
+outside `Lo` that currently fails `⊨_S` (lines 9-12 of `refine`; the
+paper's `while changing` iterates this to a fixed point). The keep
+condition matches `Schema.CorrectTyping`'s two-bullet definition: line
+10's "not `typing, n ⊨_S def(L)`" means "not locally correct at
+`(n,L)`", since an abstract label `L` is checked via some descendant
+satisfying its shape (Definition 4), not by `Satisfies` on `L` itself. -/
 def Schema.locallyCorrect (S' : Schema) (G : Graph) (τ : Typing) (p : Assoc) : Prop :=
   (p.2 ∉ S'.A → Satisfies S' G τ p.1 (S'.shapeDef p.2)) ∧
   (p.2 ∈ S'.A → ∃ x ∈ S'.desc p.2 \ S'.A, Satisfies S' G τ p.1 (S'.shapeDef x))
@@ -135,7 +99,7 @@ theorem refineStep_restrictTo {S' : Schema} {G : Graph} {Lo : Finset Label} {cur
 
 /-- The per-stratum computation `refine` performs: start from `bigStart`
 and iterate `refineStep` to a fixed point (`Finset.card`-many iterations
-always suffice, by `Finset.decreasing_iterate_fixed`). -/
+suffice, by `Finset.decreasing_iterate_fixed`). -/
 noncomputable def refine1 (S' : Schema) (G : Graph) (Lo : Finset Label) (T : Typing) : Typing :=
   (refineStep S' G Lo)^[(bigStart S' G Lo T).card] (bigStart S' G Lo T)
 
@@ -175,11 +139,11 @@ same object, via the union of all correct typings, rather than iterative
 refinement).
 -/
 
-/-- A typing correct at `Lo`'s schema level, and confined to `Lo`-labelled
-pairs, is automatically correct at any bigger `D_S`-closed schema level
-`Ls' ⊇ Lo` too — no *new* pairs to check, and the schema-invariance facts
-(`Satisfies_restrictLabels_agree`, `Schema.restrictLabels_desc_eq`) show
-the checks for the *existing* pairs transport unchanged. -/
+/-- A typing correct and confined to `Lo` under `S.restrictLabels Lo`
+stays correct under `S.restrictLabels Ls'` for any `D_S`-closed
+`Ls' ⊇ Lo`: no new pairs to check, and `Satisfies_restrictLabels_agree` /
+`Schema.restrictLabels_desc_eq` show the existing checks carry over
+unchanged. -/
 theorem correctTyping_restrictLabels_lift {S : Schema} (hWFX : S.WellFormedX)
     (hAcyclic : S.ExtAcyclic) {G : Graph} {Lo Ls' : Finset Label} {T : Typing}
     (hLoLs' : Lo ⊆ Ls') (hLoClosed : S.DClosedOn Lo) (hLs'Closed : S.DClosedOn Ls')
@@ -214,13 +178,12 @@ theorem correctTyping_restrictLabels_lift {S : Schema} (hWFX : S.WellFormedX)
   · simp only [Schema.restrictLabels, Finset.mem_inter]
     exact fun h => hxnA h.1
 
-/-- `refine1 S' G Lo T` is correct: on `Lo` it inherits `T`'s correctness
-(via `Satisfies.agree` — a *typing*-agreement step — chained with
-`Satisfies_restrictLabels_agree` — a *schema*-restriction-level step,
-needed since `T`'s own correctness is witnessed at `Lo`'s schema level but
-`Satisfies.agree` alone only ever compares two typings against a *single*
-fixed schema); outside `Lo` it holds directly from `refine1` being a fixed
-point of `refineStep`. -/
+/-- `refine1 S' G Lo T` is correct. On `Lo` it inherits `T`'s correctness,
+transported from `Lo`'s schema level to `S'`'s via `Satisfies.agree`
+(same schema, different typings) composed with
+`Satisfies_restrictLabels_agree` (same typing, different schema level).
+Outside `Lo` it follows directly since `refine1` is a fixed point of
+`refineStep`. -/
 theorem refine1_correct {S : Schema} (hWFX : S.WellFormedX) (hAcyclic : S.ExtAcyclic)
     {G : Graph} {Ls' Lo : Finset Label} {T : Typing}
     (hLoLs' : Lo ⊆ Ls') (hLoClosed : S.DClosedOn Lo) (hLs'Closed : S.DClosedOn Ls')
@@ -239,9 +202,8 @@ theorem refine1_correct {S : Schema} (hWFX : S.WellFormedX) (hAcyclic : S.ExtAcy
     have hmemT : (n, L) ∈ T := (hagree n L hL).mpr hmem
     obtain ⟨hSatPlain, hSatAbs⟩ := hTcorrect n L hmemT
     have hdepsL : (S.shapeDef L).depsIn Lo := Schema.shapeDef_depsIn hLoClosed hL
-    -- A single "transport correctness of a `Lo`-confined label from `T` to
-    -- `refine1 ... Lo T`, at schema level `Ls'`" step, reused by both the
-    -- plain and abstract cases below.
+    -- Transports correctness of a `Lo`-confined label from `T` to
+    -- `refine1 ... Lo T` at schema level `Ls'`; reused below.
     have htransport : ∀ x, x ∈ Lo → Satisfies (S.restrictLabels Lo) G T n (S.shapeDef x) →
         Satisfies (S.restrictLabels Ls') G (refine1 (S.restrictLabels Ls') G Lo T) n
           (S.shapeDef x) := by
@@ -283,11 +245,10 @@ theorem refine1_correct {S : Schema} (hWFX : S.WellFormedX) (hAcyclic : S.ExtAcy
     rcases mem_refineStep.mp hmem with ⟨-, hcase⟩
     exact hcase.resolve_left hL
 
-/-- `maxTypingAgreeing` is itself a fixed point of `refineStep` (its own
-correctness gives the "keep" side of the filter for free, via
-`correctTyping_restrictLabels_lift` + `maxTypingAgreeing_correct`), and
-starts below `bigStart`, so it stays below every iterate — in particular
-below `refine1`. -/
+/-- `maxTypingAgreeing` is a fixed point of `refineStep` (its correctness,
+via `correctTyping_restrictLabels_lift` and `maxTypingAgreeing_correct`,
+gives the filter's keep condition) and starts below `bigStart`, so it
+stays below every iterate, in particular below `refine1`. -/
 theorem maxTypingAgreeing_subset_refine1 {S : Schema} (hWFX : S.WellFormedX)
     (hAcyclic : S.ExtAcyclic) (hWFExtra : S.WellFormedExtra) (hNEF : S.NotIsExtendsFree)
     {G : Graph} {Ls' Lo : Finset Label} {T : Typing} (hLoLs' : Lo ⊆ Ls')
@@ -397,17 +358,16 @@ theorem refine1_eq_maxTypingAgreeing {S : Schema} (hWFX : S.WellFormedX) (hAcycl
       hLs'YX hTsub hTcorrect hLsneg
 
 /-!
-**Chaining across strata.** `refineAlg` mirrors `stratTypingSeq`'s recursion
-exactly, replacing `maxTypingAgreeing` (the declarative "union of correct
-typings" description) with `refine1` (the actual procedure); the
-per-stratum core lemma above shows the two agree at every step, so the two
-recursions agree everywhere, and in particular at `strat.k`.
+**Chaining across strata.** `refineAlg` mirrors `stratTypingSeq`'s
+recursion, replacing the declarative `maxTypingAgreeing` with the
+procedural `refine1`; the per-stratum lemma above shows they agree at
+every step, hence everywhere, including at `strat.k`.
 -/
 
 /-- The per-stratum recursion Algorithm 1 performs: `refineAlg S strat G 0
 := ∅`, and each successor stratum refines from `bigStart` (lines 3-5 of
 `refine`) down to a fixed point (lines 6-12), reusing the previous
-stratum's result as the "frozen" part of the initial guess. -/
+stratum's result as the frozen part of the initial guess. -/
 noncomputable def refineAlg (S : Schema) (strat : Label → ℕ) (G : Graph) : ℕ → Typing
   | 0 => ∅
   | i + 1 => refine1 (S.stratRestrict strat (i + 1)) G (S.stratum strat i) (refineAlg S strat G i)
@@ -418,13 +378,8 @@ noncomputable def Algorithm1 (G : Graph) (S : Schema) (strat : Stratification S)
 
 /-- Algorithm 1's per-stratum recursion computes exactly what
 `stratTypingSeq` (Definition 8's declarative construction) computes, at
-every stratum. Chains the per-stratum core lemma
-(`refine1_eq_maxTypingAgreeing`) across all of `S`'s strata: the
-hypotheses it needs at each step come from `Schema.stratum_mono` (for
-`Lo ⊆ Ls'`), `Schema.stratum_DClosedOn` (for `hLoClosed`/`hLs'Closed`),
-`stratTypingSeq_correct` (for `hTsub`/`hTcorrect`), and the
-stratification's `negDep_lt` (for `hLsneg`, exactly as in
-`stratTypingSeq_correct`'s own inductive step). -/
+every stratum, by chaining `refine1_eq_maxTypingAgreeing` across `S`'s
+strata. -/
 theorem refineAlg_eq_stratTypingSeq (S : Schema) (strat : Stratification S) (hWFX : S.WellFormedX)
     (hAcyclic : S.ExtAcyclic) (hWFExtra : S.WellFormedExtra) (hNEF : S.NotIsExtendsFree)
     (hDClosed : S.DClosed) (G : Graph) :
@@ -472,19 +427,17 @@ theorem refineAlg_eq_stratTypingSeq (S : Schema) (strat : Stratification S) (hWF
       exact refine1_eq_maxTypingAgreeing hWFX hAcyclic hWFExtra hNEF hLoLs' hLoClosed hLs'Closed
         hLs'YX hTsub hTcorrect hLsneg
 
-/-- **Algorithm 1's correctness.** The per-stratum refinement procedure, run
-for all `strat.k` strata, computes exactly `Typing8 G S strat`
-(`τ_max(S,σ,G)`, Definition 8) — the §5 refinement algorithm, adapted to
-ShEx with inheritance, really does compute the semantics it claims to. -/
+/-- **Algorithm 1's correctness.** Running the per-stratum refinement for
+all `strat.k` strata computes exactly `Typing8 G S strat`
+(`τ_max(S,σ,G)`, Definition 8). -/
 theorem algorithm1_correct (G : Graph) (S : Schema) (strat : Stratification S)
     (hWFX : S.WellFormedX) (hAcyclic : S.ExtAcyclic) (hWFExtra : S.WellFormedExtra)
     (hNEF : S.NotIsExtendsFree) (hDClosed : S.DClosed) :
     Algorithm1 G S strat = Typing8 G S strat :=
   refineAlg_eq_stratTypingSeq S strat hWFX hAcyclic hWFExtra hNEF hDClosed G strat.k
 
-/-- **Algorithm 1 computes a correct typing** (combining `algorithm1_correct`
-with `proposition1`) — the validation algorithm's output is trustworthy on
-its own terms, not just "equal to an abstractly-defined object". -/
+/-- **Algorithm 1 computes a correct typing**, combining `algorithm1_correct`
+with `proposition1`. -/
 theorem algorithm1_correctTyping (G : Graph) (S : Schema) (strat : Stratification S)
     (hWFX : S.WellFormedX) (hAcyclic : S.ExtAcyclic) (hWFExtra : S.WellFormedExtra)
     (hNEF : S.NotIsExtendsFree) (hDClosed : S.DClosed) :

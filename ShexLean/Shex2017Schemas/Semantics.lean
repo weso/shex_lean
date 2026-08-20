@@ -10,17 +10,16 @@ The `⊢` and `⊨` relations of Fig. 2 in Boneva, Labra Gayo, Prud'hommeaux
 triple expression".
 
 Both relations are parameterized by a `t`, exactly as `t, n ⊢ S`
-and `t, N ⊨ E` in the paper. The paper stresses that `t, n ⊢ S` "is
-by recursion on the structure of `S`" (§3.1, Discussion on `⊢`) — the only
-place a *shape label* gets resolved is by consulting `t` in Rule
-te-tpattern, not by a recursive call into `⊢` on `def(L)`. So for a fixed
-`t` the relation is a well-founded recursion on the finite AST of `S`
-(resp. `E`), not a fixpoint over `⊢` itself. This is exactly why it can be
-defined as ordinary mutually recursive `Prop`-valued functions below, rather
-than as a mutual `inductive`: Rule se-shape-not's premise `¬ (t, n ⊢ S)`
-is a negative occurrence of `⊢`, which Lean's strict-positivity check would
-reject for an `inductive` family but which is entirely fine for a recursive
-function, since `S` is a strictly smaller subterm than `NOT S`.
+and `t, N ⊨ E` in the paper. The paper notes that `t, n ⊢ S` "is by
+recursion on the structure of `S`" (§3.1, Discussion on `⊢`): a shape
+label is resolved by consulting `t` in Rule te-tpattern, not by a
+recursive call into `⊢` on `def(L)`. So for fixed `t` the relation is a
+well-founded recursion on the AST of `S` (resp. `E`), not a fixpoint over
+`⊢`. This is why `Satisfies`/`Matches` below are ordinary mutually
+recursive functions rather than a mutual `inductive`: Rule se-shape-not's
+premise `¬ (t, n ⊢ S)` is a negative occurrence of `⊢`, which Lean's
+positivity check would reject for an `inductive` family, but which a
+recursive function allows since `S` is a smaller subterm than `NOT S`.
 
 Where the paper lists several rules with the same conclusion shape (the two
 `se-value-descr` rules, and the two `te-some-of` rules), the corresponding
@@ -39,7 +38,7 @@ namespace ShexLean
 
 /-- `n ∈ V` (Rule se-value-descr1): whether the RDF node `n` belongs to the
 value description `V`, i.e. `n` is an IRI or a literal explicitly listed in
-`V`. Blank nodes are never members of `V` this way — they can only satisfy
+`V`. Blank nodes are never members of `V` this way; they can only satisfy
 `V` via the separate `_b` constant, Rule se-value-descr2. -/
 abbrev InV (n : RDFNode) (V : ValueDescr) : Prop :=
   match n with
@@ -93,14 +92,12 @@ def Matches (G : Graph) (t : Typing) (N : Finset Triple) : TExpr → Prop
 end
 
 
--- `G` is deliberately left free in both notations below, matching the
--- paper's own habit of leaving the ambient graph implicit: it's resolved as
--- whichever local/section variable named `G` is in scope at the point of
--- use (as it is in every declaration in this file), rather than against a
--- global declaration — hence disabling quotation prechecking (which would
--- otherwise reject `G` for not already existing) and hygiene (which would
--- otherwise capture a fresh `G` distinct from the one at each use site),
--- for just these two declarations.
+-- `G` is left free in both notations below, matching the paper's habit of
+-- leaving the ambient graph implicit: it resolves to whichever local
+-- variable named `G` is in scope at the use site. `quotPrecheck`/`hygiene`
+-- are disabled for these two declarations only, since Lean would otherwise
+-- reject a free `G` (quotation prechecking) or capture a fresh one instead
+-- of the one in scope (hygiene).
 set_option quotPrecheck false in
 set_option hygiene false in
 /-- `(t, n) ⊢ S` (Fig. 2a) - infix notation for `Satisfies` -/
@@ -113,19 +110,17 @@ scoped notation:50 "(" t ", " N ")" " ⊨ " E:51 => Matches G t N E
 
 /-! ### Smart constructors
 
-Every worked example proves `Matches`/`Satisfies` goals by supplying an
-explicit witness (a triple's subject/predicate/object, or the list of
-`Finset`s a `.rep` splits `N` into) and then discharging the rule's side
-conditions — usually `Finset`/`List` (dis)equalities and memberships, all
-`Decidable` — one at a time via `by decide`. The three lemmas below package
-that: each takes the witness as an explicit argument and the recursive
-`Matches` premise(s) as an ordinary argument, and gives every *decidable*
-side condition a `by decide` (or, for `.rep`'s length bound, an equivalent
-short tactic) default, so `refine Matches.rep_of G t Ns ?_` etc. leaves
-only the substantive goal(s) instead of every side condition individually.
-This changes proof *packaging* only, not the underlying rules: each lemma's
-body is exactly the anonymous-constructor term the un-packaged proof would
-have written by hand. -/
+Worked examples prove `Matches`/`Satisfies` goals by supplying an explicit
+witness (a triple's subject/predicate/object, or the list of `Finset`s a
+`.rep` splits `N` into) and discharging the rule's side conditions
+(`Finset`/`List` (dis)equalities and memberships, all `Decidable`) via `by
+decide`. The three lemmas below package that: each takes the witness as an
+explicit argument, the recursive `Matches` premise(s) as an ordinary
+argument, and gives every decidable side condition a `by decide` default,
+so e.g. `refine Matches.rep_of G t Ns ?_` leaves only the substantive
+goal(s). This changes proof packaging only, not the underlying rules: each
+lemma's body is the same anonymous-constructor term an un-packaged proof
+would write by hand. -/
 
 /-- Smart constructor for Rule te-tpattern: a single triple `(subj, pred,
 obj)` matches `.tPattern P L` when its predicate is in `P` and its object
@@ -160,12 +155,12 @@ theorem Matches.rep_of (G : Graph) (t : Typing) {N : Finset Triple} (Ns : List (
     Matches G t N (.rep E min max) :=
   ⟨Ns, ⟨hpairwise, hunion⟩, hmin, hmax, hmem⟩
 
-/-- Specialization of `Matches.rep_of` for the common case of a *singleton*
-witness split (`Ns := [N]`, so the matched set is just `N` itself) —
-collapses the `∀ Ni ∈ [N], Matches G t Ni E` obligation to a single
-`Matches G t N E` premise, discharging the `List.Pairwise`/union bookkeeping
-via `simp` instead of `decide` since `N` is an arbitrary (not necessarily
-concrete) `Finset Triple` here. -/
+/-- Specialization of `Matches.rep_of` for the *singleton* witness split
+(`Ns := [N]`, so the matched set is just `N` itself). Collapses the
+`∀ Ni ∈ [N], Matches G t Ni E` obligation to a single `Matches G t N E`
+premise, discharging the `List.Pairwise`/union bookkeeping via `simp`
+instead of `decide` since `N` is an arbitrary (not necessarily concrete)
+`Finset Triple` here. -/
 theorem Matches.rep_single_of (G : Graph) (t : Typing) (N : Finset Triple) {E : TExpr}
     {min : ℕ} {max : Option ℕ} (h : Matches G t N E) (hmin : min ≤ 1 := by decide)
     (hmax : ∀ m', max = some m' → 1 ≤ m' := by intro m' hm'; cases hm' <;> decide) :
@@ -174,10 +169,10 @@ theorem Matches.rep_single_of (G : Graph) (t : Typing) (N : Finset Triple) {E : 
     (by intro Ni hNi; simp only [List.mem_singleton] at hNi; subst hNi; exact h)
     (by simp) (by simp) hmin hmax
 
-/-- Specialization of `Matches.rep_of` for the common case of an *empty*
-witness split (`Ns := []`, so `N = ∅`) — the `∀ Ni ∈ [], ...` obligation
-discharges itself, leaving only the (still decidable, since `min`/`max` are
-concrete at any real call site) length bounds. -/
+/-- Specialization of `Matches.rep_of` for the *empty* witness split
+(`Ns := []`, so `N = ∅`). The `∀ Ni ∈ [], ...` obligation discharges
+itself, leaving only the length bounds (still decidable since `min`/`max`
+are concrete at any real call site). -/
 theorem Matches.rep_empty_of (G : Graph) (t : Typing) {E : TExpr} {min : ℕ}
     {max : Option ℕ} (hmin : min ≤ 0 := by decide)
     (hmax : ∀ m', max = some m' → 0 ≤ m' := by intro m' hm'; cases hm' <;> decide) :

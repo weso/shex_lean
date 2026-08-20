@@ -1,3 +1,4 @@
+import ShexLean.Common.FixedPoint
 import ShexLean.Shex2017Schemas.Lemma2
 
 /-!
@@ -25,50 +26,17 @@ Output: Typing(G, S, str)
 13   return t
 ```
 
-Each outer iteration `i` is a *greatest fixed point* computation: start from
+Each outer iteration `i` is a greatest fixed point computation: start from
 the largest plausible typing for `S_i` (everything already fixed for
 `S_{i-1}`, plus every possible guess for the new labels), then repeatedly
-strip out anything that currently fails `⊢`, until nothing more can be
+strip out anything that currently fails `⊢` until nothing more can be
 removed. This file formalizes that per-stratum computation
-(`refineStep`/`refine1`), proves it equals `maxAgree` (hence
-`Definition 4`'s own per-stratum construction), and chains that across all
-`k` strata to get `Algorithm1 G S str = MTyping G S str`.
+(`refineStep`/`refine1`), proves it equals `maxAgree` (Definition 4's own
+per-stratum construction), and chains that across all `k` strata to get
+`Algorithm1 G S str = MTyping G S str`.
 -/
 
 namespace ShexLean
-
-/-- A purely order-theoretic fact used to show the per-stratum refinement
-loop actually reaches a fixed point: iterating any *decreasing* self-map of
-a finite type stabilizes within `x.card` steps. -/
-theorem Finset.decreasing_iterate_fixed {α : Type*} [DecidableEq α] (f : Finset α → Finset α)
-    (hf : ∀ t, f t ⊆ t) (x : Finset α) : f (f^[x.card] x) = f^[x.card] x := by
-  have hfix : ∀ (y : Finset α), f y = y → ∀ n, f^[n] y = y := by
-    intro y hy n
-    induction n with
-    | zero => rfl
-    | succ n ihn => rw [Function.iterate_succ_apply', ihn, hy]
-  induction hcard : x.card using Nat.strong_induction_on generalizing x with
-  | _ card ih =>
-    by_cases heq : f x = x
-    · rw [hfix x heq card]
-      exact heq
-    · have hsub := hf x
-      have hlt : (f x).card < x.card := Finset.card_lt_card (hsub.ssubset_of_ne heq)
-      have hcard' : (f x).card < card := hcard ▸ hlt
-      have hxne : x ≠ ∅ := by rintro rfl; exact heq (by simpa using hf (∅ : Finset α))
-      have hcardpos : 0 < card := by
-        rw [← hcard]; exact Finset.card_pos.mpr (Finset.nonempty_iff_ne_empty.mpr hxne)
-      have hih := ih (f x).card hcard' (f x) rfl
-      have hpad : ∀ n, (f x).card ≤ n → f^[n] (f x) = f^[(f x).card] (f x) := by
-        intro n hn
-        obtain ⟨k, rfl⟩ : ∃ k, n = k + (f x).card := ⟨n - (f x).card, by omega⟩
-        rw [Function.iterate_add_apply]
-        exact hfix (f^[(f x).card] (f x)) hih k
-      have hstep : f^[card] x = f^[card - 1] (f x) := by
-        conv_lhs => rw [show card = (card - 1) + 1 by omega]
-        rw [Function.iterate_succ_apply]
-      rw [hstep, hpad (card - 1) (by omega)]
-      exact hih
 
 /-- The initial guess for stratum `S'` relative to the previous stratum's
 `(Lo, T)`: keep `T`'s contribution on `Lo` exactly, and guess every
@@ -155,9 +123,9 @@ theorem refine1_restrictTo {S' : Schema} {G : Graph} {Lo : Finset Label} {T : Ty
   iterate_refineStep_restrictTo hTsub _
 
 /-!
-**Core lemma**: `refine1` computes the same thing as `maxAgree`
-(Proposition1.lean/Lemma2.lean's own construction of the same object,
-via the union of all correct typings, rather than iterative refinement).
+Core lemma: `refine1` computes the same thing as `maxAgree`
+(Proposition1.lean/Lemma2.lean's construction of the same object via the
+union of all correct typings, rather than iterative refinement).
 -/
 
 /-- `refine1 S' G Lo T` is correct for `S'`: on `Lo` it inherits `T`'s
@@ -273,11 +241,11 @@ theorem refine1_eq_maxAgree {S : Schema} {G : Graph} {Ls' Lo : Finset Label}
   · exact maxAgree_subset_refine1 hLoLs' hTsub hTcorrect hLsneg
 
 /-!
-**Chaining across strata.** `refineAlg` mirrors `typ`'s
-recursion exactly, replacing `maxAgree` (the declarative "union of
-correct typings" description) with `refine1` (the actual procedure); the
-per-stratum core lemma above shows the two agree at every step, so the two
-recursions agree everywhere, and in particular at `str.k`.
+Chaining across strata. `refineAlg` mirrors `typ`'s recursion exactly,
+replacing `maxAgree` (the declarative "union of correct typings"
+description) with `refine1` (the actual procedure). The per-stratum core
+lemma above shows the two agree at every step, hence everywhere,
+including at `str.k`.
 -/
 
 /-- The per-stratum recursion Algorithm 1 performs: `refineAlg S str G 0
@@ -299,14 +267,14 @@ the more general `restrictLabels`) apply directly to `stratRestrict`. -/
 theorem Schema.stratRestrict_eq_restrictLabels (S : Schema) (str : Label → ℕ) (i : ℕ) :
     S.stratRestrict str i = S.restrictLabels (S.stratum str i) := rfl
 
-/-- Algorithm 1's per-stratum recursion computes exactly what
-`typ` (Definition 4's declarative construction) computes, at
-every stratum. Chains the per-stratum core lemma
-(`refine1_eq_maxAgree`) across all of `S`'s strata: the hypotheses
-it needs at each step come from `Schema.stratum_mono` (for `Lo ⊆ Ls'`),
-`Schema.stratum_self_contained` (for `hLoself`), `typ_correct`
-(for `hTsub`/`hTcorrect`), and the stratification's `neg_strict` (for
-`hLsneg`, exactly as in `typ_correct`'s own inductive step). -/
+/-- Algorithm 1's per-stratum recursion computes exactly what `typ`
+(Definition 4's declarative construction) computes, at every stratum.
+Chains the per-stratum core lemma (`refine1_eq_maxAgree`) across all of
+`S`'s strata; the hypotheses it needs at each step come from
+`Schema.stratum_mono` (`Lo ⊆ Ls'`), `Schema.stratum_self_contained`
+(`hLoself`), `typ_correct` (`hTsub`/`hTcorrect`), and the
+stratification's `neg_strict` (`hLsneg`, as in `typ_correct`'s own
+inductive step). -/
 theorem refineAlg_eq_typ (S : Schema) (str : Strat S) (hClosed : S.Closed)
     (G : Graph) : ∀ i : ℕ, refineAlg S str.str G i = typ S str.str G i
   | 0 => rfl
@@ -338,10 +306,9 @@ theorem refineAlg_eq_typ (S : Schema) (str : Strat S) (hClosed : S.Closed)
       rw [ih, Schema.stratRestrict_eq_restrictLabels]
       exact refine1_eq_maxAgree hLoLs' hLoself hTsub hTcorrect hLsneg
 
-/-- **Algorithm 1's correctness.** The per-stratum refinement procedure,
-run for all `str.k` strata, computes exactly `Typing(G, S, str)`
-(Definition 4) — Algorithm 1 as described in §4.1 of the paper really does
-compute the semantics it claims to. -/
+/-- Algorithm 1's correctness. The per-stratum refinement procedure, run
+for all `str.k` strata, computes exactly `Typing(G, S, str)`
+(Definition 4), as claimed in §4.1 of the paper. -/
 theorem algorithm1_correct (G : Graph) (S : Schema) (str : Strat S)
     (hClosed : S.Closed) : Algorithm1 G S str = MTyping G S str :=
   refineAlg_eq_typ S str hClosed G str.k

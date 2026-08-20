@@ -1,0 +1,44 @@
+\section{Representing ShEx abstract syntax and typings in Lean} \label{sec:shex_lean}
+
+The ShEx abstract syntax from~\cite{BGP17} is represented in Lean as follows.
+A ShEx schema is a finite set of shape labels and a function that maps each
+shape label to a shape expression:
+
+\begin{leanlisting}
+structure Schema where
+  labels   : Finset Label
+  shapeDef : Label → ShExpr
+\end{leanlisting}
+
+A shape expression \lean{ShExpr} is either a value description,
+ a triple expression, or a boolean combination of shape expressions,
+ and a triple expression \lean{TExpr} is either a triple pattern,
+ the empty triple expression,
+ a choice or conjunction of triple expressions,
+ or a repetition of a triple expression.
+ Since a shape expression's neighbourhood description embeds a triple
+ expression, and a triple pattern refers back to a shape label,
+ the two are declared as a single mutually recursive block:
+
+ \begin{leanlisting}
+mutual
+inductive ShExpr where
+  | valueDescr : ValueDescr → ShExpr
+  | neigDescr  : TExpr → ShExpr
+  | and        : ShExpr → ShExpr → ShExpr
+  | or         : ShExpr → ShExpr → ShExpr
+  | not        : ShExpr → ShExpr
+
+inductive TExpr where
+  | tPattern : PropSet → Label → TExpr
+  | empty    : TExpr
+  | someOf   : TExpr → TExpr → TExpr
+  | eachOf   : TExpr → TExpr → TExpr
+  | rep      : TExpr → Nat → Option Nat → TExpr
+end
+\end{leanlisting}
+
+A value description \lean{ValueDescr} is a finite subset of RDF nodes, 
+ and a \lean{PropSet} is a subset of properties (IRIs).
+
+

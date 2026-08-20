@@ -5,24 +5,24 @@ import Example
 Example 7 from the 2025 "Shape Expressions with Inheritance" paper (§4.2,
 Def. 6): well-definedness verdicts for `S1`, `S2`, `S3` from Example 6
 (`Example6_dependency_graph.lean`), checked against Definition 6
-(`Schema.WellDefined`, `ShexLean/Shex2025Inheritance/Stratification.lean`):
-`S1` is well-defined (its only cycles, `y1↔y2` and `y1,y3`, carry no
-negative dependency), `S2` is not (the cycle `y4,y5` carries the negative
-`dep-shape-neg(y5,y4)`), and `S3` is not (the cycle `y7,x2,x1` — needing
-`dep-extends`, symmetrized, to get from `x2` back to `x1` — carries the
-negative `dep-shape-neg(y7,x2)`). Note also that the cycle in `S3` won't
-be present without the `dep-extends` relation; this illustrates that
-extension and negation cannot be arbitrarily interleaved.
+(`Schema.WellDefined`, `ShexLean/Shex2025Inheritance/Stratification.lean`).
+`S1` is well-defined: its only cycles, `y1↔y2` and `y1,y3`, carry no
+negative dependency. `S2` is not: the cycle `y4,y5` carries the negative
+`dep-shape-neg(y5,y4)`. `S3` is not: the cycle `y7,x2,x1`, which needs
+`dep-extends` (symmetrized) to get from `x2` back to `x1`, carries the
+negative `dep-shape-neg(y7,x2)`. The cycle in `S3` would not exist
+without the `dep-extends` relation; this illustrates that extension and
+negation cannot be arbitrarily interleaved.
 -/
 
 namespace ShexLean.Inheritance
 
 /-- `S1` is well-defined (Example 7): `H_{S1}` is trivially acyclic
-(`X1 = ∅`), and `S1` has no negative dependency at all, for *any* pair of
-labels — `y3`'s own `extra {r}` never matches its `p @y1` triple
-constraint's predicate `p`, so `dep-extra-neg` never fires, and `S1` has
-no `not` at all, so `dep-shape-neg` never fires either (nor for any label
-outside `{y1,y2,y3}`, whose `shapeDef` is the referenceless
+(`X1 = ∅`), and `S1` has no negative dependency for any pair of labels.
+`y3`'s `extra {r}` never matches its `p @y1` triple constraint's
+predicate `p`, so `dep-extra-neg` never fires; `S1` has no `not`, so
+`dep-shape-neg` never fires either (nor for any label outside
+`{y1,y2,y3}`, whose `shapeDef` is the referenceless
 `.constraint (fun _ => False)`). -/
 theorem S1_wellDefined : S1.WellDefined := by
   refine ⟨?_, ?_⟩
@@ -68,9 +68,8 @@ theorem S2_not_wellDefined : ¬ S2.WellDefined := by
 /-- `S3` is not well-defined (Example 7): the cycle `y7, x2, x1` carries
 the negative dependency `dep-shape-neg(y7,x2)` (`y7 = not ⟨q@x2⟩`), and
 `x2` reaches back to `y7` via `dep-extends(x2,x1)` (`x2 extends x1`,
-symmetrized) followed by `dep(x1,y7)` (`x1`'s own `⟨p@y7⟩`) — "the cycle
-won't be present without the `dep-extends` relation" (paper's own remark).
--/
+symmetrized) followed by `dep(x1,y7)` (`x1`'s `⟨p@y7⟩`). The paper notes
+the cycle would not exist without the `dep-extends` relation. -/
 theorem S3_not_wellDefined : ¬ S3.WellDefined := by
   rintro ⟨-, hNC⟩
   apply hNC
@@ -95,16 +94,15 @@ namespace Examples
 open ShexLean.Inheritance (S1 S2 S3 renderDepG renderDepShapeNeg renderDepExtends)
 
 /-- Example 7's well-definedness verdicts for `S1`, `S2`, `S3`.
-`Schema.WellDefined` itself (`ExtAcyclic ∧ ¬NegCycle`, an unbounded
+`Schema.WellDefined` (`ExtAcyclic ∧ ¬NegCycle`, an unbounded
 `ReflTransGen`-reachability existential in its negative half) has no
-`Decidable` instance in this formalization — same situation as 2017's
+`Decidable` instance in this formalization, the same situation as 2017's
 `StratifiedNegation` (`ShexLean.Shex2017Schemas.examples.
-Example5_stratification`) — so the three headline verdicts still name their
+Example5_stratification`). So the three headline verdicts still name their
 witnessing theorems (`S1_wellDefined`/`S2_not_wellDefined`/
-`S3_not_wellDefined`), but every *sub*-fact each proof actually turns on
-(`dep`/`dep-shape-neg`/`dep-extends`) is a genuine `native_decide`
-computation, reusing Example 6's `renderDepG`/`renderDepShapeNeg`/
-`renderDepExtends`. -/
+`S3_not_wellDefined`), but every sub-fact each proof turns on
+(`dep`/`dep-shape-neg`/`dep-extends`) is a `native_decide` computation,
+reusing Example 6's `renderDepG`/`renderDepShapeNeg`/`renderDepExtends`. -/
 def inheritance2025WellDefined : Example where
   name := "inheritance2025-example7-well-defined"
   summary := "Well-definedness (Def. 6) verdicts for Example 6's S1/S2/S3."

@@ -56,7 +56,7 @@ theorem Schema.maximalCorrTyping_correct (S : Schema) (hClosed : S.Closed)
 
 /-- Definition 6 (`SHAPES_SEM`). Node `n` (of `G`) has shape `L` (from `S`)
 iff `(n, L) ∈ Typing(G, S)`, i.e. `(n, L)` belongs to the maximal correct
-t of `G` by `S` (Definition 5). -/
+typing of `G` by `S` (Definition 5). -/
 def Schema.ShapesSem (S : Schema) (hStrat : S.StratNeg)
     (G : Graph) (n : RDFNode) (L : Label) : Prop :=
   (n, L) ∈ S.maximalCorrTyping hStrat G

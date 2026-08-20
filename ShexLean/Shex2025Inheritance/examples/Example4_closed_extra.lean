@@ -4,13 +4,13 @@ import Example
 /-!
 Example 4 from the 2025 "Shape Expressions with Inheritance" paper (§4.1,
 Table 3 rule 17): the `closed`/`extra` modifiers, reusing Example 3's
-`M24`/`M246`/`M2a`/`M24a`/`τ_ex3` (`Example3_triple_match.lean`), but a
-*different* triple expression: `e = p @T_even ; p @T_lt5` (a bare
-two-element sequence, no `|`/`*` — unlike `e_ex3`, this one needs `M` to
-consist of *exactly* two triples once the shape's own `closed`/`extra`
-bookkeeping strips away anything not "consumed", which is exactly what
-this file exercises and Example 3 never did (a bare, unwrapped triple
-expression has no `closed`/`extra` to speak of at all).
+`M24`/`M246`/`M2a`/`M24a`/`τ_ex3` (`Example3_triple_match.lean`), but with
+a different triple expression: `e = p @T_even ; p @T_lt5`, a bare
+two-element sequence with no `|`/`*`. Unlike `e_ex3`, this needs `M` to
+consist of exactly two triples once the shape's `closed`/`extra`
+bookkeeping strips away anything not "consumed". Example 3's bare,
+unwrapped triple expression had no `closed`/`extra` to speak of, so this
+is the first file to exercise that bookkeeping.
 -/
 
 namespace ShexLean.Inheritance
@@ -19,10 +19,9 @@ namespace ShexLean.Inheritance
 def e_ex4 : TripleExpr := .seq (.tc "p" "T_even") (.tc "p" "T_lt5")
 
 /-- Any `M` satisfying a bare `e1;e2` sequence of two triple constraints
-has exactly two elements — each side of the split is forced to a singleton
-by `.tc`'s own semantics. The cardinality fact behind Example 4's negative
-claims (`M2a`/`M246` can't satisfy `e_ex4`, for unrelated reasons: `M2a`'s
-matching part is too small, `M246` itself is too big). -/
+has exactly two elements, since each side of the split is forced to a
+singleton by `.tc`'s semantics. Used by Example 4's negative claims:
+`M2a`'s matching part is too small, `M246` is too big. -/
 theorem seq_tc_tc_card_two {S : Schema} {G : Graph} {τ : Typing} {fuel : ℕ} {M : Finset Triple}
     {p1 : IRI} {z1 : Label} {p2 : IRI} {z2 : Label}
     (hSat : SatisfiesEFuel (fuel + 2) S G τ M (.seq (.tc p1 z1) (.tc p2 z2))) : M.card = 2 := by
@@ -136,12 +135,11 @@ theorem M24a_satisfies_extra :
   · decide
 
 /-- `M24a ∪ {(n,q,2)}, τ ⊨ extra {p} ⟨e⟩` (Example 4): the extra
-`q`-predicated triple is invisible to a non-closed shape (`q ∉
-props(e_ex4) = {p}`, so it is captured by neither `M^e` nor `M^{e'}` at
-all — Table 3 rule 17's `closed`/`extra` bookkeeping only ever inspects
-`M^{e'}`, whose own filter already excludes predicates outside
-`props(e)`). Contrasts with `M24a_q_not_satisfies_closed_extra` right
-below: adding `closed` is exactly what makes this same set fail. -/
+`q`-predicated triple is invisible to a non-closed shape, since `q ∉
+props(e_ex4) = {p}` and Table 3 rule 17's `closed`/`extra` bookkeeping
+only inspects `M^{e'}`, whose filter already excludes predicates outside
+`props(e)`. Contrast `M24a_q_not_satisfies_closed_extra` below, where
+adding `closed` makes this same set fail. -/
 theorem M24a_q_satisfies_extra :
     SatisfiesMFuel bigFuel S_ex5 default τ_ex3 (M24a ∪ {tp "q" (.lit (.int 2))})
       (.ofShape ⟨false, some {"p"}, e_ex4⟩) := by
@@ -203,9 +201,9 @@ open ShexLean.Inheritance (Shape e_ex4 M24 M246 M2a M24a S_ex5 τ_ex3 bigFuel n_
 open ShexLean (Triple Graph.render renderDecide)
 
 /-- `renderDecide`'s `native_decide`-computed verdict for `M ⊨ shape` under
-`S_ex5`/`τ_ex3` — every `.ofShape` argument below trivially satisfies `MOk`
+`S_ex5`/`τ_ex3`. Every `.ofShape` argument below trivially satisfies `MOk`
 (`.ofShape _ => True`), so no `XClosed`/`RestrOk` beyond the schema-level
-`S_ex5_XClosed`/`S_ex5_RestrOk` witnesses is ever needed. -/
+`S_ex5_XClosed`/`S_ex5_RestrOk` witnesses is needed. -/
 def satEx4 (M : Finset Triple) (h : Shape) : String :=
   renderDecide (satisfiesMFuel_decidable S_ex5 default τ_ex3 S_ex5_XClosed S_ex5_RestrOk
     bigFuel M (.ofShape h) trivial)
@@ -215,9 +213,9 @@ and `M24a_q_not_satisfies_closed_extra` reason about. -/
 def M24a_q : Finset Triple := M24a ∪ {tp "q" (.lit (.int 2))}
 
 /-- Example 4's `closed`/`extra` semantics, on Example 3's `M24`/`M246`/
-`M2a`/`M24a`. `graphText` is rendered from the real `Finset Triple` values;
-every `M ⊨ shape` claim in `typingText` is a `native_decide` computation via
-`satisfiesMFuel_decidable`, not prose. -/
+`M2a`/`M24a`. `graphText` is rendered from the actual `Finset Triple`
+values; every `M ⊨ shape` claim in `typingText` is a `native_decide`
+computation via `satisfiesMFuel_decidable`. -/
 def inheritance2025ClosedExtra : Example where
   name := "inheritance2025-example4-closed-extra"
   summary := "closed/extra modifiers (Table 3, rule 17) on M24/M246/M2a/M24a."

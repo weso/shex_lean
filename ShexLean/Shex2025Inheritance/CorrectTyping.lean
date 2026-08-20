@@ -22,7 +22,7 @@ def Schema.CorrectTyping (S : Schema) (G : Graph) (τ : Typing) : Prop :=
     (z ∉ S.A → Satisfies S G τ n (S.shapeDef z)) ∧
     (z ∈ S.A → ∃ x ∈ S.desc z \ S.A, Satisfies S G τ n (S.shapeDef x))
 
-/-- The empty typing is always correct (vacuously — it has no `(n,z)` pairs to check) -/
+/-- The empty typing is trivially correct: it has no `(n,z)` pairs to check. -/
 theorem Schema.correctTyping_empty (S : Schema) (G : Graph) : S.CorrectTyping G ∅ := by
   intro n z hz
   simp [Typing.has] at hz
