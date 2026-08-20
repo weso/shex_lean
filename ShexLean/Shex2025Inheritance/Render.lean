@@ -3,17 +3,16 @@ import ShexLean.Shex2017Schemas.Render
 import Mathlib.Data.Finset.Sort
 
 /-!
-Turns the *real* `Graph`/`Schema`/`Typing` values of an example into
-display text, and hand-typed `true`/`false`/prose claims into values
-computed via `ShexLean.Inheritance`'s `Decidable` instances
-(`satisfiesFuel_decidable`/`satisfiesMFuel_decidable`/
-`satisfiesEFuel_decidable`, `ShexLean/Shex2025Inheritance/Decidable.lean`).
+Renders `Graph`/`Schema`/`Typing` values as display text for worked
+examples, using the `Decidable` instances in
+`ShexLean/Shex2025Inheritance/Decidable.lean`
+(`satisfiesFuel_decidable`/`satisfiesMFuel_decidable`/`satisfiesEFuel_decidable`)
+to compute the `true`/`false` results.
 
-**`NodeConstraint := RDFNode → Prop` is opaque** (Def 1, unlike 2017's
+`NodeConstraint := RDFNode → Prop` is opaque (Def 1, unlike 2017's
 concrete `ValueDescr`), so `.constraint c` can't be rendered from `c`
-itself — every worked example's `.constraint` leaves are `Y`-labels
-referenced only via `Schema.render`'s own `<L> → …` line, so a generic
-placeholder is all a `.constraint` node ever needs to show on its own line.
+itself. Worked examples' `.constraint` leaves are `Y`-labels already shown
+via `Schema.render`'s `<L> → …` line, so a generic placeholder suffices.
 -/
 
 namespace ShexLean.Inheritance
@@ -40,13 +39,12 @@ def ShapeExpr.render : ShapeExpr → String
   | .and s1 s2 => s!"({s1.render} AND {s2.render})"
   | .not s => s!"NOT({s.render})"
 
-/-- `Schema.render`, one `<L> → def(L)` line per label in `Y ∪ X`
-(`shapeDef` is total, but only these labels are the schema's own — matching
-`ShexLean.Shex2017Schemas.Render`'s `Schema.render`). Sorted directly via
-`Finset.sort` (unlike `renderSorted`, which sorts *rendered strings* for
-types with no order of their own — `Label := String` already has one,
-and here each label `L` is still needed, not just its rendering, to look up
-`S.shapeDef L`/`L ∈ S.A`). -/
+/-- One `<L> → def(L)` line per label in `Y ∪ X` (`shapeDef` is total, but
+only these labels belong to the schema, matching
+`ShexLean.Shex2017Schemas.Render`'s `Schema.render`). Sorted via
+`Finset.sort` on the label itself, not via `renderSorted` (which sorts
+rendered strings), since the label `L` is still needed to look up
+`S.shapeDef L`/`L ∈ S.A`. -/
 def Schema.render (S : Schema) : String :=
   "\n".intercalate
     (((S.Y ∪ S.X).sort (· ≤ ·)).map

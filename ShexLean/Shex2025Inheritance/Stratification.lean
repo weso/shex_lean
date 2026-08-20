@@ -33,26 +33,23 @@ Inheritance" paper — the dependency graph `D_S` and well-defined schemas
 >   `dep-shape-neg` or `dep-extra-neg`. We say in this case that `S` is
 >   with stratified negation.
 
-Definition 5's four relations only ever need `@z'`-reference-collecting
-(`dep`, `dep-shape-neg`) or triple-constraint-property-collecting
-(`dep-extra-neg`) *inside a single label's own definition* — never a
-schema-wide reachability computation, unlike `H_S`'s edges. So (mirroring
-`ShexLean/Shex2017Schemas/Stratification.lean`'s `depsAux` for the 2017 formalism) a single
+Definition 5's four relations only need reference-collecting (`dep`,
+`dep-shape-neg`) or triple-constraint-property-collecting
+(`dep-extra-neg`) inside a single label's own definition, not a
+schema-wide reachability computation like `H_S`'s edges. So, mirroring
+`ShexLean/Shex2017Schemas/Stratification.lean`'s `depsAux`, a single
 recursive walk over `s = S.shapeDef z`, tracking whether the current
-position is under an odd number of `not`, computes all three relations'
-"target set" at once (`DepInfo` below) — `[closed][extra P]⟨e⟩` matches
-*either* a bare `.ofShape h` or the `h` embedded in an `.extends X h`
-(both are literally the same `Shape` grammar production, Definition 1),
-and — since `extends X h [and u]`'s `u` is a genuine sub-expression of
-`def(z)` too — the walk recurses through `or`/`and`/`not` uniformly,
-picking up every `[closed][extra P]⟨e⟩` reachable that way, regardless of
-whether it sits inside an `extends`'s own `h`, a restriction `u`, or a
-plain shape.
+position is under `not`, computes all three relations' target sets at
+once (`DepInfo` below). `[closed][extra P]⟨e⟩` matches either a bare
+`.ofShape h` or the `h` inside an `.extends X h` (same `Shape` grammar
+production, Definition 1); since `extends X h [and u]`'s `u` is itself a
+sub-expression of `def(z)`, the walk recurses through `or`/`and`/`not`
+uniformly to reach every `[closed][extra P]⟨e⟩`, whether inside an
+`extends`'s `h`, a restriction `u`, or a plain shape.
 
-Note `dep-extends_S` is *not* built from this walk at all — `H_S`'s edges
-(`Schema.extEdge`, `ShexLean/Shex2025Inheritance/Syntax.lean`) already capture
-exactly `extends X h`'s targets; `dep-extends_S(z,z')` is just that
-relation made symmetric.
+`dep-extends_S` is not built from this walk: `H_S`'s edges
+(`Schema.extEdge`, `Syntax.lean`) already capture `extends X h`'s targets,
+and `dep-extends_S(z,z')` is just that relation made symmetric.
 -/
 
 namespace ShexLean.Inheritance
@@ -85,44 +82,35 @@ instance : EmptyCollection DepInfo := ⟨⟨∅, ∅, ∅⟩⟩
 
 /-- The dependency info contributed by a single `[closed][extra P]⟨e⟩`
 shape (Definition 1's `h`), given whether it occurs under `not` (`neg`;
-see `ShapeExpr.depsAux`'s docstring for why this is "under *any* `not`",
-not literally "under an *odd number of* `not`" as Definition 5's own
-wording has it). -/
+see `ShapeExpr.depsAux`'s docstring for why this means "under any `not`",
+not literally "under an odd number of `not`" as Definition 5 states). -/
 def Shape.depInfo (h : Shape) (neg : Bool) : DepInfo :=
   { refs := h.triples.tcs.image Prod.snd
     negRefs := if neg then h.triples.tcs.image Prod.snd else ∅
     extraNegRefs := (h.triples.tcs.filter (fun pz => pz.1 ∈ h.extra.getD ∅)).image Prod.snd }
 
 /-- Definition 5's `sub-expr(def(z))`/`neg-sub-expr(def(z))` walk.
-`.extends`'s own extends-targets contribute nothing here (they are
-`dep-extends_S`'s concern, via `Schema.extEdge`, not this walk's).
+`.extends`'s own extends-targets contribute nothing here; they are
+`dep-extends_S`'s concern, via `Schema.extEdge`.
 
-**A deliberate deviation from Definition 5's literal wording**, worth
-flagging explicitly: the paper defines `neg-sub-expr(s)` as "sub-expressions
-that appear in `s` under an *odd number of occurrences* of `not`" — true
-parity, toggling on every `not`. Below, `neg` instead *latches*: once
-`true`, a further nested `not` leaves it `true` rather than flipping it
-back (`.not s => s.depsAux true`, ignoring the incoming `neg` rather than
-negating it). This is a strictly *more conservative* notion of "negative
-dependency" (it only ever classifies more things as negative, never fewer,
-since parity-`true` positions are a subset of latch-`true` positions) —
-every schema `well-defined` under the paper's literal parity reading
-remains so under this stricter one, so nothing already proved changes
-meaning, and it costs nothing for the schemas either paper actually
-exercises (their own examples never nest `not` under `not`, where the two
-readings first diverge). It's needed for `ShexLean/Shex2025Inheritance/
-Proposition1.lean`'s `stratMono`: mirroring 2017's own `not_negDeps`
-(`ShexLean/Shex2017Schemas/Proposition1.lean`, `S.posDeps ∪ S.negDeps ⊆ (.not S).negDeps`),
-`stratMono`'s `not` case needs *everything* reachable from inside a `not`
-— regardless of that content's own internal `not`-nesting — to already be
-accounted for by the outer call's `negRefs`, which is exactly what latching
-(and not true parity) guarantees: at `neg = true`, `negRefs = refs`
-*unconditionally*, by a clean structural induction, since latching never
-un-sets `neg` for the rest of the recursion. True-parity toggling does not
-have this property (two nested `not`s cancel back to positive, so the
-*outer* call's `negRefs` at that point would need to be empty, an
-insufficient bound for what the inner content, itself simply reused for a
-different stratMono step, would actually require). -/
+Deliberate deviation from Definition 5: the paper defines `neg-sub-expr(s)`
+by true parity of `not`-nesting, toggling on every `not`. Here `neg`
+latches instead: once `true`, a further nested `not` leaves it `true`
+(`.not s => s.depsAux true`, ignoring the incoming `neg` rather than
+negating it). This is a more conservative notion of "negative dependency"
+— it can only classify more things as negative, never fewer — so every
+schema well-defined under the paper's literal parity reading stays
+well-defined under this one; nothing already proved changes meaning, and
+the two readings agree on both papers' own examples (which never nest
+`not` under `not`).
+
+This is needed for `Proposition1.lean`'s `stratMono` (mirroring 2017's
+`not_negDeps`): its `not` case needs everything reachable from inside a
+`not`, regardless of that content's own `not`-nesting, to already be
+covered by the outer call's `negRefs`. Latching gives this for free: at
+`neg = true`, `negRefs = refs` unconditionally, by structural induction,
+since latching never un-sets `neg`. True-parity toggling does not have
+this property. -/
 def ShapeExpr.depsAux (neg : Bool) : ShapeExpr → DepInfo
   | .constraint _ => ∅
   | .ofShape h => h.depInfo neg
@@ -166,14 +154,12 @@ theorem ShapeExpr.negRefs_subset_refs (s : ShapeExpr) (neg : Bool) :
       exact Finset.union_subset_union (ih1 neg) (ih2 neg)
   | not s ih => simpa only [ShapeExpr.depsAux] using ih true
 
-/-- The latching payoff: at `neg = true`, `negRefs` is not just `⊆ refs`
-(`negRefs_subset_refs`) but *equal* to it, for *any* `s` — including one
-with further `not`s nested inside, since latching never un-sets `neg` for
-the rest of the recursion. This is what `stratMono`'s `.not` case
-(`ShexLean/Shex2025Inheritance/Proposition1.lean`) actually needs: the outer call's
-`negRefs` (at `neg = false`, i.e. `(.not s).depsAux false = s.depsAux
-true`) must bound *all* of `s`'s own references, not just the
-not-yet-further-negated ones. -/
+/-- At `neg = true`, `negRefs` is not just `⊆ refs` (`negRefs_subset_refs`)
+but equal to it, for any `s`, including one with further `not`s nested
+inside, since latching never un-sets `neg`. This is what `stratMono`'s
+`.not` case (`Proposition1.lean`) needs: the outer call's `negRefs` (at
+`neg = false`, i.e. `(.not s).depsAux false = s.depsAux true`) must bound
+all of `s`'s own references, not just the not-yet-further-negated ones. -/
 theorem ShapeExpr.negRefs_true_eq_refs (s : ShapeExpr) :
     (s.depsAux true).negRefs = (s.depsAux true).refs := by
   induction s with
@@ -223,10 +209,10 @@ The first of Definition 6's two conditions. -/
 def Schema.ExtAcyclic (S : Schema) : Prop :=
   ∀ x ∈ S.X, ¬ Relation.TransGen S.extEdge x x
 
-/-- Any `D_S` edge ("`z` depends on `z'`", the paper's own phrase right
-after Definition 5: "`dep` subsumes `dep-shape-neg`/`dep-extra-neg`", so
-following either the `dep` or `dep-extends` relation already covers every
-edge `D_S` can have, regardless of which of the four labels it carries). -/
+/-- Any `D_S` edge ("`z` depends on `z'`"). Since `dep` subsumes
+`dep-shape-neg`/`dep-extra-neg` (Definition 5's remark), following either
+`dep` or `dep-extends` already covers every edge `D_S` can have, regardless
+of which of the four labels it carries. -/
 def Schema.DEdge (S : Schema) (z z' : Label) : Prop := S.dep z z' ∨ S.depExtends z z'
 
 /-- A `D_S` edge carrying one of the two *negative* labels. -/

@@ -1,0 +1,17 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{k+kn}{mutual}
+\PYG{k+kn}{inductive}\PYG{+w}{ }\PYG{n}{ShExpr}\PYG{+w}{ }\PYG{k+kn}{where}
+\PYG{+w}{  }\PYG{n+nb+bp}{|}\PYG{+w}{ }\PYG{n}{valueDescr}\PYG{+w}{ }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{ValueDescr}\PYG{+w}{ }\PYG{n+nb+bp}{→}\PYG{+w}{ }\PYG{n}{ShExpr}
+\PYG{+w}{  }\PYG{n+nb+bp}{|}\PYG{+w}{ }\PYG{n}{neigDescr}\PYG{+w}{  }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{TExpr}\PYG{+w}{ }\PYG{n+nb+bp}{→}\PYG{+w}{ }\PYG{n}{ShExpr}
+\PYG{+w}{  }\PYG{n+nb+bp}{|}\PYG{+w}{ }\PYG{n}{and}\PYG{+w}{        }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{ShExpr}\PYG{+w}{ }\PYG{n+nb+bp}{→}\PYG{+w}{ }\PYG{n}{ShExpr}\PYG{+w}{ }\PYG{n+nb+bp}{→}\PYG{+w}{ }\PYG{n}{ShExpr}
+\PYG{+w}{  }\PYG{n+nb+bp}{|}\PYG{+w}{ }\PYG{n}{or}\PYG{+w}{         }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{ShExpr}\PYG{+w}{ }\PYG{n+nb+bp}{→}\PYG{+w}{ }\PYG{n}{ShExpr}\PYG{+w}{ }\PYG{n+nb+bp}{→}\PYG{+w}{ }\PYG{n}{ShExpr}
+\PYG{+w}{  }\PYG{n+nb+bp}{|}\PYG{+w}{ }\PYG{n}{not}\PYG{+w}{        }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{ShExpr}\PYG{+w}{ }\PYG{n+nb+bp}{→}\PYG{+w}{ }\PYG{n}{ShExpr}
+
+\PYG{k+kn}{inductive}\PYG{+w}{ }\PYG{n}{TExpr}\PYG{+w}{ }\PYG{k+kn}{where}
+\PYG{+w}{  }\PYG{n+nb+bp}{|}\PYG{+w}{ }\PYG{n}{tPattern}\PYG{+w}{ }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{PropSet}\PYG{+w}{ }\PYG{n+nb+bp}{→}\PYG{+w}{ }\PYG{n}{Label}\PYG{+w}{ }\PYG{n+nb+bp}{→}\PYG{+w}{ }\PYG{n}{TExpr}
+\PYG{+w}{  }\PYG{n+nb+bp}{|}\PYG{+w}{ }\PYG{n}{empty}\PYG{+w}{    }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{TExpr}
+\PYG{+w}{  }\PYG{n+nb+bp}{|}\PYG{+w}{ }\PYG{n}{someOf}\PYG{+w}{   }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{TExpr}\PYG{+w}{ }\PYG{n+nb+bp}{→}\PYG{+w}{ }\PYG{n}{TExpr}\PYG{+w}{ }\PYG{n+nb+bp}{→}\PYG{+w}{ }\PYG{n}{TExpr}
+\PYG{+w}{  }\PYG{n+nb+bp}{|}\PYG{+w}{ }\PYG{n}{eachOf}\PYG{+w}{   }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{TExpr}\PYG{+w}{ }\PYG{n+nb+bp}{→}\PYG{+w}{ }\PYG{n}{TExpr}\PYG{+w}{ }\PYG{n+nb+bp}{→}\PYG{+w}{ }\PYG{n}{TExpr}
+\PYG{+w}{  }\PYG{n+nb+bp}{|}\PYG{+w}{ }\PYG{n}{rep}\PYG{+w}{      }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{TExpr}\PYG{+w}{ }\PYG{n+nb+bp}{→}\PYG{+w}{ }\PYG{n}{Nat}\PYG{+w}{ }\PYG{n+nb+bp}{→}\PYG{+w}{ }\PYG{n}{Option}\PYG{+w}{ }\PYG{n}{Nat}\PYG{+w}{ }\PYG{n+nb+bp}{→}\PYG{+w}{ }\PYG{n}{TExpr}
+\PYG{k+kn}{end}
+\end{MintedVerbatim}

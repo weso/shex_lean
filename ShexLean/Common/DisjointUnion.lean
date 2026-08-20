@@ -5,10 +5,9 @@ Paper-independent disjoint-union helpers over `Finset Triple`, used by both
 papers' `⊨` (triple-expression matching) relations for their `;`/`*`
 constructs: 2017's Rules te-each-of/te-repet
 (`ShexLean/Shex2017Schemas/Semantics.lean`) and 2025's analogous Table 1
-rules (`ShexLean/Shex2025Inheritance/Semantics.lean`). Split out into its
-own file (originally lived at the top of the 2017 `Semantics.lean`) once
-the 2025 formalism needed it too, rather than having 2025 import all of
-2017's `Semantics.lean` just for these two definitions.
+rules (`ShexLean/Shex2025Inheritance/Semantics.lean`). Originally part of
+the 2017 `Semantics.lean`; split out so 2025 doesn't need to import all of
+`Semantics.lean` just for these two definitions.
 -/
 
 namespace ShexLean

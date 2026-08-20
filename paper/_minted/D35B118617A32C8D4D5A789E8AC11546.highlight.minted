@@ -1,0 +1,8 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{k+kn}{inductive}\PYG{+w}{ }\PYG{n}{TripleExpr}\PYG{+w}{ }\PYG{k+kn}{where}
+\PYG{+w}{  }\PYG{n+nb+bp}{|}\PYG{+w}{ }\PYG{n}{empty}\PYG{+w}{  }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{TripleExpr}
+\PYG{+w}{  }\PYG{n+nb+bp}{|}\PYG{+w}{ }\PYG{n}{tc}\PYG{+w}{ }\PYG{o}{(}\PYG{n}{p}\PYG{+w}{ }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{IRI}\PYG{o}{)}\PYG{+w}{ }\PYG{o}{(}\PYG{n}{z}\PYG{+w}{ }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{Label}\PYG{o}{)}\PYG{+w}{ }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{TripleExpr}
+\PYG{+w}{  }\PYG{n+nb+bp}{|}\PYG{+w}{ }\PYG{n}{choice}\PYG{+w}{ }\PYG{o}{(}\PYG{n}{e1}\PYG{+w}{ }\PYG{n}{e2}\PYG{+w}{ }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{TripleExpr}\PYG{o}{)}\PYG{+w}{ }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{TripleExpr}
+\PYG{+w}{  }\PYG{n+nb+bp}{|}\PYG{+w}{ }\PYG{n}{seq}\PYG{+w}{ }\PYG{o}{(}\PYG{n}{e1}\PYG{+w}{ }\PYG{n}{e2}\PYG{+w}{ }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{TripleExpr}\PYG{o}{)}\PYG{+w}{ }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{TripleExpr}
+\PYG{+w}{  }\PYG{n+nb+bp}{|}\PYG{+w}{ }\PYG{n}{star}\PYG{+w}{ }\PYG{o}{(}\PYG{n}{e}\PYG{+w}{ }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{TripleExpr}\PYG{o}{)}\PYG{+w}{ }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{TripleExpr}
+\end{MintedVerbatim}

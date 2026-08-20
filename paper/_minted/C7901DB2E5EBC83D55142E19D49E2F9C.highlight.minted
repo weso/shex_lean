@@ -1,0 +1,8 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{k+kn}{def}\PYG{+w}{ }\PYG{n}{DisjointUnion}\PYG{+w}{ }\PYG{o}{(}\PYG{n}{N}\PYG{+w}{ }\PYG{n}{N1}\PYG{+w}{ }\PYG{n}{N2}\PYG{+w}{ }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{Finset}\PYG{+w}{ }\PYG{n}{Triple}\PYG{o}{)}\PYG{+w}{ }\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{Prop}\PYG{+w}{ }\PYG{o}{:=}
+\PYG{+w}{  }\PYG{n}{Disjoint}\PYG{+w}{ }\PYG{n}{N1}\PYG{+w}{ }\PYG{n}{N2}\PYG{+w}{ }\PYG{n+nb+bp}{∧}\PYG{+w}{ }\PYG{n}{N}\PYG{+w}{ }\PYG{n+nb+bp}{=}\PYG{+w}{ }\PYG{n}{N1}\PYG{+w}{ }\PYG{n+nb+bp}{∪}\PYG{+w}{ }\PYG{n}{N2}
+
+\PYG{k+kn}{def}\PYG{+w}{ }\PYG{n}{DisjointUnionList}\PYG{+w}{ }\PYG{o}{(}\PYG{n}{N}\PYG{+w}{ }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{Finset}\PYG{+w}{ }\PYG{n}{Triple}\PYG{o}{)}
+\PYG{+w}{                      }\PYG{o}{(}\PYG{n}{Ns}\PYG{+w}{ }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{List}\PYG{+w}{ }\PYG{o}{(}\PYG{n}{Finset}\PYG{+w}{ }\PYG{n}{Triple}\PYG{o}{))}\PYG{+w}{ }\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{Prop}\PYG{+w}{ }\PYG{o}{:=}
+\PYG{+w}{  }\PYG{n}{Ns}\PYG{n+nb+bp}{.}\PYG{n}{Pairwise}\PYG{+w}{ }\PYG{n}{Disjoint}\PYG{+w}{ }\PYG{n+nb+bp}{∧}\PYG{+w}{ }\PYG{n}{N}\PYG{+w}{ }\PYG{n+nb+bp}{=}\PYG{+w}{ }\PYG{n}{Ns}\PYG{n+nb+bp}{.}\PYG{n}{foldr}\PYG{+w}{ }\PYG{o}{(}\PYG{n+nb+bp}{·}\PYG{+w}{ }\PYG{n+nb+bp}{∪}\PYG{+w}{ }\PYG{n+nb+bp}{·}\PYG{o}{)}\PYG{+w}{ }\PYG{n+nb+bp}{∅}
+\end{MintedVerbatim}

@@ -138,11 +138,11 @@ open Examples.StratificationExample (S₃ L1 L2 L3 Str)
 open ShexLean (Schema.render renderDecide DepNeg DepPos)
 
 /-- Example 5: `S₃` mixes `NOT` and recursion but is with stratified
-negation. `schemaText` generated from the real `S₃`; the four dependency
-edges are each a genuine `Decidable` (`DepNeg`/`DepPos`) computation.
-`S₃.StratNeg` itself (`Nonempty (Strat S₃)`) isn't
-decidable — same reason as Example 4 — so that claim still names the
-witnessing theorem/stratification. -/
+negation. `schemaText` is generated from the real `S₃`; the four
+dependency edges are each a `Decidable` (`DepNeg`/`DepPos`) computation.
+`S₃.StratNeg` itself (`Nonempty (Strat S₃)`) isn't decidable, for the same
+reason as Example 4, so that claim still names the witnessing
+theorem/stratification. -/
 def stratificationExample : Example where
   name := "schemas2017-example5-stratification"
   summary := "NOT + recursion, with stratified negation."

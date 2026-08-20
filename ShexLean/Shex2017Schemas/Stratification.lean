@@ -99,7 +99,7 @@ structure Strat (S : Schema) where
   mem_range : ∀ L ∈ S.labels, 1 ≤ str L ∧ str L ≤ k
   /-- If `dep⁻(L1, L2)`, then `str(L1) > str(L2)`. Scoped to `L1 ∈
   S.labels`, matching the paper: "the dependency graph of `S` is a graph
-  whose set of nodes is `L`" (§3.2) — `dep⁻`/`dep⁺` edges are only ever
+  whose set of nodes is `L`" (§3.2). `dep⁻`/`dep⁺` edges are only ever
   considered between declared labels. -/
   neg_strict : ∀ L1 ∈ S.labels, ∀ L2, DepNeg S L1 L2 → str L2 < str L1
   /-- If `dep⁺(L1, L2)`, then `str(L1) ≥ str(L2)`. Scoped to `L1 ∈
@@ -166,5 +166,79 @@ dependencies into `.not S`'s negative dependencies. -/
 theorem ShExpr.not_negDeps (S : ShExpr) :
     (ShExpr.not S).negDeps = S.posDeps ∪ S.negDeps := by
   simp only [ShExpr.negDeps, ShExpr.depsAux, ShExpr.depsAux_true S]
+
+/-! `AND`/`OR` (resp. `SomeOfExpr`/`EachOfExpr`) both just union their two
+operands' dependencies, since `depsAux` treats every one of these four
+constructors identically. Named so `Proposition1.lean`'s `agree`/`stratMono`
+proofs can restrict `hagree`/`hle` to a sub-expression by `rw`/`Finset.subset_union_left`
+instead of re-unfolding `depsAux` at every call site. -/
+
+theorem ShExpr.and_posDeps (S1 S2 : ShExpr) : (S1.and S2).posDeps = S1.posDeps ∪ S2.posDeps := rfl
+theorem ShExpr.and_negDeps (S1 S2 : ShExpr) : (S1.and S2).negDeps = S1.negDeps ∪ S2.negDeps := rfl
+theorem ShExpr.or_posDeps (S1 S2 : ShExpr) : (S1.or S2).posDeps = S1.posDeps ∪ S2.posDeps := rfl
+theorem ShExpr.or_negDeps (S1 S2 : ShExpr) : (S1.or S2).negDeps = S1.negDeps ∪ S2.negDeps := rfl
+theorem TExpr.someOf_posDeps (E1 E2 : TExpr) :
+    (E1.someOf E2).posDeps = E1.posDeps ∪ E2.posDeps := rfl
+theorem TExpr.someOf_negDeps (E1 E2 : TExpr) :
+    (E1.someOf E2).negDeps = E1.negDeps ∪ E2.negDeps := rfl
+theorem TExpr.eachOf_posDeps (E1 E2 : TExpr) :
+    (E1.eachOf E2).posDeps = E1.posDeps ∪ E2.posDeps := rfl
+theorem TExpr.eachOf_negDeps (E1 E2 : TExpr) :
+    (E1.eachOf E2).negDeps = E1.negDeps ∪ E2.negDeps := rfl
+
+/-! Two derived shapes of the above, exactly what `Proposition1.lean`'s
+`agree` and `stratMono` need at each binary constructor: `agree` restricts
+`hagree` from a whole `posDeps ∪ negDeps` set to an operand's, `stratMono`
+restricts `hle : _.negDeps ⊆ Lo` the same way. -/
+
+theorem ShExpr.and_deps_subset_left (S1 S2 : ShExpr) :
+    S1.posDeps ∪ S1.negDeps ⊆ (S1.and S2).posDeps ∪ (S1.and S2).negDeps := by
+  rw [ShExpr.and_posDeps, ShExpr.and_negDeps]
+  exact Finset.union_subset_union Finset.subset_union_left Finset.subset_union_left
+theorem ShExpr.and_deps_subset_right (S1 S2 : ShExpr) :
+    S2.posDeps ∪ S2.negDeps ⊆ (S1.and S2).posDeps ∪ (S1.and S2).negDeps := by
+  rw [ShExpr.and_posDeps, ShExpr.and_negDeps]
+  exact Finset.union_subset_union Finset.subset_union_right Finset.subset_union_right
+theorem ShExpr.or_deps_subset_left (S1 S2 : ShExpr) :
+    S1.posDeps ∪ S1.negDeps ⊆ (S1.or S2).posDeps ∪ (S1.or S2).negDeps := by
+  rw [ShExpr.or_posDeps, ShExpr.or_negDeps]
+  exact Finset.union_subset_union Finset.subset_union_left Finset.subset_union_left
+theorem ShExpr.or_deps_subset_right (S1 S2 : ShExpr) :
+    S2.posDeps ∪ S2.negDeps ⊆ (S1.or S2).posDeps ∪ (S1.or S2).negDeps := by
+  rw [ShExpr.or_posDeps, ShExpr.or_negDeps]
+  exact Finset.union_subset_union Finset.subset_union_right Finset.subset_union_right
+theorem TExpr.someOf_deps_subset_left (E1 E2 : TExpr) :
+    E1.posDeps ∪ E1.negDeps ⊆ (E1.someOf E2).posDeps ∪ (E1.someOf E2).negDeps := by
+  rw [TExpr.someOf_posDeps, TExpr.someOf_negDeps]
+  exact Finset.union_subset_union Finset.subset_union_left Finset.subset_union_left
+theorem TExpr.someOf_deps_subset_right (E1 E2 : TExpr) :
+    E2.posDeps ∪ E2.negDeps ⊆ (E1.someOf E2).posDeps ∪ (E1.someOf E2).negDeps := by
+  rw [TExpr.someOf_posDeps, TExpr.someOf_negDeps]
+  exact Finset.union_subset_union Finset.subset_union_right Finset.subset_union_right
+theorem TExpr.eachOf_deps_subset_left (E1 E2 : TExpr) :
+    E1.posDeps ∪ E1.negDeps ⊆ (E1.eachOf E2).posDeps ∪ (E1.eachOf E2).negDeps := by
+  rw [TExpr.eachOf_posDeps, TExpr.eachOf_negDeps]
+  exact Finset.union_subset_union Finset.subset_union_left Finset.subset_union_left
+theorem TExpr.eachOf_deps_subset_right (E1 E2 : TExpr) :
+    E2.posDeps ∪ E2.negDeps ⊆ (E1.eachOf E2).posDeps ∪ (E1.eachOf E2).negDeps := by
+  rw [TExpr.eachOf_posDeps, TExpr.eachOf_negDeps]
+  exact Finset.union_subset_union Finset.subset_union_right Finset.subset_union_right
+
+theorem ShExpr.and_negDeps_subset_left (S1 S2 : ShExpr) :
+    S1.negDeps ⊆ (S1.and S2).negDeps := ShExpr.and_negDeps S1 S2 ▸ Finset.subset_union_left
+theorem ShExpr.and_negDeps_subset_right (S1 S2 : ShExpr) :
+    S2.negDeps ⊆ (S1.and S2).negDeps := ShExpr.and_negDeps S1 S2 ▸ Finset.subset_union_right
+theorem ShExpr.or_negDeps_subset_left (S1 S2 : ShExpr) :
+    S1.negDeps ⊆ (S1.or S2).negDeps := ShExpr.or_negDeps S1 S2 ▸ Finset.subset_union_left
+theorem ShExpr.or_negDeps_subset_right (S1 S2 : ShExpr) :
+    S2.negDeps ⊆ (S1.or S2).negDeps := ShExpr.or_negDeps S1 S2 ▸ Finset.subset_union_right
+theorem TExpr.someOf_negDeps_subset_left (E1 E2 : TExpr) :
+    E1.negDeps ⊆ (E1.someOf E2).negDeps := TExpr.someOf_negDeps E1 E2 ▸ Finset.subset_union_left
+theorem TExpr.someOf_negDeps_subset_right (E1 E2 : TExpr) :
+    E2.negDeps ⊆ (E1.someOf E2).negDeps := TExpr.someOf_negDeps E1 E2 ▸ Finset.subset_union_right
+theorem TExpr.eachOf_negDeps_subset_left (E1 E2 : TExpr) :
+    E1.negDeps ⊆ (E1.eachOf E2).negDeps := TExpr.eachOf_negDeps E1 E2 ▸ Finset.subset_union_left
+theorem TExpr.eachOf_negDeps_subset_right (E1 E2 : TExpr) :
+    E2.negDeps ⊆ (E1.eachOf E2).negDeps := TExpr.eachOf_negDeps E1 E2 ▸ Finset.subset_union_right
 
 end ShexLean

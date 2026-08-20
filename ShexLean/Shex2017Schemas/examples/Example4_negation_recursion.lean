@@ -117,8 +117,8 @@ not enough for a sound semantics, and `S₂` is not with stratified negation.
 the real `S₂`/`G₂`/`typing5`/`typing6` values; `DepNeg`'s two edges are
 likewise computed (it *is* `Decidable`). `S₂.StratNeg` itself
 (`Nonempty (Strat S₂)`, an existential over stratification
-*functions*) genuinely isn't decidable, so that one claim still just names
-the theorem proving it. -/
+*functions*) isn't decidable, so that claim still just names the theorem
+proving it. -/
 def negationRecursion : Example where
   name := "schemas2017-example4-negation-recursion"
   summary := "NOT + mutual recursion: two contradicting typings, not stratified."

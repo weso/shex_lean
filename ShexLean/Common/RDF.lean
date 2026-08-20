@@ -19,8 +19,8 @@ abbrev IRI := String
 /-- The set `Blank` of blank node identifiers. -/
 abbrev BNodeId := String
 
-/-- The set `Lit` of RDF literals. Minimal to start with; extend with more
-datatypes (langtag strings, decimals, dates, ...) as they become needed. -/
+/-- The set `Lit` of RDF literals: strings and integers. Extend with more
+datatypes (langtag strings, decimals, dates, ...) as needed. -/
 inductive Literal where
   | str : String → Literal
   | int : Int → Literal
@@ -34,30 +34,21 @@ inductive RDFNode where
   deriving DecidableEq, Repr
 
 /-- An RDF *subject*: `IRI ∪ Blank`, i.e. an `RDFNode` that isn't a literal.
-The paper's own grammar box (§1) already draws this distinction — "An RDF
-graph is a set of triples over `IRI ∪ Blank × IRI × IRI ∪ Lit ∪ Blank`" —
-but the original `Triple` below didn't enforce it: `RDFNode` includes
-`.lit`, so nothing prevented constructing an ill-formed triple with a
-literal subject. `Subject` makes that unrepresentable. -/
+The paper's grammar restricts triples to `(IRI ∪ Blank) × IRI × (IRI ∪ Lit ∪ Blank)`
+(§1); `Subject` makes a literal subject unrepresentable at the type level. -/
 inductive Subject where
   | iri   : IRI → Subject
   | bnode : BNodeId → Subject
   deriving DecidableEq, Repr
 
-/-- Every subject is in particular an RDF node (used, via the `Coe`
-instance below, wherever a subject is compared against/passed as a general
-`RDFNode` — e.g. `Graph.nodes`, `neigh`, or a shape-satisfaction query,
-which may ask about a literal that can never be *anyone's* subject). -/
+/-- Every subject is in particular an RDF node. -/
 def Subject.toNode : Subject → RDFNode
   | .iri i => .iri i
   | .bnode b => .bnode b
 
 instance : Coe Subject RDFNode := ⟨Subject.toNode⟩
 
-/-- The partial converse: an `RDFNode` is a `Subject` iff it isn't a
-literal. Used wherever some *other* representation of a graph only tracks
-"the node," but needs to rebuild an actual `Triple` — e.g.
-`ShexLean.InductiveRDF.Graph`'s `TContext.toTriples`. -/
+/-- The partial converse: an `RDFNode` is a `Subject` iff it isn't a literal. -/
 def RDFNode.toSubject? : RDFNode → Option Subject
   | .iri i => some (.iri i)
   | .bnode b => some (.bnode b)
@@ -72,9 +63,7 @@ constructors, each preserving the payload). -/
 theorem Subject.toNode_inj {s1 s2 : Subject} (h : (s1 : RDFNode) = (s2 : RDFNode)) : s1 = s2 := by
   cases s1 <;> cases s2 <;> simp_all [Subject.toNode]
 
-/-- A triple `(s, p, o) ∈ (IRI ∪ Blank) × IRI × (IRI ∪ Lit ∪ Blank)` — `s`'s
-type (`Subject`, not `RDFNode`) rules out a literal subject at the type
-level; `o` is unrestricted, matching the grammar box. -/
+/-- A triple `(s, p, o) ∈ (IRI ∪ Blank) × IRI × (IRI ∪ Lit ∪ Blank)`. -/
 structure Triple where
   subj : Subject
   pred : IRI
@@ -88,9 +77,9 @@ abbrev Graph := Finset Triple
 def Graph.nodes (G : Graph) : Finset RDFNode :=
   G.image (fun t => (t.subj : RDFNode)) ∪ G.image Triple.obj
 
-/-- `neigh_G(n)`: the triples of `G` that have `n` as subject.
- `n` ranges over all of `RDFNode` (not just `Subject`), since the neighbourhood of a
-literal is well-defined too — always `∅`, as no triple can have a literal subject. -/
+/-- `neigh_G(n)`: the triples of `G` that have `n` as subject. `n` ranges over
+all of `RDFNode`, not just `Subject`: the neighbourhood of a literal is
+well-defined too, always `∅`. -/
 def neigh (G : Graph) (n : RDFNode) : Finset Triple :=
   G.filter (fun t => (t.subj : RDFNode) = n)
 

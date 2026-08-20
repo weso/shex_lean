@@ -12,15 +12,15 @@ introduces a new graph `G₃`, alongside `S₃` from Example 5
 `Satisfies`/`Matches` are `Prop`s over infinite types (`RDFNode`, `IRI :=
 String`), so Algorithm 2 itself was never literally executable via
 `Satisfies`/`Matches` as *stated* (per `ShexLean.Shex2017Schemas.
-Semantics`'s own module docstring) — but `ShexLean.Shex2017Schemas.Decidable`
-now provides genuine, kernel-reducible `Decidable` instances for both,
-bounding every existential to the finite graph/typing at hand. This file
-proves Example 6's headline claim the traditional way, at the level of the
+Semantics`'s own module docstring). `ShexLean.Shex2017Schemas.Decidable`
+now provides kernel-reducible `Decidable` instances for both, bounding
+every existential to the finite graph/typing at hand. This file proves
+Example 6's headline claim the traditional way, at the level of the
 declarative semantics (`⊢`/`⊨`, Fig. 2): `t = {(ex:n1,<L1>),
 (ex:n2,<L2>), (ex:n3,<L3>)}` is a correct typing of `G₃` by `S₃`
-(`typing_correct`) — and the `Example` at the bottom additionally *runs*
-that same claim via `native_decide`, rather than only asserting it in
-prose. Example 7's execution trace of `prove(ex:n1,<L1>,[])` on this same
+(`typing_correct`). The `Example` at the bottom additionally runs that
+same claim via `native_decide`, rather than only asserting it in prose.
+Example 7's execution trace of `prove(ex:n1,<L1>,[])` on this same
 `G₃`/`S₃` (`Example7_trace.lean`) reuses every definition here.
 -/
 
@@ -48,8 +48,8 @@ def t4 : Triple := ⟨n3, c, n2⟩
 def G₃ : Graph := {t1, t2, t3, t4}
 
 -- The same shape-label aliases as `Examples.StratificationExample` (same
--- string values, so `S₃.shapeDef` — defined there against *its own*
--- `L1`/`L2`/`L3`/`Str` — unfolds against these identically).
+-- string values, so `S₃.shapeDef`, defined there against its own
+-- `L1`/`L2`/`L3`/`Str`, unfolds against these identically).
 def L1 : Label := "L1"
 def L2 : Label := "L2"
 def L3 : Label := "L3"

@@ -1,0 +1,57 @@
+\section{Representing RDF data in Lean} \label{sec:rdf_in_lean}
+
+This section introduces the Lean declarations used throughout the paper.
+Lean 4 provides three constructs for defining types, all used below:
+\lean{structure} defines a record type, a fixed set of named fields
+grouped into one value (analogous to a class with only data members);
+\lean{inductive} defines a type by an exhaustive list of constructors,
+each optionally carrying arguments, so a value of the type is built from
+exactly one of the listed cases (this is how ShEx's abstract syntax and
+semantic rules are represented as data, in Sections~\ref{sec:shex_lean}
+and~\ref{sec:semantics_lean}); and \lean{abbrev} introduces a transparent
+name for an existing type, used purely for readability. \lean{Finset}~$\alpha$,
+from Lean's Mathlib library, is the type of finite sets of elements of
+type $\alpha$.
+
+We define an RDF graph as a finite set of RDF triples:
+
+\begin{leanlisting} 
+ abbrev Graph := Finset Triple
+\end{leanlisting} 
+
+where a \lean{Triple} is a structure:
+
+\begin{leanlisting}
+structure Triple where
+  subj : Subject
+  pred : IRI
+  obj  : RDFNode
+\end{leanlisting}
+
+such that an \lean{RDFNode} is either an IRI, a literal or a blank node:
+\begin{leanlisting}
+inductive RDFNode where
+  | iri   : IRI → RDFNode
+  | lit   : Literal → RDFNode
+  | bnode : BNodeId → RDFNode
+
+inductive Subject where
+  | iri   : IRI → Subject
+  | bnode : BNodeId → Subject
+\end{leanlisting}
+
+where IRI, Literal and BNodeId have a simplified definition as:
+\begin{leanlisting}
+abbrev IRI := String
+abbrev BNodeId := String  
+inductive Literal where
+  | str : String → Literal
+  | int : Int → Literal
+\end{leanlisting}
+
+A typing is a finite set of pairs of RDF nodes and shape labels:
+\begin{leanlisting}
+abbrev Assoc  := RDFNode × Label
+abbrev Typing := Finset Assoc
+\end{leanlisting}
+
