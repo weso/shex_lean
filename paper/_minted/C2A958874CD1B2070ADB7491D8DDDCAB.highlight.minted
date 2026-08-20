@@ -1,4 +1,0 @@
-\begin{MintedVerbatim}[commandchars=\\\{\}]
-\PYG{k+kn}{abbrev}\PYG{+w}{ }\PYG{n}{Assoc}\PYG{+w}{  }\PYG{o}{:=}\PYG{+w}{ }\PYG{n}{RDFNode}\PYG{+w}{ }\PYG{n+nb+bp}{×}\PYG{+w}{ }\PYG{n}{Label}
-\PYG{k+kn}{abbrev}\PYG{+w}{ }\PYG{n}{Typing}\PYG{+w}{ }\PYG{o}{:=}\PYG{+w}{ }\PYG{n}{Finset}\PYG{+w}{ }\PYG{n}{Assoc}
-\end{MintedVerbatim}

@@ -1,7 +1,0 @@
-\begin{MintedVerbatim}[commandchars=\\\{\}]
-\PYG{k+kn}{def}\PYG{+w}{ }\PYG{n}{Algorithm1}\PYG{+w}{ }\PYG{o}{(}\PYG{n}{G}\PYG{+w}{ }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{Graph}\PYG{o}{)}\PYG{+w}{ }\PYG{o}{(}\PYG{n}{S}\PYG{+w}{ }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{Schema}\PYG{o}{)}\PYG{+w}{ }\PYG{o}{(}\PYG{n}{str}\PYG{+w}{ }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{Strat}\PYG{+w}{ }\PYG{n}{S}\PYG{o}{)}\PYG{+w}{ }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{Typing}\PYG{+w}{ }\PYG{o}{:=}
-\PYG{+w}{  }\PYG{n}{refineAlg}\PYG{+w}{ }\PYG{n}{S}\PYG{+w}{ }\PYG{n}{str}\PYG{n+nb+bp}{.}\PYG{n}{str}\PYG{+w}{ }\PYG{n}{G}\PYG{+w}{ }\PYG{n}{str}\PYG{n+nb+bp}{.}\PYG{n}{k}
-
-\PYG{k+kn}{theorem}\PYG{+w}{ }\PYG{n}{algorithm1\PYGZus{}correct}\PYG{+w}{ }\PYG{o}{(}\PYG{n}{G}\PYG{+w}{ }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{Graph}\PYG{o}{)}\PYG{+w}{ }\PYG{o}{(}\PYG{n}{S}\PYG{+w}{ }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{Schema}\PYG{o}{)}\PYG{+w}{ }\PYG{o}{(}\PYG{n}{str}\PYG{+w}{ }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{Strat}\PYG{+w}{ }\PYG{n}{S}\PYG{o}{)}
-\PYG{+w}{    }\PYG{o}{(}\PYG{n}{hClosed}\PYG{+w}{ }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{S}\PYG{n+nb+bp}{.}\PYG{n}{Closed}\PYG{o}{)}\PYG{+w}{ }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{Algorithm1}\PYG{+w}{ }\PYG{n}{G}\PYG{+w}{ }\PYG{n}{S}\PYG{+w}{ }\PYG{n}{str}\PYG{+w}{ }\PYG{n+nb+bp}{=}\PYG{+w}{ }\PYG{n}{MTyping}\PYG{+w}{ }\PYG{n}{G}\PYG{+w}{ }\PYG{n}{S}\PYG{+w}{ }\PYG{n}{str}
-\end{MintedVerbatim}

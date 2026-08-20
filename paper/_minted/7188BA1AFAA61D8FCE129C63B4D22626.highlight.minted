@@ -1,6 +1,0 @@
-\begin{MintedVerbatim}[commandchars=\\\{\}]
-\PYG{k+kn}{def}\PYG{+w}{ }\PYG{n}{SatisfiesFuel}\PYG{+w}{ }\PYG{o}{:}\PYG{+w}{ }\PYG{o}{(}\PYG{n}{Fuel}\PYG{+w}{ }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{ℕ}\PYG{o}{)}\PYG{+w}{ }\PYG{n+nb+bp}{→}\PYG{+w}{ }\PYG{n}{Schema}\PYG{+w}{ }\PYG{n+nb+bp}{→}\PYG{+w}{ }\PYG{n}{Graph}\PYG{+w}{ }\PYG{n+nb+bp}{→}\PYG{+w}{ }\PYG{n}{Typing}\PYG{+w}{ }\PYG{n+nb+bp}{→}\PYG{+w}{ }\PYG{n}{RDFNode}\PYG{+w}{ }\PYG{n+nb+bp}{→}
-\PYG{+w}{    }\PYG{n}{ShapeExpr}\PYG{+w}{ }\PYG{n+nb+bp}{→}\PYG{+w}{ }\PYG{k+kt}{Prop}
-\PYG{+w}{  }\PYG{n+nb+bp}{|}\PYG{+w}{ }\PYG{l+m+mi}{0}\PYG{o}{,}\PYG{+w}{ }\PYG{n+nb+bp}{\PYGZus{}}\PYG{o}{,}\PYG{+w}{ }\PYG{n+nb+bp}{\PYGZus{}}\PYG{o}{,}\PYG{+w}{ }\PYG{n+nb+bp}{\PYGZus{}}\PYG{o}{,}\PYG{+w}{ }\PYG{n+nb+bp}{\PYGZus{}}\PYG{o}{,}\PYG{+w}{ }\PYG{n+nb+bp}{\PYGZus{}}\PYG{+w}{ }\PYG{n+nb+bp}{=\PYGZgt{}}\PYG{+w}{ }\PYG{n}{False}
-\PYG{+w}{  }\PYG{n+nb+bp}{...}
-\end{MintedVerbatim}

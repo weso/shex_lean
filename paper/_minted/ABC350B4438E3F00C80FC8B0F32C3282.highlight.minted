@@ -1,6 +1,0 @@
-\begin{MintedVerbatim}[commandchars=\\\{\}]
-\PYG{k+kn}{structure}\PYG{+w}{ }\PYG{n}{Triple}\PYG{+w}{ }\PYG{k+kn}{where}
-\PYG{+w}{  }\PYG{n}{subj}\PYG{+w}{ }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{Subject}
-\PYG{+w}{  }\PYG{n}{pred}\PYG{+w}{ }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{IRI}
-\PYG{+w}{  }\PYG{n}{obj}\PYG{+w}{  }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{RDFNode}
-\end{MintedVerbatim}
