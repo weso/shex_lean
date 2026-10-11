@@ -22,7 +22,7 @@
 *.snm
 *.vrb
 
-paper/_minted/
+_minted/
 
 # Springer/LNCS class files are licensed, not ours to redistribute —
 # each of paper/ and slides/ expects its own local copy.
