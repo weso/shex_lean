@@ -1,9 +1,14 @@
 # Formalizing Shape Expressions in Lean 4
 
 A Lean 4 formalization of [ShEx (Shape Expressions)](https://shex.io/), the
+<<<<<<< HEAD
 schema language for validating RDF graphs. 
 
 This repository formalizes **two** papers and contains some experiments about RDF and ShEx:
+=======
+schema language for validating RDF graphs. This repository formalizes two
+papers, side by side, each in its own directory and Lean namespace:
+>>>>>>> f34a08bef2152d9c04055c292b791d2fba8474cf
 
 > Iovka Boneva, Jose Emilio Labra Gayo, Eric Prud'hommeaux,
 > *"Semantics and Validation of Shapes Schemas for RDF"*, ISWC 2017.
@@ -23,6 +28,7 @@ expression syntax, satisfaction relations, and for 2017 a full
 soundness/completeness proof for two validation algorithms), not a
 production ShEx validator. The repository also contains the LaTeX source
 of a paper describing this formalization — see [`paper/`](paper/).
+<<<<<<< HEAD
 
 A third directory, `ShexLean/Shex2026InheritanceDisjunction/`, is an
 **exploration**, not a third paper: it asks whether the 2025 paper's own
@@ -32,24 +38,32 @@ ambiguity — could be relaxed while keeping the same correctness results.
 It's a copy of `Shex2025Inheritance/` with that one restriction lifted and
 a fix for the ambiguity designed and proved sound; see "What's implemented
 (2026 exploration)" below.
+=======
+>>>>>>> f34a08bef2152d9c04055c292b791d2fba8474cf
 
 ## Repository structure
 
 ```
 ShexLean/
   Common/                 -- vocabulary shared by both papers (RDF, Typing, ...)
+<<<<<<< HEAD
   InductiveRDF/               -- an alternative RDF graph representation,
                                 investigated (see "Decidability" below) as a
                                 possible route to decidability and kept as a
                                 proved-correct but non-load-bearing detour
+=======
+>>>>>>> f34a08bef2152d9c04055c292b791d2fba8474cf
   Shex2017Schemas/         -- 2017 paper: syntax, semantics, algorithms, decidability
     examples/               -- worked examples from the paper
   Shex2025Inheritance/     -- 2025 paper: syntax, semantics, algorithm, decidability
     examples/               -- worked examples from the paper
+<<<<<<< HEAD
   Shex2026InheritanceDisjunction/ -- exploration: 2025's §6 "extends on a
                                 disjunction" relaxation, same shape as
                                 Shex2025Inheritance/ (syntax through
                                 decidability/renderer)
+=======
+>>>>>>> f34a08bef2152d9c04055c292b791d2fba8474cf
 examples/                 -- shex_lean CLI infrastructure (paper-agnostic)
 paper/                    -- LaTeX source of the accompanying paper
 ```
@@ -116,6 +130,7 @@ and `Common/Typing.lean` unchanged.
 - `Shex2025Inheritance/Decidable.lean`, `Render.lean` — see "Decidability".
 - `Shex2025Inheritance/examples/` — every numbered example from the paper,
   same structure as the 2017 side.
+<<<<<<< HEAD
 
 ## What's implemented (2026 exploration: disjunctive `extends`)
 
@@ -194,6 +209,8 @@ anywhere in the directory.**
   rejected — for every possible witness, not just the ones tried, since
   `f3_not_satisfies_ColouredCircle` is a genuine non-existence proof, not
   an omission.
+=======
+>>>>>>> f34a08bef2152d9c04055c292b791d2fba8474cf
 
 ## CLI infrastructure (`examples/`)
 

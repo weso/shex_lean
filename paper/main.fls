@@ -1,7 +1,7 @@
-PWD /home/labra/src/lean/shex_lean_kgswc_paper/shex_lean/paper
+PWD /home/labra/src/lean/shex_lean/paper
 INPUT /home/linuxbrew/.linuxbrew/Cellar/texlive/20260301/share/texmf-dist/web2c/texmf.cnf
 INPUT /home/linuxbrew/.linuxbrew/Cellar/texlive/20260301/share/texmf-var/web2c/xetex/xelatex.fmt
-INPUT /home/labra/src/lean/shex_lean_kgswc_paper/shex_lean/paper/main.tex
+INPUT /home/labra/src/lean/shex_lean/paper/main.tex
 OUTPUT main.log
 INPUT /home/linuxbrew/.linuxbrew/Cellar/texlive/20260301/share/texmf-dist/tex/latex/llncs/llncs.cls
 INPUT /home/linuxbrew/.linuxbrew/Cellar/texlive/20260301/share/texmf-dist/tex/latex/llncs/llncs.cls

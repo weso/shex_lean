@@ -5,7 +5,7 @@ worked schema/graph/typing examples (`Examples.Example`).
 
 Unlike `Example` (whose schema/graph/typing text is a hand-written summary
 in paper notation), a `ProofItem` is shown by reading its Lean source
-straight from `path` at runtime — the displayed proof can never drift from
+straight from `path` at runtime: the displayed proof can never drift from
 the one `lake build` actually checks.
 -/
 
