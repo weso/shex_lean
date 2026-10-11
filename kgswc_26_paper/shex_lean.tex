@@ -38,7 +38,13 @@ inductive TExpr where
 end
 \end{leanlisting}
 
-A value description \lean{ValueDescr} is a finite subset of RDF nodes, 
- and a \lean{PropSet} is a subset of properties (IRIs).
+A value description \lean{ValueDescr} is a finite set of \lean{ValueItem}s (IRIs, literals or any blank
+node), and a \lean{PropSet} is a subset of properties (IRIs).
 
-
+The encoding simplifies~\cite{BGP17,ShExInheritance} in a few points that
+do not affect the proofs: IRIs, blank nodes and labels are strings, and
+literals are restricted to strings and integers; 
+\lean{shapeDef} is total, so closure of the schema (\lean{Closed}) is an explicit hypothesis; 
+ in the inheritance formalism, acyclicity of \lean{extends} (\lean{ExtAcyclic}),
+invariant (*) (\lean{WellFormedExtra}) and the absence of \lean{extends}
+under \lean{not} (\lean{NotIsExtendsFree}) are also explicit hypotheses.

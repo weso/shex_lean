@@ -143,6 +143,23 @@ The appendix proof of Proposition 1 in the paper states the fix for this:
 an invariant it calls "(*)": a shape's triple-constraint properties 
 never overlap its own \lean{extra} set. 
 That definition was not defined as a standalone definition 
-in the main text: we named it explicitly as \lean{Schema.WellFormedExtra} and 
+in the main text: 
+we named it explicitly as \lean{Schema.WellFormedExtra} and 
 added it as a hypothesis to Proposition 1, Lemma 2 and Algorithm 1 of the inheritance formalism.
+
+%\begin{table}[t]\centering\scriptsize
+%\caption{Results formalized and gaps found.}\label{tab:summary}
+%\begin{tabular}{lccl}
+%\hline
+%Result & 2017~\cite{BGP17} & Inheritance~\cite{ShExInheritance} & Gap found \\
+%\hline
+%Lemma 1 (neg.-free max.\ typing) & \checkmark & -- & -- \\
+%Proposition 1 & \checkmark & \checkmark & closure (\lean{Closed}); (*) as \lean{WellFormedExtra} \\
+%Lemma 2 & \checkmark & \checkmark & proof only sketched; full proof supplied \\
+%Algorithm 1 (refine) & \checkmark & \checkmark & -- \\
+%Algorithm 2 (prove) & \checkmark & not yet & -- \\
+%Termination of $\vdash$ & n/a & \checkmark & rank function made explicit \\
+%\hline
+%\end{tabular}
+%\end{table}
 
