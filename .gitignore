@@ -2,6 +2,10 @@
 .lake/
 /.lake
 
+# cache and other artifacts produced by Lean's Lake build tool
+.lake/
+/.lake
+
 # LaTeX build artifacts (paper/, slides/)
 *.aux
 *.log

@@ -109,10 +109,26 @@ def eachOfDecidableAux (G : Graph) (t : Typing) (N : Finset Triple) (E1 E2 : TEx
     (@Finset.decidableExistsAndFinset (Finset Triple) N.powerset _ hd1)
 
 /-- `Matches _ N (repExact E k)` is decidable given `E`'s own decidability
+<<<<<<< HEAD
+(at every possible sub-neighbourhood, not just `N` — the `.eachOf`
+unfolding at each step of the chain needs it at a new `Finset` each time),
+by structural recursion on `k` alone: `repExact E (k+1) = .eachOf E
+(repExact E k)` routes through the same bounded-`N.powerset` search as
+`.eachOf`'s own case below.
+
+Inlined directly (rather than factored through a shared `.eachOf` helper)
+so the compiler can specialize each recursive call to its own concrete
+`E`/`repExact E k`: routing this through an opaque, non-recursive helper
+taking the sub-decidability witnesses as plain function arguments defeats
+that specialization and made this exponential-search decidability
+instance unusably slow in practice on worked examples with several
+nested `.rep`/`.eachOf`/`AND` — direct self-recursive calls only. -/
+=======
 at every possible sub-neighbourhood, not just `N` (the `.eachOf` unfolding
 at each step of the chain needs it at a new `Finset` each time), by
 structural recursion on `k`: `repExact E (k+1) = .eachOf E (repExact E k)`
 routes through `eachOfDecidableAux`. -/
+>>>>>>> f34a08bef2152d9c04055c292b791d2fba8474cf
 def repExactDecidableAux (G : Graph) (t : Typing) (E : TExpr)
     (hE : ∀ N' : Finset Triple, Decidable (Matches G t N' E)) :
     ∀ (k : ℕ) (N : Finset Triple), Decidable (Matches G t N (repExact E k))
