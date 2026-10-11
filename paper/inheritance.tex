@@ -125,14 +125,24 @@ For example, Table 3's \lean{extra} rule is
 growing the typing can move a triple out of the "extra-covered" bucket and 
 into the main triple-expression match, which can break a bare 
 (non-starred) triple constraint that needed an exact singleton. 
-We checked a concrete instance of this directly in Lean: 
-a shape with \lean{extra := some \{p\}} and
-\lean{triples := p @z}, satisfied under a typing $\tau_1$, provably
-\emph{stops} being satisfied under a strictly larger $\tau_2 \supseteq
-\tau_1$. 
+For instance, let node $n$ have two triples $t_1=(n,p,o_1)$ and
+$t_2=(n,p,o_2)$, and let $h$ be a shape with \lean|closed := false|, 
+\lean{extra := some {p}} and 
+\lean{triples := p @z}.
+Under $\tau_1=\{(o_1,z)\}$, $t_1$ matches \lean|p @z| and 
+$t_2$ is covered by \lean|extra|, 
+so $n$ satisfies $h$. Under $\tau_2=\tau_1\cup\{(o_2,z)\}$
+both triples must match \lean|p @z|, which accepts exactly one, 
+so $n$ no
+longer satisfies $h$ although $\tau_1 \subseteq \tau_2$.
+% We checked a concrete instance of this directly in Lean: 
+% a shape with \lean{extra := some \{p\}} and
+% \lean{triples := p @z}, satisfied under a typing $\tau_1$, provably
+% \emph{stops} being satisfied under a strictly larger $\tau_2 \supseteq \tau_1$. 
 The appendix proof of Proposition 1 in the paper states the fix for this: 
 an invariant it calls "(*)": a shape's triple-constraint properties 
-never overlap its own \lean{extra} set. That definition was not defined as a standalone definition 
+never overlap its own \lean{extra} set. 
+That definition was not defined as a standalone definition 
 in the main text: we named it explicitly as \lean{Schema.WellFormedExtra} and 
-added it as a hypothesis everywhere Proposition 1 and its descendants need it.
+added it as a hypothesis to Proposition 1, Lemma 2 and Algorithm 1 of the inheritance formalism.
 

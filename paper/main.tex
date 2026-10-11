@@ -65,21 +65,20 @@
 %
 \begin{document}
 %
-\title{Automated formal verification of ShEx with Lean}
+\title{Towards automated formal verification of ShEx with Lean}
 %
-%\titlerunning{Abbreviated paper title}
+\titlerunning{Towards Formal Verification of ShEx with Lean}
 % If the paper title is too long for the running head, you can set
 % an abbreviated paper title here
 %
-% \author{Jose Emilio Labra Gayo\inst{1}\orcidID{0000-0001-8907-5348}} 
+\author{Jose Emilio Labra Gayo\inst{1}\orcidID{0000-0001-8907-5348} 
+   \and Eric Prud'hommeaux\orcidID{0000-0003-1775-9921}} 
 %
-% \authorrunning{Jose E. Labra et al.}
+\authorrunning{Jose E. Labra et al.}
 % First names are abbreviated in the running head.
 % If there are more than two authors, 'et al.' is used.
 %
-%\institute{WESO Lab \and
-%University of Oviedo, Spain
-%\email{labra@uniovi.es}}
+\institute{WESO Lab, University of Oviedo, Spain, \email{labra@uniovi.es} \and \email{eric@uu3.org}}
 %
 \maketitle              % typeset the header of the contribution
 %
@@ -88,10 +87,11 @@ Validation of RDF data is a key task for the Semantic Web and Knowledge Graphs.
 Shape Expressions (ShEx) is a popular language for RDF validation 
  that has been presented with a formal semantics in several academic papers.
 We present a Lean 4 representation of ShEx based on two papers
-that can be used to verify the correctness of the language and the validation algorithms
-presented in those papers. 
-The development of this encoding can be useful to safely 
-extend the language with new features.
+%that can be used to verify the correctness of the language and the validation algorithms
+%presented in those papers. 
+with machine-checked proofs of the main semantic results and of the validation algorithms
+ presented in those papers, within a simplified model of RDF.
+The development of this encoding can help to extend the language with new features.
 
 \keywords{RDF \and ShEx \and Shape Expressions}
 \end{abstract}
