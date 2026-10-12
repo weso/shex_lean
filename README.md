@@ -33,7 +33,6 @@ ShexLean/
   Shex2025Inheritance/     -- 2025 paper: syntax, semantics, algorithm, decidability
     examples/               -- worked examples from the paper
 examples/                 -- shex_lean CLI infrastructure (paper-agnostic)
-paper/                    -- LaTeX source of the accompanying paper
 ```
 
 `ShexLean.lean` imports every non-example file, so `lake build ShexLean`
