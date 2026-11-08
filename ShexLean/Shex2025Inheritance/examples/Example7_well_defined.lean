@@ -2,28 +2,34 @@ import ShexLean.Shex2025Inheritance.examples.Example6_dependency_graph
 import Example
 
 /-!
-Example 7 from the 2025 "Shape Expressions with Inheritance" paper (§4.2,
-Def. 6): well-definedness verdicts for `S1`, `S2`, `S3` from Example 6
-(`Example6_dependency_graph.lean`), checked against Definition 6
-(`Schema.WellDefined`, `ShexLean/Shex2025Inheritance/Stratification.lean`).
-`S1` is well-defined: its only cycles, `y1↔y2` and `y1,y3`, carry no
-negative dependency. `S2` is not: the cycle `y4,y5` carries the negative
-`dep-shape-neg(y5,y4)`. `S3` is not: the cycle `y7,x2,x1`, which needs
-`dep-extends` (symmetrized) to get from `x2` back to `x1`, carries the
-negative `dep-shape-neg(y7,x2)`. The cycle in `S3` would not exist
-without the `dep-extends` relation; this illustrates that extension and
-negation cannot be arbitrarily interleaved.
+Example 7 from the 2025 paper "Shape Expressions with Inheritance" (§4.2,
+Def. 6): the well-definedness results for `S1`, `S2` and `S3` of
+Example 6 (`Example6_dependency_graph.lean`). The checks use Definition 6
+(`Schema.WellDefined`, in
+`ShexLean/Shex2025Inheritance/Stratification.lean`).
+
+* `S1` is well-defined. Its only cycles, `y1↔y2` and `y1,y3`, have no
+  negative dependency.
+* `S2` is not well-defined. The cycle `y4,y5` has the negative dependency
+  `dep-shape-neg(y5,y4)`.
+* `S3` is not well-defined. The cycle `y7,x2,x1` has the negative
+  dependency `dep-shape-neg(y7,x2)`. This cycle needs `dep-extends`
+  (made symmetric) to go from `x2` back to `x1`.
+
+Without the `dep-extends` relation, the cycle in `S3` does not exist. This
+shows that you cannot mix extension and negation in all possible ways.
 -/
 
 namespace ShexLean.Inheritance
 
-/-- `S1` is well-defined (Example 7): `H_{S1}` is trivially acyclic
-(`X1 = ∅`), and `S1` has no negative dependency for any pair of labels.
-`y3`'s `extra {r}` never matches its `p @y1` triple constraint's
-predicate `p`, so `dep-extra-neg` never fires; `S1` has no `not`, so
-`dep-shape-neg` never fires either (nor for any label outside
-`{y1,y2,y3}`, whose `shapeDef` is the referenceless
-`.constraint (fun _ => False)`). -/
+/-- `S1` is well-defined (Example 7). `H_{S1}` is trivially acyclic
+(`X1 = ∅`), and `S1` has no negative dependency for any pair of labels:
+
+* The `extra {r}` of `y3` never matches the predicate `p` of its triple
+  constraint `p @y1`. Thus, `dep-extra-neg` never applies.
+* `S1` has no `not`. Thus, `dep-shape-neg` also never applies. (This is
+  also true for each label outside `{y1,y2,y3}`, whose `shapeDef` is
+  `.constraint (fun _ => False)`, which has no references.) -/
 theorem S1_wellDefined : S1.WellDefined := by
   refine ⟨?_, ?_⟩
   · have hX : S1.X = (∅ : Finset Label) := rfl
@@ -49,10 +55,10 @@ theorem S1_wellDefined : S1.WellDefined := by
           · simp [hz1, hz2, hz3, ShapeExpr.depsAux]
     exact hDNeg.elim (hnoNeg a b).1 (hnoNeg a b).2
 
-/-- `S2` is not well-defined (Example 7): the cycle `y4, y5` carries the
-negative dependency `dep-shape-neg(y5,y4)` (`y5 = not ⟨q@y4⟩`), and `y4`
-reaches back to `y5` directly via `dep(y4,y5)` (`y4`'s own `⟨p@y5⟩`
-disjunct). -/
+/-- `S2` is not well-defined (Example 7). The cycle `y4, y5` has the
+negative dependency `dep-shape-neg(y5,y4)` (`y5 = not ⟨q@y4⟩`). `y4` goes
+back to `y5` directly through `dep(y4,y5)` (the disjunct `⟨p@y5⟩` of
+`y4`). -/
 theorem S2_not_wellDefined : ¬ S2.WellDefined := by
   rintro ⟨-, hNC⟩
   apply hNC
@@ -65,11 +71,11 @@ theorem S2_not_wellDefined : ¬ S2.WellDefined := by
   · show "y5" ∈ ((S2.shapeDef "y4").depsAux false).refs
     rw [hy4shape]; decide
 
-/-- `S3` is not well-defined (Example 7): the cycle `y7, x2, x1` carries
-the negative dependency `dep-shape-neg(y7,x2)` (`y7 = not ⟨q@x2⟩`), and
-`x2` reaches back to `y7` via `dep-extends(x2,x1)` (`x2 extends x1`,
-symmetrized) followed by `dep(x1,y7)` (`x1`'s `⟨p@y7⟩`). The paper notes
-the cycle would not exist without the `dep-extends` relation. -/
+/-- `S3` is not well-defined (Example 7). The cycle `y7, x2, x1` has the
+negative dependency `dep-shape-neg(y7,x2)` (`y7 = not ⟨q@x2⟩`). `x2` goes
+back to `y7` through `dep-extends(x2,x1)` (`x2 extends x1`, made
+symmetric) and then `dep(x1,y7)` (the `⟨p@y7⟩` of `x1`). The paper says
+that the cycle does not exist without the `dep-extends` relation. -/
 theorem S3_not_wellDefined : ¬ S3.WellDefined := by
   rintro ⟨-, hNC⟩
   apply hNC
@@ -93,19 +99,22 @@ namespace Examples
 
 open ShexLean.Inheritance (S1 S2 S3 renderDepG renderDepShapeNeg renderDepExtends)
 
-/-- Example 7's well-definedness verdicts for `S1`, `S2`, `S3`.
-`Schema.WellDefined` (`ExtAcyclic ∧ ¬NegCycle`, an unbounded
-`ReflTransGen`-reachability existential in its negative half) has no
-`Decidable` instance in this formalization, the same situation as 2017's
-`StratifiedNegation` (`ShexLean.Shex2017Schemas.examples.
-Example5_stratification`). So the three headline verdicts still name their
-witnessing theorems (`S1_wellDefined`/`S2_not_wellDefined`/
-`S3_not_wellDefined`), but every sub-fact each proof turns on
-(`dep`/`dep-shape-neg`/`dep-extends`) is a `native_decide` computation,
-reusing Example 6's `renderDepG`/`renderDepShapeNeg`/`renderDepExtends`. -/
+/-- The well-definedness results of Example 7 for `S1`, `S2` and `S3`.
+
+`Schema.WellDefined` is `ExtAcyclic ∧ ¬NegCycle`. Its negative part is an
+unbounded existential over `ReflTransGen` reachability. It has no
+`Decidable` instance in this formalization. This is the same as
+`StratifiedNegation` of 2017
+(`ShexLean.Shex2017Schemas.examples.Example5_stratification`).
+
+Thus, the three main results still give the names of the theorems that
+are their witnesses (`S1_wellDefined`, `S2_not_wellDefined` and
+`S3_not_wellDefined`). But each sub-fact that a proof uses (`dep`,
+`dep-shape-neg` and `dep-extends`) is a `native_decide` computation, with
+`renderDepG`, `renderDepShapeNeg` and `renderDepExtends` of Example 6. -/
 def inheritance2025WellDefined : Example where
   name := "inheritance2025-example7-well-defined"
-  summary := "Well-definedness (Def. 6) verdicts for Example 6's S1/S2/S3."
+  summary := "Well-definedness results (Def. 6) for S1, S2 and S3 of Example 6."
   schemaText := "(S1/S2/S3 as in inheritance2025-example6-dependency-graph)"
   graphText := "(Example 7 is purely about well-definedness, no RDF graph of its own.)"
   typingText :=

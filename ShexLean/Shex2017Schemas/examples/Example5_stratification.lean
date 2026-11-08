@@ -4,11 +4,11 @@ import ShexLean.Shex2017Schemas.Render
 import Example
 
 /-!
-Example 5 from Boneva, Labra Gayo, Prud'hommeaux (2017), illustrating
+Example 5 from Boneva, Labra Gayo, Prud'hommeaux (2017). It shows
 Definition 3 ("schema with stratified negation",
-`ShexLean.Strat.Schema.StratNeg`) on a schema that mixes
-`NOT` and recursion, but *is* stratified (unlike `S₂` from Example 4,
-`Examples.NegationRecursion`).
+`ShexLean.Strat.Schema.StratNeg`) on a schema that has `NOT` and
+recursion. This schema *is* stratified. (`S₂` from Example 4,
+`Examples.NegationRecursion`, is not.)
 
 ```
 <L1> → NOT(ex:a @<L2> ; ex:b @<Str>)      <L3> → ex:c @<L2>
@@ -21,9 +21,9 @@ Definition 3 ("schema with stratified negation",
 > only, so the schema is stratified. [...] One possible stratification is
 > `<L1>` on stratum 2 and the other three shape labels on stratum 1.
 
-Example 5 introduces no RDF graph of its own (it is purely about Definition
-3); a graph exercising `S₃` appears later, in Example 6 (§4.2 of the paper),
-which is out of scope here.
+Example 5 has no RDF graph. It is only about Definition 3. Example 6
+(§4.2 of the paper, `Example6_prove_motivation.lean`) gives a graph for
+`S₃`.
 -/
 
 namespace Examples.StratificationExample
@@ -49,14 +49,14 @@ private abbrev L2Def : ShExpr := .neigDescr (.tPattern {c} L3)
 /-- `<L3> → ex:c @<L2>`. -/
 private abbrev L3Def : ShExpr := .neigDescr (.tPattern {c} L2)
 
-/-- `<Str> → xsd:string`, stood in (as elsewhere, e.g. `ShexLean.Examples`)
-by a placeholder literal, since Example 5 has no accompanying graph to
-size the set against. -/
+/-- `<Str> → xsd:string`. A placeholder literal replaces `xsd:string` (as
+in other files, for example `ShexLean.Examples`). Example 5 has no graph
+that can give the literals for the set. -/
 private abbrev StrDef : ShExpr := .valueDescr {.lit (.str "placeholder")}
 
-/-- The schema `S₃` from Example 5. Written with an explicit `if`-chain
-(rather than the `|`-pattern style used elsewhere) so that `S₃.shapeDef`'s
-case split is directly available to `simp` in the proofs below. -/
+/-- The schema `S₃` from Example 5. It uses an explicit `if` chain, and not
+the `|` pattern style of other files. Thus, `simp` can use the case split
+of `S₃.shapeDef` directly in the proofs below. -/
 abbrev S₃ : Schema where
   labels := {L1, L2, L3, Str}
   shapeDef := fun L =>
@@ -86,11 +86,12 @@ theorem depPos_L2_L3 : DepPos S₃ L2 L3 := by rw [DepPos, shapeDef_L2]; decide
 /-- `dep⁺(<L3>, <L2>)`. -/
 theorem depPos_L3_L2 : DepPos S₃ L3 L2 := by rw [DepPos, shapeDef_L3]; decide
 
-/-- The stratification from the paper: `<L1>` on stratum 2, the other three
-labels on stratum 1. -/
+/-- The stratification from the paper: `<L1>` is on stratum 2, and the
+other three labels are on stratum 1. -/
 private def str1 : Label → ℕ := fun L => if L = L1 then 2 else 1
 
-/-- `S₃` is with stratified negation (Definition 3), witnessed by `str1`. -/
+/-- `S₃` is with stratified negation (Definition 3). The witness is
+`str1`. -/
 theorem S₃_stratified : S₃.StratNeg := by
   refine ⟨2, str1, ?_, ?_, ?_⟩
   · intro L hL
@@ -137,15 +138,18 @@ namespace Examples
 open Examples.StratificationExample (S₃ L1 L2 L3 Str)
 open ShexLean (Schema.render renderDecide DepNeg DepPos)
 
-/-- Example 5: `S₃` mixes `NOT` and recursion but is with stratified
-negation. `schemaText` is generated from the real `S₃`; the four
-dependency edges are each a `Decidable` (`DepNeg`/`DepPos`) computation.
-`S₃.StratNeg` itself (`Nonempty (Strat S₃)`) isn't decidable, for the same
-reason as Example 4, so that claim still names the witnessing
-theorem/stratification. -/
+/-- Example 5: `S₃` has `NOT` and recursion, but it is with stratified
+negation.
+
+* `schemaText` is generated from the real `S₃`.
+* Each of the four dependency edges is a `Decidable` computation
+  (`DepNeg` or `DepPos`).
+* `S₃.StratNeg` (`Nonempty (Strat S₃)`) is not decidable, for the same
+  reason as in Example 4. Thus, for this claim, the text gives the name of
+  the theorem and of the stratification that are the witness. -/
 def stratificationExample : Example where
   name := "schemas2017-example5-stratification"
-  summary := "NOT + recursion, with stratified negation."
+  summary := "NOT and recursion, with stratified negation."
   schemaText := Schema.render S₃
   graphText :=
     "(none — Example 5 illustrates Definition 3 on the schema alone;\n" ++

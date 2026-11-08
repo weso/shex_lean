@@ -6,20 +6,29 @@ import Mathlib.Logic.Relation
 
 /-!
 Definitions 1–3 (§3) of Boneva, Labra Gayo, Prud'hommeaux, Thornton,
-Waagmeester (2025), "Shape Expressions with Inheritance" (arXiv:2503.24299)
-— the syntax of shape expressions with inheritance, ShEx schemas, and the
-extension hierarchy.
+Waagmeester (2025), "Shape Expressions with Inheritance"
+(arXiv:2503.24299). These definitions give:
 
-This is a separate formalism from `ShexLean.Syntax` (the 2017 paper's
-`ShapeExpr`/`TripleExpr`), not a strict extension of it: node constraints
-are now an arbitrary boolean predicate rather than a concrete `ValueDescr`,
-`closed`/`extra` are first-class shape modifiers rather than the 2017
-encoding trick, and `extends` is new. It lives in its own
-`ShexLean.Inheritance` namespace to avoid clashing with the 2017
-definitions, while reusing the paper-independent RDF/typing vocabulary
-unchanged: `ShexLean.RDF` (`IRI`, `RDFNode`, `Triple`, `Graph`, `neigh`)
-and `ShexLean.Typing` (`Label`, `Assoc`, `Typing`, `Typing.has`) — a
-"typing of `G` by `S`" is the same notion in both papers.
+* The syntax of shape expressions with inheritance.
+* ShEx schemas.
+* The extension hierarchy.
+
+This formalism is different from `ShexLean.Syntax` (the `ShapeExpr` and
+`TripleExpr` of the 2017 paper). It is not a strict extension of it:
+
+* A node constraint is a Boolean predicate, not a concrete `ValueDescr`.
+* `closed` and `extra` are shape modifiers in the syntax. In 2017, they
+  were an encoding.
+* `extends` is new.
+
+It is in its own namespace, `ShexLean.Inheritance`, so that its names do
+not conflict with the 2017 definitions. It uses, with no change, the RDF
+and typing vocabulary that does not depend on a paper:
+
+* `ShexLean.RDF` (`IRI`, `RDFNode`, `Triple`, `Graph`, `neigh`).
+* `ShexLean.Typing` (`Label`, `Assoc`, `Typing`, `Typing.has`).
+
+A "typing of `G` by `S`" has the same meaning in the two papers.
 
 > Definition 1 (shape expressions). Let Y be a finite set of simple labels
 > and X be a finite set of extendable labels disjoint from Y. A shape
@@ -36,35 +45,37 @@ and `ShexLean.Typing` (`Label`, `Assoc`, `Typing`, `Typing.has`) — a
 > where z ∈ Y ∪ X, X ⊆ X, p ∈ IRI, P ⊆ IRI, the symbol 'ε' is a constant,
 > and the symbols '@', '|', '*' and ';' are operators.
 
-A reference `@z` is not modelled as its own `ShapeExpr` constructor.
-Definition 1's grammar for `u` (what a schema's `def` maps labels into)
-has no `@z` alternative — references occur only nested inside a triple
-constraint `p @z` (`TripleExpr.tc`), where Table 2's rule 10
-(`@z: (n,z) ∈ τ`) is a typing lookup with no further recursion, matching
-Rule te-tpattern's `typing.has obj L` in the 2017 formalization
-(`ShexLean/Shex2017Schemas/Semantics.lean`). It is inlined directly into
-`TripleExpr.tc`'s satisfaction rule in `Semantics.lean`.
+A reference `@z` is not a `ShapeExpr` constructor. The grammar of `u` in
+Definition 1 has no `@z` alternative. (A schema's `def` maps labels to
+`u`.) A reference occurs only inside a triple constraint `p @z`
+(`TripleExpr.tc`). There, rule 10 of Table 2 (`@z: (n,z) ∈ τ`) is a typing
+lookup with no more recursion. This agrees with `typing.has obj L` of Rule
+te-tpattern in the 2017 formalization
+(`ShexLean/Shex2017Schemas/Semantics.lean`). `Semantics.lean` puts it
+directly in the satisfaction rule of `TripleExpr.tc`.
 
-The `t ::= extends X h .` production has no `[and u]` field: a label's
-optional restriction after `extends X h and u` (Definition 2's prose) is
-the generic `u and u` production with the first operand being `t`, i.e.
-`ShapeExpr.and (ShapeExpr.extends X h) u`. `ShapeExpr.extTe`/
-`ShapeExpr.restrOf` below extract the paper's `ext-te(x)`/`restr(x)`
-notations (Table 3, rule 18) from either the bare `extends X h` or the
-`(extends X h) and u` shape.
+The production `t ::= extends X h .` has no `[and u]` field. In the text
+of Definition 2, a label can have an optional restriction:
+`extends X h and u`. This is the general production `u and u`, where the
+first operand is `t`. Thus, it is
+`ShapeExpr.and (ShapeExpr.extends X h) u`. `ShapeExpr.extTe` and
+`ShapeExpr.restrOf` below get the `ext-te(x)` and `restr(x)` of the paper
+(Table 3, rule 18) from the two forms: `extends X h` and
+`(extends X h) and u`.
 -/
 
 namespace ShexLean.Inheritance
 
-/-- Def 1's node constraint `c`: "a boolean function over
-IRI ∪ Blank ∪ Literal", i.e. over `RDFNode`. Left fully abstract, matching
-the paper (unlike the 2017 formalization's concrete `ValueDescr`). -/
+/-- The node constraint `c` of Def 1: "a boolean function over
+IRI ∪ Blank ∪ Literal". Thus, it is a function over `RDFNode`. It is fully
+abstract, as in the paper. (The 2017 formalization uses a concrete
+`ValueDescr`.) -/
 abbrev NodeConstraint := RDFNode → Prop
 
-/-- Def 1's triple expression grammar,
+/-- The grammar of triple expressions of Def 1:
 `e ::= ε | p @z | e|e | e;e | e*`. `tc p z` is the triple constraint
-`p @z`; `z` ranges over `Label` (reused from `ShexLean.Typing`), i.e.
-over `Y ∪ X` for whichever schema the expression belongs to. -/
+`p @z`. `z` is a `Label` (from `ShexLean.Typing`). Thus, it is in `Y ∪ X`
+for the schema of the expression. -/
 inductive TripleExpr where
   | empty : TripleExpr
   | tc (p : IRI) (z : Label) : TripleExpr
@@ -73,8 +84,8 @@ inductive TripleExpr where
   | star (e : TripleExpr) : TripleExpr
   deriving DecidableEq
 
-/-- The triple-constraint sub-expressions of `e` (the paper's `tcs(e)`),
-represented as `(property, target label)` pairs. -/
+/-- The triple-constraint sub-expressions of `e` (`tcs(e)` in the paper),
+as pairs `(property, target label)`. -/
 def TripleExpr.tcs : TripleExpr → Finset (IRI × Label)
   | .empty => ∅
   | .tc p z => {(p, z)}
@@ -82,22 +93,23 @@ def TripleExpr.tcs : TripleExpr → Finset (IRI × Label)
   | .seq e1 e2 => e1.tcs ∪ e2.tcs
   | .star e => e.tcs
 
-/-- The properties used in `e`'s triple constraints (the paper's
-`props(e)`). -/
+/-- The properties of the triple constraints of `e` (`props(e)` in the
+paper). -/
 def TripleExpr.props (e : TripleExpr) : Finset IRI := e.tcs.image Prod.fst
 
-/-- Def 1's shape `h ::= [closed] [extra P] ⟨e⟩`. `extra := none` when
-absent (so `P' = ∅` in Table 3's rule 17), `extra := some P` when present. -/
+/-- The shape `h ::= [closed] [extra P] ⟨e⟩` of Def 1. `extra := none` when
+there is no `extra` (thus, `P' = ∅` in rule 17 of Table 3).
+`extra := some P` when there is one. -/
 structure Shape where
   closed : Bool
   extra  : Option (Finset IRI)
   triples : TripleExpr
   deriving DecidableEq
 
-/-- Def 1's shape expression grammar (`u`/`t`/`c`/boolean connectives),
-i.e. everything a schema's `def` can map a label to. See the module
-docstring for why `@z` is not a constructor and why `extends` has no
-`restr` field of its own. -/
+/-- The grammar of shape expressions of Def 1 (`u`, `t`, `c` and the
+Boolean connectives). This is all that the `def` of a schema can map a
+label to. Refer to the module docstring to know why `@z` is not a
+constructor, and why `extends` has no `restr` field. -/
 inductive ShapeExpr where
   | ofShape (h : Shape) : ShapeExpr
   | extends (xs : Finset Label) (h : Shape) : ShapeExpr
@@ -106,18 +118,19 @@ inductive ShapeExpr where
   | and (s1 s2 : ShapeExpr) : ShapeExpr
   | not (s : ShapeExpr) : ShapeExpr
 
-/-- The labels named after `extends`, anywhere in `s` (recursing through
-`or`/`and`/`not`, not just the top level). Used to build the extension
-hierarchy `H_S` (Definition 3).
+/-- The labels after `extends`, at any location in `s`. The recursion goes
+through `or`, `and` and `not`, not only the top level. The extension
+hierarchy `H_S` (Definition 3) uses this function.
 
-Definition 3's prose only describes a label's outermost
-`extends X h [and u]` clause, but the grammar does not confine `extends`
-to that position: `u` can contain a further nested `extends`, and Table 3's
-rule 18 (`Semantics.lean`) fires on any `.extends` node it reaches.
-Recursing through the whole tree, as `ShapeExpr.depsAux`
-(`Stratification.lean`) already does for references, is needed so
-`Schema.extEdge`/`H_S`/`D_S` track every `extends` the evaluator can
-dereference, including ones nested inside a `Y`-label's definition. -/
+The text of Definition 3 describes only the outermost
+`extends X h [and u]` clause of a label. But the grammar does not keep
+`extends` only at that location. `u` can contain a nested `extends`, and
+rule 18 of Table 3 (`Semantics.lean`) applies to each `.extends` node that
+it gets to. Thus, the function must go through the full tree, as
+`ShapeExpr.depsAux` (`Stratification.lean`) already does for references.
+Then `Schema.extEdge`, `H_S` and `D_S` record each `extends` that the
+evaluator can dereference. This includes an `extends` nested in the
+definition of a `Y` label. -/
 def ShapeExpr.extendsTargets : ShapeExpr → Finset Label
   | .extends xs _ => xs
   | .constraint _ => ∅
@@ -126,30 +139,36 @@ def ShapeExpr.extendsTargets : ShapeExpr → Finset Label
   | .and s1 s2 => s1.extendsTargets ∪ s2.extendsTargets
   | .not s => s.extendsTargets
 
-/-- `ext-te(x)`: assuming `def(x) = extends X h [and u]`, the triple
-expression of `h` (Table 3's discussion before rule 18). Junk value
-(`.empty`) when `s` is not of that form — only ever meaningful for `x`
-with `s = S.shapeDef x` and `x` a well-formed extendable label
-(`Schema.WellFormedX` below). -/
+/-- `ext-te(x)`: if `def(x) = extends X h [and u]`, the triple expression
+of `h` (Table 3, the discussion before rule 18). If `s` does not have this
+form, the result is a junk value (`.empty`). The result has a meaning only
+for `x` with `s = S.shapeDef x`, where `x` is a well-formed extendable
+label (`Schema.WellFormedX` below). -/
 def ShapeExpr.extTe : ShapeExpr → TripleExpr
   | .extends _ h => h.triples
   | .and (.extends _ h) _ => h.triples
   | _ => .empty
 
-/-- `restr(x)`: assuming `def(x) = extends X h [and u]`, the optional `u`
-(`none` if the `and u` part is absent, matching "whenever it exists" in
-the paper's prose). Junk value (`none`) when `s` is not of that form. -/
+/-- `restr(x)`: if `def(x) = extends X h [and u]`, the optional `u`. The
+result is `none` if there is no `and u` part. This agrees with "whenever
+it exists" in the text of the paper. If `s` does not have this form, the
+result is a junk value (`none`). -/
 def ShapeExpr.restrOf : ShapeExpr → Option ShapeExpr
   | .and (.extends _ _) u => some u
   | _ => none
 
-/-- Definition 2 (ShEx schema). `S = (Y, X, def, A)`: `Y` simple labels,
-`X` extendable labels disjoint from `Y`, `A ⊆ X` abstract labels, and
-`shapeDef` (the paper's `def`) associates every label of `Y ∪ X` with its
-definition. `shapeDef` is total on all of `Label` (as in the 2017
-formalization) because Lean functions must be total; `Schema.WellFormedX`
-below is the extra hypothesis this forces (mirroring `Schema.Closed` in
-`ShexLean/Shex2017Schemas/Proposition1.lean`). -/
+/-- Definition 2 (ShEx schema). `S = (Y, X, def, A)`:
+
+* `Y`: the simple labels.
+* `X`: the extendable labels, disjoint from `Y`.
+* `A ⊆ X`: the abstract labels.
+* `shapeDef` (the `def` of the paper): gives a definition to each label of
+  `Y ∪ X`.
+
+`shapeDef` is total on all of `Label` (as in the 2017 formalization),
+because Lean functions must be total. Because of this, we need the extra
+hypothesis `Schema.WellFormedX` below. (It has the same role as
+`Schema.Closed` in `ShexLean/Shex2017Schemas/Proposition1.lean`.) -/
 structure Schema where
   Y : Finset Label
   X : Finset Label
@@ -158,36 +177,42 @@ structure Schema where
   A_subX : A ⊆ X
   shapeDef : Label → ShapeExpr
 
-/-- Definition 2's second bullet: for `x ∈ X`, `def(x)` must be of the
-form `extends X h [and u]`, i.e. `.extends xs h` or
-`.and (.extends xs h) u`. The first bullet, "for `y ∈ Y`, `def(y)` is a
-plain shape expression", is automatic here since `ShapeExpr` has no `@z`
-constructor, so every `ShapeExpr` value already is one. -/
+/-- The second bullet of Definition 2: for `x ∈ X`, `def(x)` must have the
+form `extends X h [and u]`. Thus, it is `.extends xs h` or
+`.and (.extends xs h) u`.
+
+The first bullet says "for `y ∈ Y`, `def(y)` is a plain shape
+expression". This is automatically true here, because `ShapeExpr` has no
+`@z` constructor. Thus, each `ShapeExpr` value is a plain shape
+expression. -/
 def Schema.WellFormedX (S : Schema) : Prop :=
   ∀ x ∈ S.X, ∃ xs h, S.shapeDef x = .extends xs h ∨ ∃ u, S.shapeDef x = .and (.extends xs h) u
 
-/-- Definition 3's edge relation of `H_S`: an edge from `x` to `x'` iff
-`x'` is named right after `extends` at the top of `def(x)`. -/
+/-- The edge relation of `H_S` in Definition 3. There is an edge from `x`
+to `x'` if and only if `x'` comes directly after `extends` at the top of
+`def(x)`. -/
 abbrev Schema.extEdge (S : Schema) (x x' : Label) : Prop :=
   x' ∈ (S.shapeDef x).extendsTargets
 
-/-- Definition 3 (extension hierarchy). `x' ∈ S.anc x` iff there is a
-(possibly empty) path from `x` to `x'` in `H_S`, i.e. `x'` is an ancestor
-of `x` (equivalently `x` is a descendant of `x'`). Restricted to `S.X`
-(`H_S`'s vertex set); only meaningful for `x ∈ S.X`. Uses
-`Classical.decPred` because `extEdge` is `Prop`-valued and reachability is
-not decidable in general, as elsewhere in the 2017 formalization. -/
+/-- Definition 3 (extension hierarchy). `x' ∈ S.anc x` if and only if
+there is a path (possibly empty) from `x` to `x'` in `H_S`. Thus, `x'` is
+an ancestor of `x`, and `x` is a descendant of `x'`.
+
+The result is restricted to `S.X` (the vertex set of `H_S`). It has a
+meaning only for `x ∈ S.X`. The definition uses `Classical.decPred`,
+because `extEdge` is a `Prop` and, in general, reachability is not
+decidable. The 2017 formalization does the same in other locations. -/
 noncomputable def Schema.anc (S : Schema) (x : Label) : Finset Label :=
   haveI := Classical.decPred (Relation.ReflTransGen S.extEdge x)
   S.X.filter (Relation.ReflTransGen S.extEdge x)
 
-/-- `S.desc x`: the descendants of `x` (dual of `S.anc`). -/
+/-- `S.desc x`: the descendants of `x` (the dual of `S.anc`). -/
 noncomputable def Schema.desc (S : Schema) (x : Label) : Finset Label :=
   haveI := Classical.decPred (Relation.ReflTransGen S.extEdge · x)
   S.X.filter (Relation.ReflTransGen S.extEdge · x)
 
-/-- `anc(X) = ⋃_{x ∈ X} anc(x)` (Table 3's extension of `anc` to a set of
-labels, used by rule 18). -/
+/-- `anc(X) = ⋃_{x ∈ X} anc(x)`. Table 3 extends `anc` to a set of labels
+in this way. Rule 18 uses it. -/
 noncomputable def Schema.ancSet (S : Schema) (xs : Finset Label) : Finset Label :=
   xs.biUnion S.anc
 

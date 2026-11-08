@@ -7,23 +7,26 @@ import Mathlib.Tactic.FinCases
 import Example
 
 /-!
-Example 3 from the 2025 "Shape Expressions with Inheritance" paper (§4.1,
+Example 3 from the 2025 paper "Shape Expressions with Inheritance" (§4.1,
 Table 1): the triple expression `e = p @T_even ; (p @T_<5* | p @T_str)`,
-matched or not matched against four example sets of triples. This file
-also hosts the ambient schema `S_ex5` (Example 5's schema, §4.2) and node
-constraints `T_even`/`T_<5`/`T_>5`/`T_str`, since Examples 3-5 all state
-their claims against this same schema. `Example4_closed_extra.lean` and
-`Example5_extends.lean` both import this file to reuse them, along with
-the `M24`/`M246`/`M2a`/`M24a` triple sets. The generic `ofShape`-lifting
-helper lemmas both files also need (`ofShape_of_Me_eq_self`/
-`singleton_tc_ofShape`/`Me_eq_self_of_props_subset`) live in
-`ShexLean/Shex2025Inheritance/Semantics.lean` instead, since they aren't
-tied to any particular example.
+and four example sets of triples that match it or do not match it.
+
+This file also contains the schema `S_ex5` (the schema of Example 5, §4.2)
+and the node constraints `T_even`, `T_<5`, `T_>5` and `T_str`, because
+the claims of Examples 3-5 all use this schema. `Example4_closed_extra.lean`
+and `Example5_extends.lean` both import this file to use them again,
+together with the triple sets `M24`, `M246`, `M2a` and `M24a`.
+
+The two files also need the general helper lemmas that lift to `ofShape`
+(`ofShape_of_Me_eq_self`, `singleton_tc_ofShape` and
+`Me_eq_self_of_props_subset`). These lemmas are in
+`ShexLean/Shex2025Inheritance/Semantics.lean`, because they are not
+specific to one example.
 -/
 
 namespace ShexLean.Inheritance
 
-/-! ### Node constraints for Example 3/Example 4/Example 5 (§4.1) -/
+/-! ### Node constraints for Examples 3, 4 and 5 (§4.1) -/
 
 /-- `T_even`: the node is an even integer literal. -/
 def cEven : NodeConstraint
@@ -45,8 +48,9 @@ def cStr : NodeConstraint
   | .lit (.str _) => True
   | _ => False
 
-/-- Example 5's schema `S = (Y, X, def, ∅)`, with `Y = {T_even, T_<5,
-T_>5}`, `X = {x0,...,x6}`, `def` as listed in the paper. -/
+/-- The schema of Example 5, `S = (Y, X, def, ∅)`, with
+`Y = {T_even, T_<5, T_>5}`, `X = {x0,...,x6}`, and `def` as in the
+paper. -/
 def S_ex5 : Schema where
   Y := {"T_even", "T_lt5", "T_gt5"}
   X := {"x0", "x1", "x2", "x3", "x4", "x5", "x6"}
@@ -75,18 +79,18 @@ def S_ex5 : Schema where
     | "x6" => .extends {"x3"} ⟨false, none, .tc "p" "T_even"⟩
     | _ => .constraint (fun _ => False)
 
-/-- The fixed subject used by every neighbourhood set in Examples 3-5. -/
+/-- The fixed subject of all the neighbourhood sets in Examples 3-5. -/
 def n_ex3 : Subject := .iri "n"
 
-/-- Example 3's typing `τ`. -/
+/-- The typing `τ` of Example 3. -/
 def τ_ex3 : Typing :=
   { (RDFNode.lit (.int 2), "T_even"), (RDFNode.lit (.int 2), "T_lt5"),
     (RDFNode.lit (.int 4), "T_even"), (RDFNode.lit (.int 4), "T_lt5"),
     (RDFNode.lit (.int 6), "T_even"), (RDFNode.lit (.int 6), "T_gt5"),
     (RDFNode.lit (.str "a"), "T_str") }
 
-/-- `t p o` is the triple `(n_ex3, p, o)`, the common shape of every
-triple used in Examples 3-4. -/
+/-- `t p o` is the triple `(n_ex3, p, o)`. All the triples of Examples 3-4
+have this form. -/
 def tp (p : IRI) (o : RDFNode) : Triple := ⟨n_ex3, p, o⟩
 
 def M24 : Finset Triple := {tp "p" (.lit (.int 2)), tp "p" (.lit (.int 4))}
@@ -96,17 +100,19 @@ def M2a : Finset Triple := {tp "p" (.lit (.int 2)), tp "p" (.lit (.str "a"))}
 def M24a : Finset Triple :=
   {tp "p" (.lit (.int 2)), tp "p" (.lit (.int 4)), tp "p" (.lit (.str "a"))}
 
-/-- Example 3's triple expression `e = p @T_even ; (p @T_<5* | p @T_str)`. -/
+/-- The triple expression of Example 3,
+`e = p @T_even ; (p @T_<5* | p @T_str)`. -/
 def e_ex3 : TripleExpr :=
   .seq (.tc "p" "T_even") (.choice (.star (.tc "p" "T_lt5")) (.tc "p" "T_str"))
 
-/-- A fuel bound sufficient for every proof in Examples 3-5: `e_ex3` has
-depth 4, and the deepest `extends` chain used below, `x4 → x6 → x3 → x0`,
-is 4 levels. -/
+/-- A fuel bound that is sufficient for all the proofs in Examples 3-5.
+`e_ex3` has depth 4, and the deepest `extends` chain below,
+`x4 → x6 → x3 → x0`, has 4 levels. -/
 def bigFuel : ℕ := 10
 
-/-- `M24, τ ⊨ e` (Example 3): split into `{(n,p,2)}` (satisfying
-`p @T_even`) and `{(n,p,4)}` (satisfying `(p @T_<5)*` via a single part). -/
+/-- `M24, τ ⊨ e` (Example 3). Split it into `{(n,p,2)}` (which satisfies
+`p @T_even`) and `{(n,p,4)}` (which satisfies `(p @T_<5)*` with one
+part). -/
 theorem M24_satisfies_e : SatisfiesEFuel bigFuel S_ex5 default τ_ex3 M24 e_ex3 := by
   refine ⟨{tp "p" (.lit (.int 2))}, {tp "p" (.lit (.int 4))}, ⟨by decide, by decide⟩, ?_, ?_⟩
   · exact ⟨n_ex3, .lit (.int 2), rfl, by decide⟩
@@ -116,9 +122,9 @@ theorem M24_satisfies_e : SatisfiesEFuel bigFuel S_ex5 default τ_ex3 M24 e_ex3 
     subst hNi
     exact ⟨n_ex3, .lit (.int 4), rfl, by decide⟩
 
-/-- `M246, τ ⊨ e` (Example 3): split into `{(n,p,6)}` (satisfying
-`p @T_even`) and `{(n,p,2),(n,p,4)}` (satisfying `(p @T_<5)*` via two
-parts). -/
+/-- `M246, τ ⊨ e` (Example 3). Split it into `{(n,p,6)}` (which satisfies
+`p @T_even`) and `{(n,p,2),(n,p,4)}` (which satisfies `(p @T_<5)*` with
+two parts). -/
 theorem M246_satisfies_e : SatisfiesEFuel bigFuel S_ex5 default τ_ex3 M246 e_ex3 := by
   refine ⟨{tp "p" (.lit (.int 6))}, {tp "p" (.lit (.int 2)), tp "p" (.lit (.int 4))},
     ⟨by decide, by decide⟩, ?_, ?_⟩
@@ -130,15 +136,15 @@ theorem M246_satisfies_e : SatisfiesEFuel bigFuel S_ex5 default τ_ex3 M246 e_ex
     · exact ⟨n_ex3, .lit (.int 2), rfl, by decide⟩
     · exact ⟨n_ex3, .lit (.int 4), rfl, by decide⟩
 
-/-- `M2a, τ ⊨ e` (Example 3): split into `{(n,p,2)}` (satisfying
-`p @T_even`) and `{(n,p,"a")}` (satisfying `p @T_str`). -/
+/-- `M2a, τ ⊨ e` (Example 3). Split it into `{(n,p,2)}` (which satisfies
+`p @T_even`) and `{(n,p,"a")}` (which satisfies `p @T_str`). -/
 theorem M2a_satisfies_e : SatisfiesEFuel bigFuel S_ex5 default τ_ex3 M2a e_ex3 := by
   refine ⟨{tp "p" (.lit (.int 2))}, {tp "p" (.lit (.str "a"))}, ⟨by decide, by decide⟩, ?_, ?_⟩
   · exact ⟨n_ex3, .lit (.int 2), rfl, by decide⟩
   · exact Or.inr ⟨n_ex3, .lit (.str "a"), rfl, by decide⟩
 
-/-- `x` belongs to some piece of a `List.foldr (· ∪ ·) ∅` union. Converse
-of `RepBound.lean`'s `mem_subset_foldr_union`. -/
+/-- `x` is in a piece of a `List.foldr (· ∪ ·) ∅` union. This is the
+converse of `mem_subset_foldr_union` in `RepBound.lean`. -/
 private theorem mem_of_mem_foldr_union {α : Type*} [DecidableEq α] (l : List (Finset α))
     {x : α} (hx : x ∈ l.foldr (· ∪ ·) ∅) : ∃ N ∈ l, x ∈ N := by
   induction l with
@@ -150,8 +156,8 @@ private theorem mem_of_mem_foldr_union {α : Type*} [DecidableEq α] (l : List (
       · obtain ⟨N', hN', hxN'⟩ := ih hx
         exact ⟨N', List.mem_cons_of_mem _ hN', hxN'⟩
 
-/-- `M24a, τ ¬⊨ e` (Example 3's fourth fact): `M24a` cannot be split to
-satisfy `e`, unlike `M24`/`M246`/`M2a`. -/
+/-- `M24a, τ ¬⊨ e` (the fourth fact of Example 3). No split of `M24a`
+satisfies `e`. (`M24`, `M246` and `M2a` have such a split.) -/
 theorem M24a_not_satisfies_e : ¬ SatisfiesEFuel bigFuel S_ex5 default τ_ex3 M24a e_ex3 := by
   rintro ⟨N1, N2, ⟨hdisj, hunion⟩, ⟨n1, o1, hN1eq, hty1⟩, hN2⟩
   have ha_mem : tp "p" (.lit (.str "a")) ∈ M24a := by decide
@@ -183,9 +189,10 @@ theorem M24a_not_satisfies_e : ¬ SatisfiesEFuel bigFuel S_ex5 default τ_ex3 M2
     have hcard3 : M24a.card = 3 := by decide
     omega
 
-/-! `S_ex5`'s decidability prerequisites (`ShexLean.Shex2025Inheritance.
-Decidable`'s `satisfiesFuel_decidable`/`satisfiesMFuel_decidable`), needed
-by every `SatisfiesFuel`/`SatisfiesMFuel` display claim in Examples 4/5. -/
+/-! The prerequisites for the decidability of `S_ex5`
+(`satisfiesFuel_decidable` and `satisfiesMFuel_decidable` in
+`ShexLean.Shex2025Inheritance.Decidable`). Each `SatisfiesFuel` or
+`SatisfiesMFuel` claim that Examples 4 and 5 show needs them. -/
 
 theorem S_ex5_XClosed : S_ex5.XClosed := by unfold Schema.XClosed; decide
 
@@ -200,16 +207,21 @@ namespace Examples
 open ShexLean.Inheritance (e_ex3 M24 M246 M2a M24a S_ex5 τ_ex3 bigFuel satisfiesEFuel_decidable)
 open ShexLean (Graph.render Typing.render renderDecide)
 
-/-- Example 3's triple expression, matched against `M24`/`M246`/`M2a`/`M24a`.
-`graphText`/`typingText` render the actual `Finset Triple`/`Typing` values;
-every `M,τ ⊨ e` claim is a `native_decide` computation via
-`satisfiesEFuel_decidable`. This is unconditionally decidable because
-Table 1 never touches `NodeConstraint`/`extends`, so no `XClosed`/`RestrOk`/
-`FOk` witnesses are needed here, unlike the `SatisfiesFuel` claims in the
-other 2025 examples. -/
+/-- The triple expression of Example 3, matched against `M24`, `M246`,
+`M2a` and `M24a`.
+
+* `graphText` and `typingText` render the real `Finset Triple` and
+  `Typing` values.
+* Each claim `M,τ ⊨ e` is a `native_decide` computation with
+  `satisfiesEFuel_decidable`.
+
+This is decidable with no condition, because Table 1 never uses
+`NodeConstraint` or `extends`. Thus, no `XClosed`, `RestrOk` or `FOk`
+witnesses are necessary here. (The `SatisfiesFuel` claims in the other
+2025 examples need them.) -/
 def inheritance2025TripleMatch : Example where
   name := "inheritance2025-example3-triple-match"
-  summary := "Triple expression p@T_even;(p@T_<5*|p@T_str) matched against three sets."
+  summary := "Triple expression p@T_even;(p@T_<5*|p@T_str) matched against four sets."
   schemaText := s!"e = {e_ex3.render}"
   graphText :=
     s!"M24  = {Graph.render M24}\n" ++

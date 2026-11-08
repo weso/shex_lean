@@ -1,16 +1,21 @@
 import ShexLean.Shex2017Schemas.Lemma2
 
 /-!
-Definitions 5 and 6 (§3.3): the maximal correct typing of `G` by `S`, and
-`SHAPES_SEM` itself — the statement this whole development has been
-building towards since §3.1:
+Definitions 5 and 6 (§3.3):
+
+* Definition 5: the maximal correct typing of `G` by `S`.
+* Definition 6: `SHAPES_SEM`. This is the statement that all of the
+  development since §3.1 prepares:
 
 > SHAPES_SEM: node `n` in graph `G` has shape (or type) `L` from schema `S`
 
-Both are one-line definitions in the paper, sitting directly on top of
-Proposition 1 (`Typing(G, S, str)` is always a correct typing,
-`ShexLean/Shex2017Schemas/Proposition1.lean`) and Lemma 2 (`Typing(G, S, str)` does not
-depend on `str`, `ShexLean/Shex2017Schemas/Lemma2.lean`):
+In the paper, each definition is one line. Each definition uses two
+results directly:
+
+* Proposition 1: `Typing(G, S, str)` is always a correct typing
+  (`ShexLean/Shex2017Schemas/Proposition1.lean`).
+* Lemma 2: `Typing(G, S, str)` does not depend on `str`
+  (`ShexLean/Shex2017Schemas/Lemma2.lean`).
 
 > Definition 5 (maximal correct typing). Let `S = (L, def)` be a schema and
 > `G` be a graph. The maximal correct typing of `G` by `S` is denoted
@@ -21,51 +26,54 @@ depend on `str`, `ShexLean/Shex2017Schemas/Lemma2.lean`):
 > graph. We say that node `n` (of `G`) has shape `L` (from `S`) if
 > `(n, L) ∈ Typing(G, S)`.
 
-The only work left to do here is to record that Definition 5 is
-well-defined regardless of which stratification `Classical.choice` happens
-to pick out of `S.StratNeg` (immediate from `lemma2`), and that
-the resulting typing is indeed correct (immediate from `proposition1`).
+This file must show only two facts:
+
+* Definition 5 is well-defined. The result does not depend on the
+  stratification that `Classical.choice` selects from `S.StratNeg`. This
+  follows directly from `lemma2`.
+* The typing of Definition 5 is correct. This follows directly from
+  `proposition1`.
 -/
 
 namespace ShexLean
 
-/-- Definition 5 (maximal correct typing). `Typing(G, S)`: pick any
-stratification witnessing `S.StratNeg` (its exact identity is
-irrelevant by `maximalCorrTyping_eq_MTyping` below) and take
-`Typing(G, S, str)` (Definition 4, `MTyping`). -/
+/-- Definition 5 (maximal correct typing). `Typing(G, S)`: select a
+stratification that is a witness of `S.StratNeg`, and then take
+`Typing(G, S, str)` (Definition 4, `MTyping`). The selected stratification
+has no effect on the result (`maximalCorrTyping_eq_MTyping` below). -/
 noncomputable def Schema.maximalCorrTyping (S : Schema) (hStrat : S.StratNeg)
     (G : Graph) : Typing :=
   MTyping G S hStrat.some
 
-/-- Definition 5 does not depend on which stratification is used to compute
-it: `Typing(G, S)` agrees with `Typing(G, S, str)` for *every*
-stratification `str` of `S`, not just the one `Classical.choice` happened
-to pick. This is exactly Lemma 2. -/
+/-- Definition 5 does not depend on the stratification that computes it.
+`Typing(G, S)` is equal to `Typing(G, S, str)` for *each* stratification
+`str` of `S`, not only for the stratification that `Classical.choice`
+selects. This is exactly Lemma 2. -/
 theorem Schema.maximalCorrTyping_eq_MTyping (S : Schema) (hClosed : S.Closed)
     (hStrat : S.StratNeg) (G : Graph) (str : Strat S) :
     S.maximalCorrTyping hStrat G = MTyping G S str :=
   lemma2 S hClosed hStrat.some str G
 
-/-- Definition 5's `Typing(G, S)` is a correct typing of `G` by `S`
-(Definition 2). Immediate from Proposition 1 applied to whichever
-stratification underlies `S.maximalCorrTyping`. -/
+/-- `Typing(G, S)` of Definition 5 is a correct typing of `G` by `S`
+(Definition 2). This follows directly from Proposition 1, applied to the
+stratification that `S.maximalCorrTyping` uses. -/
 theorem Schema.maximalCorrTyping_correct (S : Schema) (hClosed : S.Closed)
     (hStrat : S.StratNeg) (G : Graph) :
     S.CorrTyping G (S.maximalCorrTyping hStrat G) :=
   proposition1 S hStrat.some hClosed G
 
-/-- Definition 6 (`SHAPES_SEM`). Node `n` (of `G`) has shape `L` (from `S`)
-iff `(n, L) ∈ Typing(G, S)`, i.e. `(n, L)` belongs to the maximal correct
-typing of `G` by `S` (Definition 5). -/
+/-- Definition 6 (`SHAPES_SEM`). The node `n` (of `G`) has the shape `L`
+(from `S`) if and only if `(n, L) ∈ Typing(G, S)`. Thus, `(n, L)` is in
+the maximal correct typing of `G` by `S` (Definition 5). -/
 def Schema.ShapesSem (S : Schema) (hStrat : S.StratNeg)
     (G : Graph) (n : RDFNode) (L : Label) : Prop :=
   (n, L) ∈ S.maximalCorrTyping hStrat G
 
-/-- `SHAPES_SEM` does not depend on which stratification witnesses
-`S.StratNeg`: it can equivalently be tested against
-`Typing(G, S, str)` for *any* stratification `str` of `S`. This is what
-makes Definition 6 well-defined at all, and is exactly why Definitions 5
-and 6 needed Lemma 2 first. -/
+/-- `SHAPES_SEM` does not depend on the stratification that is a witness
+of `S.StratNeg`. You can test it with `Typing(G, S, str)` for *any*
+stratification `str` of `S`, and get the same result. This fact makes
+Definition 6 well-defined. It is the reason why Definitions 5 and 6 need
+Lemma 2 first. -/
 theorem Schema.shapesSem_iff_typing4 (S : Schema) (hClosed : S.Closed)
     (hStrat : S.StratNeg) (G : Graph) (n : RDFNode) (L : Label)
     (str : Strat S) :

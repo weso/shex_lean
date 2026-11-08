@@ -3,73 +3,87 @@ import Mathlib.Data.Finset.Card
 import Mathlib.Data.Finset.Lattice.Fold
 
 /-!
-Lemma 1 (§4.2) of the 2025 "Shape Expressions with Inheritance" paper:
+Lemma 1 (§4.2) of the 2025 paper "Shape Expressions with Inheritance":
 
 > Lemma 1. The evaluation of `G, n, τ ⊨_S def(z)` always terminates, for
 > every schema `S = (Y, X, def, A)`, graph `G`, node `n` of `G`, typing `τ`
 > of `G` by `S`, and label `z ∈ Y ∪ X`.
 
-`ShexLean.Shex2026InheritanceDisjunction/Semantics.lean` sidesteps termination by threading an
-explicit `Fuel : ℕ` through `SatisfiesFuel`/`SatisfiesMFuel`/
-`SatisfiesEFuel`, decremented on *every* recursive call, returning `False`
-on exhaustion — a total Lean function by construction, but not yet the
-paper's real (fuel-independent) relation. This file's job is to show that,
-for a well-defined schema, a large-enough `Fuel` makes the answer stop
-depending on `Fuel` at all — i.e. that the fuel-bounded under-approximation
-*is*, eventually, the real thing.
+`ShexLean/Shex2026InheritanceDisjunction/Semantics.lean` avoids the
+termination problem with an explicit argument `Fuel : ℕ` in
+`SatisfiesFuel`, `SatisfiesMFuel` and `SatisfiesEFuel`. *Each* recursive
+call decreases `Fuel`, and the result is `False` when no fuel remains.
+Thus, the Lean function is total by construction, but it is not yet the
+real relation of the paper (which does not depend on fuel).
 
-## Why this is genuinely harder than anything the 2017 formalization needed
+This file shows that, for a well-defined schema, the result stops
+depending on `Fuel` when `Fuel` is sufficiently large. Thus, the
+under-approximation bounded by fuel becomes equal to the real relation.
 
-In `ShexLean/Shex2017Schemas/Semantics.lean`, a shape reference is resolved purely by
-consulting `typing` (no recursive call into `def(L)`), so termination is
-free structural recursion on the AST. Here, Table 3's `extends` rule
-recurses into *other labels' own definitions*
-(`(S.shapeDef x).extTe`/`.restrOf`, `x` ranging over ancestors) — a schema
-lookup, not a subterm of the current expression. The paper's own
-termination argument (Lemma 1's proof sketch, appendix) is exactly one
-sentence: the tree of recursive calls is finite "due to the acyclic nature
-of the extension hierarchy". Turning that sentence into a Lean proof needs
-an actual *rank function* on labels witnessing `H_S`'s acyclicity, and a
-combined measure that decreases on every recursive call (both the
-`extends`-hop ones — governed by the rank — and the ordinary
-AST-structural ones).
+## Why this is more difficult than all that the 2017 formalization needed
 
-## An extra hypothesis beyond the paper's literal text
+In `ShexLean/Shex2017Schemas/Semantics.lean`, `typing` gives the shape of a
+reference (with no recursive call into `def(L)`). Thus, termination is a
+free structural recursion on the syntax tree. Here, the `extends` rule of
+Table 3 does a recursion into the *definitions of other labels*
+(`(S.shapeDef x).extTe` and `.restrOf`, for each ancestor `x`). This is a
+schema lookup. It is not a subterm of the current expression.
 
-Definition 3 builds `H_S`'s edges *only* from a label's own *outermost*
-`extends X h [and u]` clause: "`H_S` has an edge from `x` to `x'` iff
-`def(x) = extends X h [and u]` and `x' ∈ X`" — nothing about `u`
-(`restr(x)`) is scanned for `H_S`-edge purposes. But `u` is only
-constrained by Definition 2 to be *some* plain shape expression, which the
-grammar allows to itself contain a further `extends` node (nested inside
-an `or`/`and`/`not`) — and *that* nested `extends`, when the recursive
-evaluator actually reaches it, is not "seen" by `H_S`'s acyclicity check at
-all, since Definition 3 only ever looks at the outermost clause. Nothing
-in the paper's one-sentence proof sketch addresses this case, and it isn't
-exercised by any of the paper's own examples. Rather than guess at (or
-silently assume away) how the paper intends this edge case to be handled,
-this file adds an explicit, documented extra hypothesis ruling it out —
-`ShapeExpr.NoExtends`/`Schema.WellFormedExtends` below — exactly the same
-kind of Lean-forced strengthening as `Schema.Closed` was for the 2017
-formalization's Proposition 1 (`ShexLean/Shex2017Schemas/Proposition1.lean`): a genuine
-technical judgment call, not a shortcut, and worth flagging explicitly if
-this file is ever checked against the paper's intent more closely.
+The termination argument of the paper (the proof sketch of Lemma 1, in
+the appendix) is exactly one sentence: the tree of recursive calls is
+finite "due to the acyclic nature of the extension hierarchy". A Lean
+proof of this sentence needs two items:
+
+* A real *rank function* on labels that is a witness of the acyclicity of
+  `H_S`.
+* A combined measure that decreases on each recursive call. This includes
+  the `extends` steps (controlled by the rank) and the ordinary structural
+  steps on the syntax tree.
+
+## An extra hypothesis that the text of the paper does not have
+
+Definition 3 makes the edges of `H_S` *only* from the *outermost*
+`extends X h [and u]` clause of a label: "`H_S` has an edge from `x` to `x'`
+iff `def(x) = extends X h [and u]` and `x' ∈ X`". It does not look into `u`
+(`restr(x)`) for `H_S` edges.
+
+But Definition 2 requires only that `u` is *a* plain shape expression. The
+grammar lets it contain a nested `extends` node (inside an `or`, `and` or
+`not`). When the recursive evaluator gets to *that* nested `extends`, the
+acyclicity check of `H_S` does not "see" it, because Definition 3 looks
+only at the outermost clause. The one-sentence proof sketch of the paper
+does not discuss this case, and no example of the paper uses it.
+
+We do not guess how the paper intends to handle this edge case, and we do
+not silently assume that it cannot occur. In its place, this file adds an
+explicit extra hypothesis that excludes it: `ShapeExpr.NoExtends` and
+`Schema.WellFormedExtends` below. This is the same type of strengthening
+that Lean forces as `Schema.Closed` for Proposition 1 of the 2017
+formalization (`ShexLean/Shex2017Schemas/Proposition1.lean`). It is a
+technical decision, not a shortcut. If somebody compares this file with
+the intent of the paper, they must examine this decision.
+
+(Note: `ShexLean/Shex2025Inheritance/Termination.lean` does not need this
+extra hypothesis. It proves Lemma 1 with only `WellFormedX` and
+`ExtAcyclic`.)
 -/
 
 namespace ShexLean.InheritanceDisjunction
 
 /-! ### Extension-hierarchy acyclicity -/
 
-/-- `S.anc` strictly shrinks along every `H_S` edge, for an acyclic `S`
-(`Schema.ExtAcyclic`, the termination-relevant half of Definition 6's
-well-definedness condition, `ShexLean.Shex2026InheritanceDisjunction/Stratification.lean`):
-if `x` (directly) extends `y`, then everything `y` (transitively) extends
-is also something `x` (transitively) extends, but `x` itself witnesses the
-converse failing (`x ∈ S.anc x` always; `x ∈ S.anc y` would — combined
-with the edge `x → y` — close a cycle through `x`). This is the standard
-"descendant/ancestor count as a rank function on a DAG" trick, and is the
-whole reason `Schema.ExtAcyclic` is enough to guarantee termination: it
-turns "no cycle" into a genuine well-founded measure. -/
+/-- `S.anc` becomes strictly smaller along each edge of `H_S`, for an
+acyclic `S`. (`Schema.ExtAcyclic` is the part of the well-definedness
+condition of Definition 6 that is related to termination, in
+`ShexLean/Shex2026InheritanceDisjunction/Stratification.lean`.)
+
+If `x` extends `y` directly, then `x` extends (transitively) each label
+that `y` extends transitively. But `x` shows that the converse is false:
+`x ∈ S.anc x` always, and `x ∈ S.anc y`, together with the edge `x → y`,
+closes a cycle through `x`. This is the usual method "the number of
+descendants or ancestors is a rank function on a DAG". It is the only
+reason why `Schema.ExtAcyclic` is sufficient for termination: it changes
+"no cycle" into a real well-founded measure. -/
 theorem Schema.anc_ssubset_of_extEdge {S : Schema} (hAcyclic : S.ExtAcyclic)
     {x y : Label} (hxX : x ∈ S.X) (hxy : S.extEdge x y) :
     S.anc y ⊂ S.anc x := by
@@ -96,23 +110,24 @@ theorem Schema.anc_ssubset_of_extEdge {S : Schema} (hAcyclic : S.ExtAcyclic)
   · exact hAcyclic x hxX (Relation.TransGen.single (heq.symm ▸ hxy))
   · exact hAcyclic x hxX (Relation.TransGen.head hxy htrans)
 
-/-- `S.extRank x := (S.anc x).card`: a concrete `ℕ`-valued rank witnessing
-`H_S`'s acyclicity, strictly decreasing along every edge
-(`extRank_lt_of_extEdge` below) — the well-founded measure the rest of
-this file's termination argument is built on. -/
+/-- `S.extRank x := (S.anc x).card`: a concrete rank in `ℕ` that is a
+witness of the acyclicity of `H_S`. It decreases strictly along each edge
+(`extRank_lt_of_extEdge` below). The termination argument in the rest of
+this file uses this well-founded measure. -/
 noncomputable def Schema.extRank (S : Schema) (x : Label) : ℕ := (S.anc x).card
 
-/-- The rank form of `anc_ssubset_of_extEdge`: `extRank` strictly decreases
-along every `H_S` edge out of a label of `S`. -/
+/-- The rank form of `anc_ssubset_of_extEdge`: `extRank` decreases
+strictly along each edge of `H_S` that starts at a label of `S`. -/
 theorem Schema.extRank_lt_of_extEdge {S : Schema} (hAcyclic : S.ExtAcyclic)
     {x y : Label} (hxX : x ∈ S.X) (hxy : S.extEdge x y) :
     S.extRank y < S.extRank x :=
   Finset.card_lt_card (S.anc_ssubset_of_extEdge hAcyclic hxX hxy)
 
-/-- `extRank` doesn't increase along an ancestor path: every `x' ∈ S.anc x`
-has `extRank x' ≤ extRank x` (not strict — `x ∈ S.anc x` reflexively, the
-`= x'` case). Used to bound the rank of *every* label reached by a rule-18
-partition (`x' ∈ S.ancSet xs`), not just the direct targets `xs`. -/
+/-- `extRank` does not increase along an ancestor path. Each `x' ∈ S.anc x`
+has `extRank x' ≤ extRank x`. (The inequality is not strict, because
+`x ∈ S.anc x` reflexively. This is the case `= x'`.) This bounds the rank
+of *each* label that a rule-18 partition reaches (`x' ∈ S.ancSet xs`), not
+only the direct targets `xs`. -/
 theorem Schema.extRank_le_of_mem_anc {S : Schema} {x x' : Label} (hx' : x' ∈ S.anc x) :
     S.extRank x' ≤ S.extRank x := by
   apply Finset.card_le_card
@@ -123,10 +138,10 @@ theorem Schema.extRank_le_of_mem_anc {S : Schema} {x x' : Label} (hx' : x' ∈ S
   simp only [Finset.mem_filter] at hx' hz ⊢
   exact ⟨hz.1, hx'.2.trans hz.2⟩
 
-/-! ### The extra well-formedness hypothesis (see the module docstring) -/
+/-! ### The extra well-formedness hypothesis (refer to the module docstring) -/
 
-/-- `s` contains no `.extends` node anywhere (not even nested inside
-`or`/`and`/`not`). -/
+/-- `s` contains no `.extends` node at any location (also not nested in
+`or`, `and` or `not`). -/
 def ShapeExpr.NoExtends : ShapeExpr → Prop
   | .constraint _ => True
   | .ofShape _ => True
@@ -135,13 +150,15 @@ def ShapeExpr.NoExtends : ShapeExpr → Prop
   | .and s1 s2 => s1.NoExtends ∧ s2.NoExtends
   | .not s => s.NoExtends
 
-/-- `s` only ever uses `.extends` in the two forms Definition 2 actually
-allows a label's *own* top-level definition to take (`extends X h` or
-`extends X h and u`, `u` itself `NoExtends`) — but, unlike `WellFormedX`,
-checked *everywhere* `s` structurally contains a sub-shape-expression (so
-that a top-level query `S.shapeDef z` built from `or`/`and`/`not` around
-an `extends` is covered too, not just `X`-labels). See the module
-docstring for why this is needed at all. -/
+/-- `s` uses `.extends` only in the two forms that Definition 2 allows for
+the *top-level* definition of a label: `extends X h`, or
+`extends X h and u` where `u` is `NoExtends`.
+
+This is different from `WellFormedX`, because the check applies to *each*
+sub-shape-expression of `s`. Thus, it also covers a top-level query
+`S.shapeDef z` made with `or`, `and` or `not` around an `extends`, not
+only `X` labels. Refer to the module docstring to know why this is
+necessary. -/
 def ShapeExpr.WellFormedExtends : ShapeExpr → Prop
   | .constraint _ => True
   | .ofShape _ => True
@@ -151,46 +168,56 @@ def ShapeExpr.WellFormedExtends : ShapeExpr → Prop
   | .and s1 s2 => s1.WellFormedExtends ∧ s2.WellFormedExtends
   | .not s => s.WellFormedExtends
 
-/-- Every label of `S` (not just `S.X`'s labels, since a top-level query
-need not itself be an extendable label) has a well-formed `extends`
-structure. -/
+/-- Each label of `S` has a well-formed `extends` structure. This applies
+to all labels, not only the labels of `S.X`, because a top-level query is
+not necessarily an extendable label. -/
 def Schema.WellFormedExtends (S : Schema) : Prop :=
   ∀ ℓ, (S.shapeDef ℓ).WellFormedExtends
 
 /-! ### The stabilization argument
 
-Given `Schema.WellFormedX` (`ShexLean.Shex2026InheritanceDisjunction/Syntax.lean`) and
-`Schema.WellFormedExtends`, every `.extends` node the evaluator ever
-actually unfolds is, by construction, in one of the two shallow forms
-Definition 2 allows a label's *own* definition to take — `ext-te(x)`
-(`(S.shapeDef x).extTe`) is always a bare `TripleExpr` (never itself
-containing a `ShapeExpr`, hence never a further schema lookup at all), and
-`restr(x)` (`(S.shapeDef x).restrOf`), when present, is `NoExtends` (never
-containing *another* `.extends` node). So the recursion never needs to
-"chase" more than one `extends`-hop along any single path: past that one
-hop, everything left to evaluate is either a `TripleExpr` or a
-`NoExtends` `ShapeExpr`, both bounded by ordinary AST size with no further
-schema lookups possible. This is *why* `Schema.ExtAcyclic`/`Schema.extRank`
-above end up not being needed by the argument below — `WellFormedExtends`
-is strictly stronger than acyclicity (it doesn't just forbid a *cycle*
-through a nested `extends`, it forbids *any* nested `extends` at all), so
-the paper's own acyclicity-based argument for the fully general case (where
-`restr(x)` may itself use `extends`) is not what's reproduced here; see the
-module docstring. `extRank` is kept as a correct, reusable fact for a future
-attempt at the fully general Lemma 1 that drops `WellFormedExtends`.
+Let `Schema.WellFormedX`
+(`ShexLean/Shex2026InheritanceDisjunction/Syntax.lean`) and
+`Schema.WellFormedExtends` be true. Then each `.extends` node that the
+evaluator unfolds has one of the two shallow forms that Definition 2
+allows for the definition of a label:
+
+* `ext-te(x)` (`(S.shapeDef x).extTe`) is always a plain `TripleExpr`. It
+  never contains a `ShapeExpr`. Thus, it never causes another schema
+  lookup.
+* `restr(x)` (`(S.shapeDef x).restrOf`), when it is present, is
+  `NoExtends`. It never contains *another* `.extends` node.
+
+Thus, the recursion never needs to follow more than one `extends` step
+along a path. After that step, all that remains to evaluate is a
+`TripleExpr` or a `NoExtends` `ShapeExpr`. The ordinary syntax-tree size
+bounds the two, and no more schema lookups are possible.
+
+This is the reason why the argument below does not need
+`Schema.ExtAcyclic` and `Schema.extRank` above. `WellFormedExtends` is
+strictly stronger than acyclicity. It does not only forbid a *cycle*
+through a nested `extends`. It forbids *all* nested `extends`. Thus, this
+file does not reproduce the acyclicity argument of the paper for the
+fully general case (where `restr(x)` can use `extends`). Refer to the
+module docstring. We keep `extRank` because it is a correct fact that a
+future proof of the fully general Lemma 1 (with no `WellFormedExtends`)
+can use.
 
 The proof follows the same one-way dependency chain as the definitions
-themselves (`ShexLean.Shex2026InheritanceDisjunction/Semantics.lean`'s own docstring):
-`SatisfiesEFuel` stabilizes on its own (no schema lookups at all); then
-`SatisfiesMFuel` stabilizes using that fact (plus a `NoExtends`-only
-version of itself, proved first, for `restr(x)`); then `SatisfiesFuel`
-stabilizes using `SatisfiesMFuel`'s result for the `.ofShape`/`.extends`
-same-shape judgment switch. -/
+(refer to the docstring of
+`ShexLean/Shex2026InheritanceDisjunction/Semantics.lean`):
 
-/-- Structural size of a triple expression — a generous (not tight)
-sufficient-fuel bound: every recursive call `SatisfiesEFuel` makes is on a
-strictly smaller sub-expression, so this decreases by at least 1 at every
-step. -/
+1. `SatisfiesEFuel` becomes stable alone (it does no schema lookups).
+2. `SatisfiesMFuel` becomes stable with step 1. It also uses a version of
+   itself for `NoExtends` shapes only, which we prove first, for
+   `restr(x)`.
+3. `SatisfiesFuel` becomes stable with the result of step 2, for the
+   change of judgment in the `.ofShape` and `.extends` cases. -/
+
+/-- The structural size of a triple expression. This is a large (not
+tight) bound that gives sufficient fuel. Each recursive call of
+`SatisfiesEFuel` is on a strictly smaller sub-expression. Thus, the size
+decreases by 1 or more at each step. -/
 def TripleExpr.size : TripleExpr → ℕ
   | .empty => 1
   | .tc _ _ => 1
@@ -198,10 +225,11 @@ def TripleExpr.size : TripleExpr → ℕ
   | .seq e1 e2 => e1.size + e2.size + 1
   | .star e => e.size + 1
 
-/-- A generous bound on the `.triples.size` of *every* disjunct in `hs` at
-once — the `hs : List Shape` analogue of `h.triples.size` in the original
-(single-`Shape`) formalization, used everywhere `extTeAt`'s size needs
-bounding regardless of which disjunct `pick` happens to select. -/
+/-- A large bound on the `.triples.size` of *all* the disjuncts in `hs`
+together. This is the `hs : List Shape` version of `h.triples.size` in the
+original formalization (with one `Shape`). We use it at each location
+where we must bound the size of `extTeAt`, for each disjunct that `pick`
+selects. -/
 def Shape.listSize (hs : List Shape) : ℕ := (hs.map (fun h => h.triples.size)).sum
 
 theorem Shape.triples_size_le_listSize {hs : List Shape} {h : Shape} (hmem : h ∈ hs) :
@@ -215,11 +243,11 @@ theorem Shape.triples_size_le_listSize {hs : List Shape} {h : Shape} (hmem : h �
       · subst heq; omega
       · have := ih hmem'; omega
 
-/-- `SatisfiesEFuel` stabilizes once `Fuel ≥ e.size`: any two sufficiently
-large fuel values agree. Table 1 never performs a schema lookup at all
-(`.tc`'s label is resolved purely via `τ`, see `Semantics.lean`'s module
-docstring), so this needs no hypothesis on `S` whatsoever — plain
-structural induction on `e`. -/
+/-- `SatisfiesEFuel` becomes stable when `Fuel ≥ e.size`: two sufficiently
+large fuel values agree. Table 1 never does a schema lookup. (Only `τ`
+gives the label of `.tc`. Refer to the module docstring of
+`Semantics.lean`.) Thus, the proof needs no hypothesis on `S`. It is a
+plain structural induction on `e`. -/
 theorem stableE (e : TripleExpr) :
     ∀ fuel1 fuel2, e.size ≤ fuel1 → e.size ≤ fuel2 →
       ∀ (S : Schema) (G : Graph) (τ : Typing) (M : Finset Triple),
@@ -284,8 +312,8 @@ theorem stableE (e : TripleExpr) :
       · rintro ⟨Ns, hdu, hall⟩
         exact ⟨Ns, hdu, fun Ni hNi => (ih f1 f2 (by omega) (by omega) S G τ Ni).mpr (hall Ni hNi)⟩
 
-/-- Structural size of a shape expression (same generous role as
-`TripleExpr.size`). -/
+/-- The structural size of a shape expression. (It has the same role as
+`TripleExpr.size`: a large bound.) -/
 def ShapeExpr.size : ShapeExpr → ℕ
   | .constraint _ => 1
   | .ofShape h => h.triples.size + 1
@@ -294,17 +322,17 @@ def ShapeExpr.size : ShapeExpr → ℕ
   | .and s1 s2 => s1.size + s2.size + 1
   | .not s => s.size + 1
 
-/-- The `.triples.size` of every element of `(.extends xs hs).extTeList`
-(`= hs.map Shape.triples`) is bounded by `hs.listSize`. -/
+/-- `hs.listSize` bounds the `.triples.size` of each element of
+`(.extends xs hs).extTeList` (`= hs.map Shape.triples`). -/
 theorem TripleExpr.size_le_listSize_of_mem_extends {xs : Finset Label} {hs : List Shape}
     {e : TripleExpr} (hmem : e ∈ (ShapeExpr.extends xs hs).extTeList) : e.size ≤ Shape.listSize hs := by
   unfold ShapeExpr.extTeList at hmem
   obtain ⟨h, hh, rfl⟩ := List.mem_map.mp hmem
   exact Shape.triples_size_le_listSize hh
 
-/-- Same as `TripleExpr.size_le_listSize_of_mem_extends`, for the `.and
-(.extends xs hs) u` shape (a well-formed `X`-label's `extends X hs and u`
-form). -/
+/-- The same as `TripleExpr.size_le_listSize_of_mem_extends`, for the form
+`.and (.extends xs hs) u` (the form `extends X hs and u` of a well-formed
+`X` label). -/
 theorem TripleExpr.size_le_listSize_of_mem_and_extends {xs : Finset Label} {hs : List Shape}
     {u : ShapeExpr} {e : TripleExpr} (hmem : e ∈ (ShapeExpr.and (.extends xs hs) u).extTeList) :
     e.size ≤ Shape.listSize hs := by
@@ -312,10 +340,10 @@ theorem TripleExpr.size_le_listSize_of_mem_and_extends {xs : Finset Label} {hs :
   obtain ⟨h, hh, rfl⟩ := List.mem_map.mp hmem
   exact Shape.triples_size_le_listSize hh
 
-/-- `extTeAt`'s size is always bounded by `s.size` for `s` an `X`-label's
-own well-formed definition — `s.size` already accounts for `hs.listSize`
-(`ShapeExpr.size`'s `.extends` case above), regardless of which disjunct
-`pick` selects. -/
+/-- For `s` the well-formed definition of an `X` label, `s.size` always
+bounds the size of `extTeAt`. `s.size` already includes `hs.listSize` (the
+`.extends` case of `ShapeExpr.size` above), for each disjunct that `pick`
+selects. -/
 theorem extTeAt_size_le {S : Schema} (hWFX : S.WellFormedX) {x : Label} (hx : x ∈ S.X)
     (i : ℕ) : ((S.shapeDef x).extTeAt i).size ≤ (S.shapeDef x).size := by
   obtain ⟨xs', hs', -, hcase⟩ := hWFX x hx
@@ -328,18 +356,21 @@ theorem extTeAt_size_le {S : Schema} (hWFX : S.WellFormedX) {x : Label} (hx : x 
     · exact le_trans (TripleExpr.size_le_listSize_of_mem_extends hmem) (by omega)
     · exact le_trans (TripleExpr.size_le_listSize_of_mem_and_extends hmem) (by omega)
 
-/-- The largest `.size` of any of `S`'s own extendable labels' definitions
-— a fixed, schema-wide bound on how much fuel `ext-te(x)`/`restr(x)` can
-ever need, for *any* `x ∈ S.X` a rule-18 partition might reach. -/
+/-- The largest `.size` of the definitions of the extendable labels of
+`S`. This is a fixed bound for the full schema. It bounds the fuel that
+`ext-te(x)` and `restr(x)` can need, for *each* `x ∈ S.X` that a rule-18
+partition can reach. -/
 noncomputable def Schema.maxDefSize (S : Schema) : ℕ := S.X.sup (fun x => (S.shapeDef x).size)
 
-/-- `SatisfiesMFuel` stabilizes on any `NoExtends` shape once
-`Fuel ≥ s.size` — no schema hypothesis needed, since a `NoExtends` shape
-never triggers rule 18 (no schema lookup possible), only `stableE`. Proved
-*before* the general `stableM` below because `restr(x)`'s evaluation
-inside the general `.extends` case needs exactly this fact applied to a
-shape (`restr(x)`) that is *not* a subterm of the shape the general
-induction is on. -/
+/-- `SatisfiesMFuel` becomes stable on each `NoExtends` shape when
+`Fuel ≥ s.size`. It needs no hypothesis on the schema, because a
+`NoExtends` shape never uses rule 18 (no schema lookup is possible). It
+uses only `stableE`.
+
+We prove it *before* the general `stableM` below. The reason is that, in
+the general `.extends` case, the evaluation of `restr(x)` needs exactly
+this fact, applied to a shape (`restr(x)`) that is *not* a subterm of the
+shape of the general induction. -/
 theorem stableM_noExtends (u : ShapeExpr) (hu : u.NoExtends) :
     ∀ fuel1 fuel2, u.size ≤ fuel1 → u.size ≤ fuel2 →
       ∀ (S : Schema) (G : Graph) (τ : Typing) (M : Finset Triple),
@@ -400,9 +431,10 @@ theorem stableM_noExtends (u : ShapeExpr) (hu : u.NoExtends) :
       show ¬ SatisfiesMFuel f1 S G τ M s ↔ ¬ SatisfiesMFuel f2 S G τ M s
       rw [ih hu f1 f2 (by omega) (by omega) S G τ M]
 
-/-- `restr(x)`, whenever present, is `NoExtends` (Definition 2 + the extra
-`Schema.WellFormedExtends` hypothesis) and strictly smaller than `def(x)`
-itself, for the same reason `extTeAt_size_le` bounds `ext-te(x)`. -/
+/-- When `restr(x)` is present, it is `NoExtends` (Definition 2, and the
+extra hypothesis `Schema.WellFormedExtends`). It is also strictly smaller
+than `def(x)`, for the same reason that `extTeAt_size_le` bounds
+`ext-te(x)`. -/
 theorem restrOf_noExtends_and_size_le {S : Schema} (hWFExt : S.WellFormedExtends)
     {x : Label} {u : ShapeExpr} (hu : (S.shapeDef x).restrOf = some u) :
     u.NoExtends ∧ u.size ≤ (S.shapeDef x).size := by
@@ -420,15 +452,17 @@ theorem restrOf_noExtends_and_size_le {S : Schema} (hWFExt : S.WellFormedExtends
       | _ => simp [ShapeExpr.restrOf] at hu
   | _ => simp [ShapeExpr.restrOf] at hu
 
-/-- Sufficient fuel for `s`'s `SatisfiesMFuel`/`SatisfiesFuel` evaluation
-to have stabilized. The only case that isn't just structural AST size is
-`.extends`, which additionally needs enough fuel to cover *any* ancestor's
-own `ext-te`/`restr` (`Schema.maxDefSize`), not just `s`'s own size. `M'`'s
-own bound uses `(.ofShape h).size = h.triples.size + 1`, not bare
-`h.triples.size`: since `M'` is now checked against `.ofShape h` (Table 3
-rule 17, one recursive `SatisfiesMFuel` step) rather than directly against
-`h.triples` (Table 1), it costs one extra fuel level compared to a direct
-`SatisfiesEFuel` call at the same fuel — see the module docstring. -/
+/-- Sufficient fuel for the evaluation of `SatisfiesMFuel` and
+`SatisfiesFuel` on `s` to become stable. The only case that is not plain
+syntax-tree size is `.extends`. It also needs sufficient fuel to cover the
+`ext-te` and `restr` of *each* ancestor (`Schema.maxDefSize`), not only
+the size of `s`.
+
+The bound of `M'` uses `(.ofShape h).size = h.triples.size + 1`, not only
+`h.triples.size`. Now, the check of `M'` is against `.ofShape h` (rule 17
+of Table 3, one recursive step of `SatisfiesMFuel`), not directly against
+`h.triples` (Table 1). Thus, it costs one more fuel level than a direct
+`SatisfiesEFuel` call at the same fuel. Refer to the module docstring. -/
 noncomputable def ShapeExpr.reqFuel (S : Schema) : ShapeExpr → ℕ
   | .constraint _ => 1
   | .ofShape h => h.triples.size + 1
@@ -437,11 +471,12 @@ noncomputable def ShapeExpr.reqFuel (S : Schema) : ShapeExpr → ℕ
   | .and s1 s2 => max (ShapeExpr.reqFuel S s1) (ShapeExpr.reqFuel S s2) + 1
   | .not s => ShapeExpr.reqFuel S s + 1
 
-/-- `SatisfiesMFuel` stabilizes on any `s` once `Fuel ≥ reqFuel S s`, for a
-schema `S` satisfying `WellFormedX`/`WellFormedExtends`. The `.extends`
-case is the only one that needs those hypotheses (and `extTe_size_le`/
-`restrOf_noExtends_and_size_le` above); every other case is exactly
-`stableM_noExtends`'s proof, just with `reqFuel` in place of `size`. -/
+/-- `SatisfiesMFuel` becomes stable on each `s` when
+`Fuel ≥ reqFuel S s`, for a schema `S` that satisfies `WellFormedX` and
+`WellFormedExtends`. Only the `.extends` case needs these hypotheses (and
+`extTe_size_le` and `restrOf_noExtends_and_size_le` above). Each other
+case is exactly the proof of `stableM_noExtends`, with `reqFuel` in place
+of `size`. -/
 theorem stableM {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.WellFormedExtends)
     (s : ShapeExpr) :
     ∀ fuel1 fuel2, ShapeExpr.reqFuel S s ≤ fuel1 → ShapeExpr.reqFuel S s ≤ fuel2 →
@@ -556,10 +591,11 @@ theorem stableM {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.WellFormedExtend
       show ¬ SatisfiesMFuel f1 S G τ M s ↔ ¬ SatisfiesMFuel f2 S G τ M s
       rw [ih f1 f2 (by omega) (by omega) G τ M]
 
-/-- `SatisfiesFuel` (Table 2) stabilizes once `Fuel ≥ reqFuel S s + 1` (one
-more than `SatisfiesMFuel` needs for the very same `s`, to cover the extra
-Table-2-to-Table-3 judgment switch). The `.ofShape`/`.extends` cases are
-immediate from `stableM`; every other case is self-recursion. -/
+/-- `SatisfiesFuel` (Table 2) becomes stable when
+`Fuel ≥ reqFuel S s + 1`. This is one more than `SatisfiesMFuel` needs for
+the same `s`, to cover the extra change of judgment from Table 2 to
+Table 3. The `.ofShape` and `.extends` cases follow directly from
+`stableM`. Each other case is self-recursion. -/
 theorem stableFuel {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.WellFormedExtends)
     (s : ShapeExpr) :
     ∀ fuel1 fuel2, ShapeExpr.reqFuel S s + 1 ≤ fuel1 → ShapeExpr.reqFuel S s + 1 ≤ fuel2 →
@@ -621,32 +657,33 @@ theorem stableFuel {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.WellFormedExt
       show ¬ SatisfiesFuel f1 S G τ n s ↔ ¬ SatisfiesFuel f2 S G τ n s
       rw [ih f1 f2 (by omega) (by omega) G τ n]
 
-/-! ### Packaging: the real `Satisfies`, and Lemma 1 itself -/
+/-! ### Packaging: the real `Satisfies`, and Lemma 1 -/
 
-/-- The real `n, τ ⊨_S def(z)` (no `Fuel` in sight): evaluate at a
-canonical, concretely-sufficient fuel amount. Well-defined (independent of
-this particular choice) by `stableFuel`, recorded as `lemma1` below. -/
+/-- The real `n, τ ⊨_S def(z)` (with no `Fuel`). It evaluates at a
+canonical fuel amount that is concretely sufficient. By `stableFuel`, the
+result does not depend on this choice. `lemma1` below records this. -/
 noncomputable def Satisfies (S : Schema) (G : Graph) (τ : Typing) (n : RDFNode)
     (s : ShapeExpr) : Prop :=
   SatisfiesFuel (ShapeExpr.reqFuel S s + 1) S G τ n s
 
-/-- The real `M, τ ⊨_S s` (Table 3, no `Fuel`). -/
+/-- The real `M, τ ⊨_S s` (Table 3, with no `Fuel`). -/
 noncomputable def SatisfiesM (S : Schema) (G : Graph) (τ : Typing) (M : Finset Triple)
     (s : ShapeExpr) : Prop :=
   SatisfiesMFuel (ShapeExpr.reqFuel S s) S G τ M s
 
-/-- The real `M, τ ⊨_S e` (Table 1, no `Fuel`). -/
+/-- The real `M, τ ⊨_S e` (Table 1, with no `Fuel`). -/
 noncomputable def SatisfiesE (S : Schema) (G : Graph) (τ : Typing) (M : Finset Triple)
     (e : TripleExpr) : Prop :=
   SatisfiesEFuel e.size S G τ M e
 
-/-- **Lemma 1.** For a schema `S` satisfying `WellFormedX`/
-`WellFormedExtends`, `n, τ ⊨_S def(z)`'s evaluation "always terminates": any
-sufficiently large `Fuel` computes the same, `Fuel`-independent answer that
-`Satisfies` (defined above at one canonical such `Fuel`) gives — i.e. the
-`Fuel`-bounded relations of `Semantics.lean` really do converge to a
-well-defined limit, for every node `n`, typing `τ`, and label
-`z ∈ Y ∪ X` (`def(z) := S.shapeDef z`, any `ShapeExpr`). -/
+/-- **Lemma 1.** Let `S` be a schema that satisfies `WellFormedX` and
+`WellFormedExtends`. Then the evaluation of `n, τ ⊨_S def(z)` "always
+terminates". Each sufficiently large `Fuel` computes the same answer,
+which does not depend on `Fuel`. This answer is the result of `Satisfies`
+(defined above at one canonical `Fuel`). Thus, the relations of
+`Semantics.lean` that are bounded by `Fuel` converge to a well-defined
+limit, for each node `n`, typing `τ` and label `z ∈ Y ∪ X`
+(`def(z) := S.shapeDef z`, any `ShapeExpr`). -/
 theorem lemma1 {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.WellFormedExtends)
     (G : Graph) (τ : Typing) (n : RDFNode) (z : Label) (fuel : ℕ)
     (hfuel : ShapeExpr.reqFuel S (S.shapeDef z) + 1 ≤ fuel) :

@@ -3,8 +3,8 @@ import ShexLean.Common.Typing
 import Mathlib.Data.Finset.Basic
 
 /-!
-The grammar of shape expressions and triple expressions, Fig. 1 of Boneva,
-Labra Gayo, Prud'hommeaux (2017):
+The grammar of shape expressions and triple expressions. This is Fig. 1 of
+Boneva, Labra Gayo, Prud'hommeaux (2017):
 
 ```
 ShExpr  ::= ValueDescr | NeigDescr                 TExpr        ::= TriplePattern | 'EMPTY'
@@ -18,34 +18,34 @@ ShapeNot   ::= 'NOT' ShExpr                        RepetExpr     ::= TExpr '[' m
                                                     ShapeRef      ::= a shape label in L
 ```
 
-A shapes schema `S` is a pair `(L, def)`, where `L` is a set of shape labels
-and `def` associates a shape expression with every label.
+A shapes schema `S` is a pair `(L, def)`. `L` is a set of shape labels.
+`def` gives a shape expression to each label.
 -/
 
 namespace ShexLean
 
-/-- An element of a `ValueDescr`: an IRI, a literal, or the special constant
-`_b` standing for "any blank node". -/
+/-- An element of a `ValueDescr`: an IRI, a literal, or the special
+constant `_b`. The constant `_b` means "any blank node". -/
 inductive ValueItem where
   | iri      : IRI → ValueItem
   | lit      : Literal → ValueItem
   | anyBlank : ValueItem
   deriving DecidableEq, Repr
 
-/-- `ValueDescr`: an arbitrary (finite) subset of `IRI ∪ Lit ∪ {_b}`. -/
+/-- `ValueDescr`: a finite subset of `IRI ∪ Lit ∪ {_b}`. -/
 abbrev ValueDescr := Finset ValueItem
 
-/-- `PropSet`: an arbitrary (finite) subset of `IRI`. -/
+/-- `PropSet`: a finite subset of `IRI`. -/
 abbrev PropSet := Finset IRI
 
 mutual
-/-- A shape expression, i.e. a Boolean combination of a value description and
-a neighbourhood description. -/
+/-- A shape expression: a Boolean combination of value descriptions and
+neighbourhood descriptions. -/
 inductive ShExpr where
-  /-- `ValueDescr`: constrains the value of the node itself. -/
+  /-- `ValueDescr`: a constraint on the value of the node. -/
   | valueDescr : ValueDescr → ShExpr
-  /-- `NeigDescr`: constrains the neighbourhood of the node via a triple
-  expression. -/
+  /-- `NeigDescr`: a constraint on the neighbourhood of the node, with a
+  triple expression. -/
   | neigDescr  : TExpr → ShExpr
   /-- `ShapeAnd`. -/
   | and        : ShExpr → ShExpr → ShExpr
@@ -54,26 +54,28 @@ inductive ShExpr where
   /-- `ShapeNot`. -/
   | not        : ShExpr → ShExpr
 
-/-- A triple expression, describing the expected neighbourhood of a node. -/
+/-- A triple expression. It describes the expected neighbourhood of a
+node. -/
 inductive TExpr where
-  /-- `TriplePattern P @L`: a set of properties `P` paired with a shape
-  reference `L` that the matched object must satisfy. -/
+  /-- `TriplePattern P @L`: a set of properties `P` and a shape reference
+  `L`. The object of each matched triple must satisfy `L`. -/
   | tPattern : PropSet → Label → TExpr
-  /-- `EMPTY`: matched only by the empty set of triples. -/
+  /-- `EMPTY`: only the empty set of triples matches it. -/
   | empty    : TExpr
   /-- `SomeOfExpr E1 | E2`. -/
   | someOf   : TExpr → TExpr → TExpr
   /-- `EachOfExpr E1 ; E2`. -/
   | eachOf   : TExpr → TExpr → TExpr
-  /-- `RepetExpr E [min; max]`; `none` for `max` stands for `*`. -/
+  /-- `RepetExpr E [min; max]`. If `max` is `none`, it means `*`. -/
   | rep      : TExpr → Nat → Option Nat → TExpr
 end
 
 /-- A shapes schema `S = (L, def)`. -/
 structure Schema where
-  /-- `L`: the set of shape labels used as names of shapes. -/
+  /-- `L`: the set of shape labels. The labels are the names of the
+shapes. -/
   labels   : Finset Label
-  /-- `def`: associates a shape expression with every shape label. -/
+  /-- `def`: gives a shape expression to each shape label. -/
   shapeDef : Label → ShExpr
 
 end ShexLean

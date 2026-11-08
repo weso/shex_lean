@@ -15,14 +15,14 @@ import ShexLean.Shex2025Inheritance.examples.Example7_well_defined
 import ShexLean.Shex2026InheritanceDisjunction.examples.Example1_coloured_circle
 
 /-!
-The list of examples the `shex_lean` executable can `list`/`run`.
+The list of examples that the `shex_lean` executable can `list` and `run`.
 -/
 
 namespace Examples
 
-/-- All examples registered for the executable's `list`/`run` commands,
-ordered by paper and then by example number so the `list` output matches
-the papers' own numbering. -/
+/-- All the examples that the `list` and `run` commands of the executable
+can use. The order is by paper, and then by example number. Thus, the
+`list` output uses the same numbers as the papers. -/
 def all : List Example :=
   [introduction, issueTracker, exampleTypings, negationRecursion, stratificationExample,
     proveAlgorithmMotivation, proveAlgorithmTrace,
@@ -31,7 +31,7 @@ def all : List Example :=
     inheritance2025WellDefined,
     inheritanceDisjunctionColouredCircle]
 
-/-- Look up a registered example by name. -/
+/-- Find a registered example by its name. -/
 def find? (name : String) : Option Example :=
   all.find? (·.name == name)
 

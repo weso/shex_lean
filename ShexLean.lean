@@ -1,5 +1,5 @@
--- This module serves as the root of the `ShexLean` library.
--- Import modules here that should be built as part of the library.
+-- This module is the root of the `ShexLean` library.
+-- Import here all the modules that the library must build.
 import ShexLean.Common.RDF
 import ShexLean.Common.Typing
 import ShexLean.Common.DisjointUnion

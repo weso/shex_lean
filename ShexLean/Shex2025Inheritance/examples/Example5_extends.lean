@@ -3,27 +3,30 @@ import ShexLean.Shex2025Inheritance.Render
 import Example
 
 /-!
-Example 5 from the 2025 "Shape Expressions with Inheritance" paper (§4.2,
-Table 3 rule 18): a chain of `extends`-related shapes `x0..x6` (schema
-`S_ex5`, `Example3_triple_match.lean`), exercising the `extends` rule's
-partition over `anc(X)`.
+Example 5 from the 2025 paper "Shape Expressions with Inheritance" (§4.2,
+rule 18 of Table 3): a chain of shapes `x0..x6` related by `extends`
+(schema `S_ex5`, in `Example3_triple_match.lean`). It tests the partition
+of the `extends` rule over `anc(X)`.
 
-Example 5's schema is stated in the paper as `S = (Y, {x1,...,x6}, def,
-∅)`, but `def(x1)` and `def(x3)` both use `extends x0`, so `x0` needs to
-be a member of the extendable-label set `X` for `Schema.anc`/
-`Schema.WellFormedX` to see it as a node of `H_S` at all (Definition 3:
-`H_S`'s vertex set is `X`). This appears to be a minor omission in the
-paper's statement of the example: `x0`'s own definition, `extends _ ⟨p
-@Teven⟩`, is exactly the form Definition 2 requires of an `X`-label.
-`Example3_triple_match.lean`'s `S_ex5.X` includes `x0`.
+The paper gives the schema of Example 5 as `S = (Y, {x1,...,x6}, def, ∅)`.
+But `def(x1)` and `def(x3)` both use `extends x0`. Thus, `x0` must be a
+member of the extendable-label set `X`, so that `Schema.anc` and
+`Schema.WellFormedX` see it as a node of `H_S` (Definition 3: the vertex
+set of `H_S` is `X`). This is possibly a small omission in the statement
+of the example in the paper. The definition of `x0`,
+`extends _ ⟨p @Teven⟩`, has exactly the form that Definition 2 requires
+for an `X` label. The `S_ex5.X` of `Example3_triple_match.lean` includes
+`x0`.
 -/
 
 namespace ShexLean.Inheritance
 
-/-- `M24, τ ⊨ def(x1)` (Example 5): `def(x1) = extends x0 ⟨p @T_even⟩`,
-so `anc({x0}) = {x0}` and `M24` splits into `M'` (satisfying `⟨p
-@T_even⟩`) and `Mx0` (satisfying `ext-te(x0) = p @T_even`; `x0` has no
-restriction of its own). -/
+/-- `M24, τ ⊨ def(x1)` (Example 5). `def(x1) = extends x0 ⟨p @T_even⟩`.
+Thus, `anc({x0}) = {x0}`, and `M24` splits into two parts:
+
+* `M'`, which satisfies `⟨p @T_even⟩`.
+* `Mx0`, which satisfies `ext-te(x0) = p @T_even`. (`x0` has no
+  restriction.) -/
 theorem M24_satisfies_defx1 :
     SatisfiesMFuel bigFuel S_ex5 default τ_ex3 M24 (S_ex5.shapeDef "x1") := by
   have hx1shape : S_ex5.shapeDef "x1" = .extends {"x0"} ⟨false, none, .tc "p" "T_even"⟩ := rfl
@@ -71,10 +74,13 @@ theorem M24_satisfies_defx1 :
     rw [hx0shape] at hu
     simp [ShapeExpr.restrOf] at hu
 
-/-- `M246, τ ⊨ def(x2)` (Example 5): `def(x2) = extends x1 ⟨p @T_<5⟩`, so
-`anc({x1}) = {x1, x0}` (`x1` extends `x0`) and `M246` splits three ways:
-`M'={2}` (satisfying `⟨p @T_<5⟩`), `Mx1={4}`, `Mx0={6}` (both satisfying
-`ext-te = p @T_even`, neither `x0` nor `x1` having a restriction). -/
+/-- `M246, τ ⊨ def(x2)` (Example 5). `def(x2) = extends x1 ⟨p @T_<5⟩`.
+Thus, `anc({x1}) = {x1, x0}` (`x1` extends `x0`), and `M246` splits into
+three parts:
+
+* `M'={2}`, which satisfies `⟨p @T_<5⟩`.
+* `Mx1={4}` and `Mx0={6}`, which both satisfy `ext-te = p @T_even`.
+  (`x0` and `x1` have no restriction.) -/
 theorem M246_satisfies_defx2 :
     SatisfiesMFuel bigFuel S_ex5 default τ_ex3 M246 (S_ex5.shapeDef "x2") := by
   have hx2shape : S_ex5.shapeDef "x2" = .extends {"x1"} ⟨false, none, .tc "p" "T_lt5"⟩ := rfl
@@ -134,10 +140,10 @@ theorem M246_satisfies_defx2 :
     · rw [hx1shape] at hu; simp [ShapeExpr.restrOf] at hu
     · rw [hx0shape] at hu; simp [ShapeExpr.restrOf] at hu
 
-/-- `M24, τ ¬⊨ def(x2)` (Example 5): `def(x2)`'s rule-18 partition needs
-*three* pairwise-disjoint singletons (`M'`, `Mx1`, `Mx0`, each forced by a
-bare `.tc`), so any satisfying `M` has exactly three elements — but
-`M24.card = 2`. -/
+/-- `M24, τ ¬⊨ def(x2)` (Example 5). The rule-18 partition of `def(x2)`
+needs *three* pairwise disjoint singletons (`M'`, `Mx1` and `Mx0`; a plain
+`.tc` forces each of them). Thus, each `M` that satisfies it has exactly
+three elements. But `M24.card = 2`. -/
 theorem M24_not_satisfies_defx2 :
     ¬ SatisfiesMFuel bigFuel S_ex5 default τ_ex3 M24 (S_ex5.shapeDef "x2") := by
   have hx2shape : S_ex5.shapeDef "x2" = .extends {"x1"} ⟨false, none, .tc "p" "T_lt5"⟩ := rfl
@@ -206,10 +212,11 @@ theorem M24_not_satisfies_defx2 :
   have : M24.card = 2 := by unfold M24; decide
   omega
 
-/-- `M2a, τ ⊨ def(x5)` (Example 5): `def(x5) = extends x0 extra {p} ⟨ε⟩`,
-so `M'` must satisfy the shape `[extra {p}]⟨ε⟩`, which allows the leftover
-`"a"`-triple (a bare `⟨ε⟩` would force `M' = ∅`); `Mx0={2}` satisfies
-`ext-te(x0) = p @T_even`. -/
+/-- `M2a, τ ⊨ def(x5)` (Example 5). `def(x5) = extends x0 extra {p} ⟨ε⟩`.
+
+* `M'` must satisfy the shape `[extra {p}]⟨ε⟩`. This shape permits the
+  leftover triple with `"a"`. (A plain `⟨ε⟩` forces `M' = ∅`.)
+* `Mx0={2}` satisfies `ext-te(x0) = p @T_even`. -/
 theorem M2a_satisfies_defx5 :
     SatisfiesMFuel bigFuel S_ex5 default τ_ex3 M2a (S_ex5.shapeDef "x5") := by
   have hx5shape : S_ex5.shapeDef "x5" = .extends {"x0"} ⟨false, some {"p"}, .empty⟩ := rfl
@@ -260,15 +267,18 @@ theorem M2a_satisfies_defx5 :
     simp only [Finset.mem_singleton] at hx; subst hx
     rw [hx0shape] at hu; simp [ShapeExpr.restrOf] at hu
 
-/-- `M24a, τ ¬⊨ def(x6)` (Example 5): `def(x6) = extends x3 ⟨p @T_even⟩`.
-`x3`'s own `extra {p}` (from `x5`'s sibling definition) is not an ancestor
-of `x6` and plays no role: `x6` extends `x3`, whose `h` is `⟨p @T_even⟩
-and ⟨(p@T_>5)*⟩` with no `extra`, so nothing licenses `M24a`'s leftover
-`"a"`-triple. As `M24_not_satisfies_defx2` shows for a similarly-shaped
-chain, the cardinality doesn't work out either: `x3` needs 2 further
-p-triples beyond `x6`'s own, which the paper's four sets don't provide
-without reuse. This proof only checks the `"a"`-triple obstruction the
-paper's claim highlights. -/
+/-- `M24a, τ ¬⊨ def(x6)` (Example 5). `def(x6) = extends x3 ⟨p @T_even⟩`.
+
+The `extra {p}` of the definition of `x5` has no effect here, because `x5`
+is not an ancestor of `x6`. `x6` extends `x3`, whose `h` is
+`⟨p @T_even⟩ and ⟨(p@T_>5)*⟩`, with no `extra`. Thus, nothing permits the
+leftover triple with `"a"` in `M24a`.
+
+As `M24_not_satisfies_defx2` shows for a chain of similar form, the
+cardinality is also not correct. `x3` needs 2 more `p` triples in
+addition to the triples of `x6`, and the four sets of the paper do not
+give them without reuse. This proof checks only the obstruction of the
+`"a"` triple, which the claim of the paper shows. -/
 theorem M24a_not_satisfies_defx6 :
     ¬ SatisfiesMFuel bigFuel S_ex5 default τ_ex3 M24a (S_ex5.shapeDef "x6") := by
   have hx6shape : S_ex5.shapeDef "x6" = .extends {"x3"} ⟨false, none, .tc "p" "T_even"⟩ := rfl
@@ -350,21 +360,24 @@ open ShexLean.Inheritance (S_ex5 τ_ex3 bigFuel M24 M246 M2a M24a
   S_ex5_XClosed S_ex5_RestrOk satisfiesMFuel_decidable)
 open ShexLean (Triple Label Graph.render Typing.render renderDecide)
 
-/-- `renderDecide`'s `native_decide`-computed verdict for `M ⊨ def(L)`. -/
+/-- The result of `renderDecide`, computed with `native_decide`, for
+`M ⊨ def(L)`. -/
 def satMEx5 (M : Finset Triple) (L : Label)
     (hOk : (S_ex5.shapeDef L).MOk S_ex5) : String :=
   renderDecide (satisfiesMFuel_decidable S_ex5 default τ_ex3 S_ex5_XClosed S_ex5_RestrOk
     bigFuel M (S_ex5.shapeDef L) hOk)
 
-/-- Example 5's `extends` chain. `schemaText` is generated from the actual
-`S_ex5`; every `M ⊨ def(L)` claim in `typingText` is a `native_decide`
-computation via `satisfiesMFuel_decidable`, including `M24, τ ⊨ def(x1)`
-(proved above via `x1`'s rule-18 partition against its ancestor `x0`) and
-the two negative claims proved above by cardinality/leftover-triple
-arguments. -/
+/-- The `extends` chain of Example 5.
+
+* `schemaText` is generated from the real `S_ex5`.
+* Each claim `M ⊨ def(L)` in `typingText` is a `native_decide` computation
+  with `satisfiesMFuel_decidable`. This includes `M24, τ ⊨ def(x1)`
+  (proved above with the rule-18 partition of `x1` against its ancestor
+  `x0`), and the two negative claims proved above with the cardinality
+  and leftover-triple arguments. -/
 def inheritance2025Extends : Example where
   name := "inheritance2025-example5-extends"
-  summary := "extends chain x0..x6; M24,τ ⊨ def(x1) via x1's rule-18 partition."
+  summary := "extends chain x0..x6. M24,τ ⊨ def(x1) with the rule-18 partition of x1."
   schemaText := S_ex5.render
   graphText :=
     s!"M24  = {Graph.render M24}\n" ++

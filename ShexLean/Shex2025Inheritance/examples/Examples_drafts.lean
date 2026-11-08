@@ -9,7 +9,7 @@ namespace ShexLean.Inheritance
 def bigFuel1 : ℕ := 4
 
 /-!
- Simple example drafts to check definitions
+ Simple draft examples to check the definitions.
 
  ShEx:
 
@@ -20,14 +20,17 @@ Data:
 
 :ok1 :p "v1"; :p "v2" .
 
-`x2` must itself be `.extends`-shaped (Definition 2's second bullet: every
-label in `X` needs `def(x) = extends X h [and u]`), since it is named
-after `x1`'s `extends` and Table 3's rule 18 reads `ext-te(x2)` off
-`(S.shapeDef "x2").extTe`, which is only meaningful for that form. `x2` is
-a leaf of the hierarchy (`extends ∅`, nothing further to inherit), and its
-own constraint is just `p @c2` — the original draft's `{p xsd:string} AND
-{p ["v2"]}` is dropped since `c2` (literal `"v2"`) already implies
-`cStr` (any string), so the conjunction was redundant. -/
+`x2` must also have the `.extends` form. (The second bullet of
+Definition 2: each label in `X` needs `def(x) = extends X h [and u]`.) The
+reason is that `x2` comes after the `extends` of `x1`, and rule 18 of
+Table 3 reads `ext-te(x2)` from `(S.shapeDef "x2").extTe`. This has a
+meaning only for that form.
+
+`x2` is a leaf of the hierarchy (`extends ∅`, with nothing more to
+inherit). Its constraint is only `p @c2`. We removed the
+`{p xsd:string} AND {p ["v2"]}` of the original draft, because `c2` (the
+literal `"v2"`) already implies `cStr` (any string). Thus, the
+conjunction was redundant. -/
 
 def cStr : NodeConstraint
   | .lit (.str _) => True
@@ -78,10 +81,12 @@ def τ : Typing :=
     ((b: RDFNode), "x1")
   }
 
-/-- `a, τ ⊨ def(x1)`: `def(x1) = extends x2 ⟨p @c1⟩`, so `anc({x2}) = {x2}`
-(`x2` is a leaf, `extends ∅`) and `neigh_G(a) = {(a,p,v1), (a,p,v2)}` splits
-into `M' = {(a,p,v1)}` (satisfying `x1`'s own `⟨p @c1⟩`) and
-`Mx2 = {(a,p,v2)}` (satisfying `ext-te(x2) = p @c2`). -/
+/-- `a, τ ⊨ def(x1)`. `def(x1) = extends x2 ⟨p @c1⟩`. Thus,
+`anc({x2}) = {x2}` (`x2` is a leaf, `extends ∅`), and
+`neigh_G(a) = {(a,p,v1), (a,p,v2)}` splits into two parts:
+
+* `M' = {(a,p,v1)}`, which satisfies the `⟨p @c1⟩` of `x1`.
+* `Mx2 = {(a,p,v2)}`, which satisfies `ext-te(x2) = p @c2`. -/
 theorem a_satisfies_x1 :
     SatisfiesFuel bigFuel1 S G τ a (S.shapeDef "x1") := by
   have hx1shape : S.shapeDef "x1" = .extends {"x2"} ⟨false, none, .tc "p" "c1"⟩ := rfl
@@ -129,11 +134,13 @@ theorem a_satisfies_x1 :
     simp [ShapeExpr.restrOf] at hu
 
 
-/-- `b, τ ⊭ def(x1)`: `neigh_G(b) = {(b,p,v1), (b,p,v3)}`. The `v1` triple
-is the only one typed `c1`, so `x1`'s own `⟨p @c1⟩` (`extra := none`) can
-only ever absorb it, forcing the `v3` triple into `Mx "x2"`, which must
-satisfy `ext-te(x2) = p @c2` (rule 18) — but `v3` isn't typed `c2` in `τ`
-either (it isn't typed anything), so no partition of `neigh_G(b)` works. -/
+/-- `b, τ ⊭ def(x1)`. `neigh_G(b) = {(b,p,v1), (b,p,v3)}`.
+
+The `v1` triple is the only triple with the type `c1`. Thus, the
+`⟨p @c1⟩` of `x1` (`extra := none`) can take only this triple. This
+forces the `v3` triple into `Mx "x2"`, which must satisfy
+`ext-te(x2) = p @c2` (rule 18). But `v3` also does not have the type `c2`
+in `τ` (it has no type). Thus, no partition of `neigh_G(b)` works. -/
 theorem b_doesnt_satisfy_x1 :
     ¬ SatisfiesFuel bigFuel1 S G τ b (S.shapeDef "x1") := by
   have hx1shape : S.shapeDef "x1" = .extends {"x2"} ⟨false, none, .tc "p" "c1"⟩ := rfl
@@ -169,8 +176,8 @@ theorem b_doesnt_satisfy_x1 :
     hunion ▸ (by decide)
   rw [Finset.mem_union, Finset.mem_biUnion] at hv3mem
   rcases hv3mem with hv3M' | ⟨x, hx, hv3Mx⟩
-  · -- v3 ∈ M': it can't be absorbed by ⟨p @c1⟩ (v3 isn't typed c1), so it
-    -- leaks into Mnotin, contradicting extra := none.
+  · -- v3 ∈ M': ⟨p @c1⟩ cannot take it (v3 does not have the type c1). Thus,
+    -- it goes into Mnotin, which contradicts extra := none.
     obtain ⟨-, hMnotin, -⟩ := hM'
     have hv3notin : (⟨b, "p", .lit (.str "v3")⟩ : Triple) ∈
         Mnotin τ M' (TripleExpr.tc "p" "c1") := by
@@ -186,8 +193,8 @@ theorem b_doesnt_satisfy_x1 :
       Finset.mem_image_of_mem Triple.pred hv3notin
     have := hMnotin hpmem
     simp at this
-  · -- v3 ∈ Mx "x2": it must satisfy ext-te(x2) = p @c2, but v3 isn't typed
-    -- c2 in τ either.
+  · -- v3 ∈ Mx "x2": it must satisfy ext-te(x2) = p @c2, but v3 also does not
+    -- have the type c2 in τ.
     simp only [Finset.mem_singleton] at hx; subst hx
     have hEx := hMx "x2" (by decide)
     obtain ⟨n, o, heq, hty⟩ := hEx

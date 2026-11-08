@@ -4,27 +4,34 @@ import Example
 
 /-!
 Example 3 from Boneva, Labra Gayo, Prud'hommeaux (2017): the four typings
-of `G₂` by `S₁` from Example 2 (`ShexLean.Examples`, `Example2_issue_tracker.lean`),
-and which of them are correct (Definition 2).
+of `G₂` by `S₁` from Example 2 (`ShexLean.Examples`,
+`Example2_issue_tracker.lean`), and which of them are correct
+(Definition 2).
 
-Example 3 lists four typings of `G₂` by `S₁` and states which are correct:
-`typing_1` (Example 2's own claim, proved there since Example 3's other
-typings reuse everything that file defines) and `typing_4` are correct,
-`typing_2` is correct too (the paper says so explicitly: "typing_1 and
-typing_2 are correct"). `typing_3` is not: it types `<i1>`/`<i2>` as
-`<IssueSh>` without also typing `"Ren"`/`"Bob"` as `<Str>`, which
-`<IssueSh>`'s own definition requires.
+Example 3 gives four typings of `G₂` by `S₁`, and tells which typings are
+correct:
+
+* `typing_1` is correct. (This is the claim of Example 2. We prove it in
+  that file, because the other typings of Example 3 use all of its
+  definitions.)
+* `typing_2` is correct. The paper says this explicitly: "typing_1 and
+  typing_2 are correct".
+* `typing_3` is not correct. It gives the type `<IssueSh>` to `<i1>` and
+  `<i2>`, but it does not give the type `<Str>` to `"Ren"` and `"Bob"`.
+  The definition of `<IssueSh>` needs this.
+* `typing_4` is correct.
 -/
 
 namespace ShexLean.Examples
 
 open ShexLean
 
-/-- `typing_2` from Example 3: only the two string literals get a type. -/
+/-- `typing_2` from Example 3: only the two string literals have a
+type. -/
 def typing2 : Typing := {(ren, Str), (bob, Str)}
 
-/-- `typing_2` is correct: it only ever asserts `<Str>`, and `strDef`'s
-satisfaction (`se-value-descr1`) doesn't depend on `t` at all. -/
+/-- `typing_2` is correct. It gives only `<Str>`, and the satisfaction of
+`strDef` (`se-value-descr1`) does not depend on `t`. -/
 theorem typing2_correct : S₁.CorrTyping G₂ typing2 := by
   intro n L hmem
   simp only [typing2, Finset.mem_insert, Finset.mem_singleton, Prod.mk.injEq] at hmem
@@ -32,14 +39,15 @@ theorem typing2_correct : S₁.CorrTyping G₂ typing2 := by
   · exact satisfies_str ren (Or.inl rfl)
   · exact satisfies_str bob (Or.inr rfl)
 
-/-- `typing_3` from Example 3: `<i1>`/`<i2>` typed `<IssueSh>`, but neither
-string literal typed `<Str>`. -/
+/-- `typing_3` from Example 3: `<i1>` and `<i2>` have the type
+`<IssueSh>`, but no string literal has the type `<Str>`. -/
 def typing3 : Typing := {((i1 : RDFNode), IssueSh), ((i2 : RDFNode), IssueSh)}
 
-/-- `typing_3` is *not* correct (Example 3's own counterexample): `(<i1>,
-<IssueSh>) ∈ typing_3`, but `<i1>`'s unique `is:reportedBy` neighbour
-`"Ren"` is not typed `<Str>` in `typing_3`, so the `is:reportedBy @<Str>`
-half of `issueShDef`'s each-of can never be matched. -/
+/-- `typing_3` is *not* correct (the counterexample of Example 3).
+`(<i1>, <IssueSh>) ∈ typing_3`. But `<i1>` has only one `is:reportedBy`
+neighbour, `"Ren"`, and `"Ren"` does not have the type `<Str>` in
+`typing_3`. Thus, the `is:reportedBy @<Str>` part of the each-of in
+`issueShDef` can never match. -/
 theorem typing3_not_correct : ¬ S₁.CorrTyping G₂ typing3 := by
   intro hcorrect
   have hsat : Satisfies G₂ typing3 i1 issueShDef :=
@@ -55,20 +63,21 @@ theorem typing3_not_correct : ¬ S₁.CorrTyping G₂ typing3 := by
   simp only [Finset.mem_insert, Finset.mem_singleton] at hmemN1
   have hpredEq : pred = reportedBy := by simpa using hpred
   rcases hmemN1 with heq | heq
-  · -- `⟨subj, pred, obj⟩ = t1 = ⟨i1, reportedBy, ren⟩`, so `obj = ren`.
+  · -- `⟨subj, pred, obj⟩ = t1 = ⟨i1, reportedBy, ren⟩`. Thus, `obj = ren`.
     have hobjEq : obj = ren := by
       have : (⟨subj, pred, obj⟩ : Triple).obj = t1.obj := by rw [heq]
       simpa [t1] using this
     rw [hobjEq] at hty
     exact absurd hty (by decide)
-  · -- `⟨subj, pred, obj⟩ = t2 = ⟨i1, relatedTo, i2⟩`, contradicting `pred = reportedBy`.
+  · -- `⟨subj, pred, obj⟩ = t2 = ⟨i1, relatedTo, i2⟩`. This contradicts `pred = reportedBy`.
     have hpredEq2 : pred = relatedTo := by
       have : (⟨subj, pred, obj⟩ : Triple).pred = t2.pred := by rw [heq]
       simpa [t2] using this
     rw [hpredEq2] at hpredEq
     exact absurd hpredEq (by decide)
 
-/-- `typing_4` from Example 3: the empty typing, trivially correct. -/
+/-- `typing_4` from Example 3: the empty typing. It is trivially
+correct. -/
 def typing4 : Typing := ∅
 
 theorem typing4_correct : S₁.CorrTyping G₂ typing4 := by
@@ -82,13 +91,14 @@ namespace Examples
 open ShexLean.Examples (S₁ G₂ typing1 typing2 typing3 typing4)
 open ShexLean (Schema.render Graph.render Typing.render renderDecide corrTyping_decidable)
 
-/-- Example 3's four typings of `G₂` by `S₁`, and their correctness.
-`schemaText`/`graphText` are generated from `S₁`/`G₂`; `typingText`'s four
-correctness verdicts are each a `Decidable` computation, not hand-typed
-"(correct)"/"(not correct)". -/
+/-- The four typings of `G₂` by `S₁` from Example 3, and their
+correctness. `schemaText` and `graphText` are generated from `S₁` and
+`G₂`. Each of the four correctness results in `typingText` is a
+`Decidable` computation. They are not a "(correct)" or a "(not correct)"
+that a person typed by hand. -/
 def exampleTypings : Example where
   name := "schemas2017-example3-typings"
-  summary := "Four typings of G₂ by S₁ from Ex. 2; which are correct (Def. 2)."
+  summary := "Four typings of G₂ by S₁ from Ex. 2, and which are correct (Def. 2)."
   schemaText := Schema.render S₁
   graphText := Graph.render G₂
   typingText :=

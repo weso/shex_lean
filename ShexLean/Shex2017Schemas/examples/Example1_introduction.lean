@@ -4,9 +4,10 @@ import Example
 
 /-!
 The "Introductory Example" (schema `S₀`) from §1 of Boneva, Labra Gayo,
-Prud'hommeaux (2017), later named and discussed as the paper's Example 1
-(§2). Used as a second, larger regression check (alongside
-`ShexLean.Examples`'s Example 2/3) that the formalization fits together.
+Prud'hommeaux (2017). §2 of the paper calls it Example 1. We use it as a
+second, larger regression check that all the parts of the formalization
+work together. (The first check is Example 2 and Example 3, in the
+namespace `ShexLean.Examples`.)
 
 ```
 <UserShape>      → foaf:name @<StringValue> ; foaf:mbox @<IRIValue> [0;1]
@@ -25,9 +26,9 @@ Prud'hommeaux (2017), later named and discussed as the paper's Example 1
 <IntValue>       → xsd:integer
 ```
 
-`Def_Client`/`Def_User` are the triple-expression bodies of
-`<ClientShape>`/`<UserShape>`, reused verbatim inside `<ClientAndUser>`;
-`−` is set difference.
+`Def_Client` and `Def_User` are the triple-expression bodies of
+`<ClientShape>` and `<UserShape>`. `<ClientAndUser>` uses them again with
+no change. `−` is set difference.
 
 ```
 ex:issue1 is:reportedBy ex:fatima ; is:reproducedBy ex:ren , ex:noa ;
@@ -44,28 +45,34 @@ ex:emin   ex:clientAffil "ABC" ; foaf:name "Emin V. Petrov" ;
 > Nodes ex:issue1 and ex:issue2 have shape <IssueShape>; ex:fatima and
 > ex:emin are <ClientAndUser>; ex:ren and ex:noa have shape <ProgShape>.
 
-**Approximating `IRI` and set difference.** `Syntax.lean`'s `PropSet` is an
-explicit `Finset IRI`, so it cannot express "any IRI" (used in
-`<AnythgShape>`) or "any IRI except a finite exclusion list" (used in
-`<ClientAndUser>`'s two branches). As in `Examples.lean`, which stands in
-`xsd:string` with the two literals that occur in `G₂`, here every such
-wildcard/difference `PropSet` is stood in by the concrete finite set of
-predicates that occur in `G₀` (`allPreds`, `clientLeftover`,
-`userLeftover` below). This is enough for `G₀`: in every derivation below,
-`<AnythgShape>` is only ever asked about a node whose neighbourhood in
-`G₀` is already empty (every literal, plus the one IRI leaf
-`mailto:evp@example.org`, never used as a subject), so the exact contents
-of the approximated `IRI` wildcard inside `<AnythgShape>`'s own definition
-are never exercised by any proof; only membership of the specific
-predicate being matched matters, which `allPreds \ {…}` preserves.
+**How we approximate `IRI` and set difference.** In `Syntax.lean`,
+`PropSet` is an explicit `Finset IRI`. Thus, it cannot express these two
+sets:
 
-**Why every leaf needs its own typing entry.** `Semantics.lean`'s
-`te-tpattern` rule resolves a `TriplePattern`'s shape reference by consulting
-`t` directly (`t.has obj L`), not by recursing into `Satisfies` on
-`def(L)`. So the typing below, to be "correct" (Definition 2), needs an
-entry not just for the six nodes the paper's prose names, but for every
-`ValueDescr` leaf and every `<AnythgShape>`-typed "leftover" object that
-any nested pattern resolves along the way, worked out by hand below.
+* "Any IRI" (in `<AnythgShape>`).
+* "Any IRI except a finite list" (in the two branches of
+  `<ClientAndUser>`).
+
+`Example2_issue_tracker.lean` replaces `xsd:string` with the two literals
+that occur in `G₂`. In the same way, this file replaces each of these
+`PropSet`s with the finite set of predicates that occur in `G₀`
+(`allPreds`, `clientLeftover` and `userLeftover` below).
+
+This is sufficient for `G₀`. In each derivation below, `<AnythgShape>` is
+used only for a node whose neighbourhood in `G₀` is empty. (These nodes
+are all the literals, and the IRI leaf `mailto:evp@example.org`, which is
+never a subject.) Thus, no proof uses the exact contents of the
+approximated `IRI` wildcard in the definition of `<AnythgShape>`. Only the
+membership of the matched predicate is important, and `allPreds \ {…}`
+keeps this membership.
+
+**Why each leaf needs its own typing entry.** In `Semantics.lean`, the
+rule `te-tpattern` finds the shape of a `TriplePattern` directly in `t`
+(`t.has obj L`). It does not do a recursion into `Satisfies` on `def(L)`.
+Thus, a "correct" typing (Definition 2) needs more entries than the six
+nodes that the paper names. It also needs an entry for each `ValueDescr`
+leaf, and for each "leftover" object with the type `<AnythgShape>`, that a
+nested pattern uses. We found these entries by hand (below).
 -/
 
 namespace Examples.Introduction
@@ -131,16 +138,16 @@ private def IRIValue      : Label := "IRIValue"
 private def ExpValueSet   : Label := "ExpValueSet"
 private def IntValue      : Label := "IntValue"
 
-/-- All predicates occurring in `G₀`, standing in for the unrestricted `IRI`
-wildcard (see the module docstring). -/
+/-- All the predicates that occur in `G₀`. This set replaces the `IRI`
+wildcard, which has no restriction (refer to the module docstring). -/
 private def allPreds : PropSet :=
   {reportedBy, reproducedBy, relatedTo, clientNbr, clientAffil, expertise,
     experience, foafName, foafMbox}
 
-/-- Stands in for `IRI − {ex:clientNbr, ex:clientAffil}`. -/
+/-- Replaces `IRI − {ex:clientNbr, ex:clientAffil}`. -/
 private def clientLeftover : PropSet := allPreds \ {clientNbr, clientAffil}
 
-/-- Stands in for `IRI − {foaf:name, foaf:mbox}`. -/
+/-- Replaces `IRI − {foaf:name, foaf:mbox}`. -/
 private def userLeftover : PropSet := allPreds \ {foafName, foafMbox}
 
 /-- `Def_Client`: the triple-expression body of `<ClientShape>`. -/
@@ -200,9 +207,9 @@ def S₀ : Schema where
     | "ExpValueSet" => expValueSetDef
     | _ => intValueDef
 
-/-- The typing of `G₀` by `S₀` described in the paper, extended with
-every leaf `ValueDescr`/`<AnythgShape>` association that a `⊢` derivation
-needs along the way (see the module docstring). 18 associations in total. -/
+/-- The typing of `G₀` by `S₀` from the paper. We added each leaf
+association (`ValueDescr` or `<AnythgShape>`) that a `⊢` derivation needs
+(refer to the module docstring). The total is 18 associations. -/
 def typing2 : Typing :=
   { ((issue1 : RDFNode), IssueShape), ((issue2 : RDFNode), IssueShape),
     ((fatima : RDFNode), ClientAndUser), ((emin : RDFNode), ClientAndUser),
@@ -363,11 +370,12 @@ namespace Examples
 open Examples.Introduction (S₀ G₀ typing2)
 open ShexLean (Schema.render Graph.render Typing.render renderDecide corrTyping_decidable)
 
-/-- The Introduction's `S₀`/`G₀` example. `schemaText`/`graphText`/
-`typingText` are all generated from the real `S₀`/`G₀`/`typing2` values;
-`typing2`'s correctness verdict is a `Decidable` computation (slower than
-the others, 18 associations, several through nested `.rep`/`.eachOf`/
-`AND`), not a hand-typed "(correct)". -/
+/-- The `S₀`/`G₀` example of the Introduction. `schemaText`, `graphText`
+and `typingText` are generated from the real values `S₀`, `G₀` and
+`typing2`. The correctness result of `typing2` is a `Decidable`
+computation. It is not a "(correct)" that a person typed by hand. This
+computation is slower than the others, because it has 18 associations and
+many of them go through nested `.rep`, `.eachOf` and `AND`. -/
 def introduction : Example where
   name := "schemas2017-example1-introduction"
   summary := "§1 Introductory Example: users, programmers, clients, issues."

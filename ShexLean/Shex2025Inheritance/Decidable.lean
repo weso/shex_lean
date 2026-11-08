@@ -6,41 +6,45 @@ import Mathlib.Data.Finset.Powerset
 import Mathlib.Data.Finset.Pi
 
 /-!
-Making the 2025 "Shape Expressions with Inheritance" semantics decidable,
-the 2025 analogue of `ShexLean.Shex2017Schemas.Decidable`. Two issues make
-this bigger than the 2017 case:
+This file makes the semantics of the 2025 paper "Shape Expressions with
+Inheritance" decidable. It is the 2025 equivalent of
+`ShexLean.Shex2017Schemas.Decidable`. Two problems make this work larger
+than in the 2017 case:
 
-1. `Schema.anc`/`Schema.ancSet` (Table 3 rule 18's ancestor sets,
-   `Syntax.lean`) are `noncomputable`, built via `Classical.decPred` since
-   Mathlib has no generic `Decidable` instance for reflexive-transitive
-   closure. This file proves the same declarative proposition — "there is
-   a path in `H_S`" — is decidable given one hypothesis Definition 3
-   already assumes: `H_S`'s edges out of any `x ∈ X` stay within `X`
-   (`Schema.XClosed` below, just Definition 3's "`H_S`'s vertex set is
-   `X`" made explicit). `Schema.anc`/`ancSet` are left untouched;
-   `ancReach`/`ancSetReach` below are a separate computable definition,
-   proved equal to them.
-2. `NodeConstraint := RDFNode → Prop` (Table 3 rule 13, `.constraint c`) is
-   an arbitrary predicate with no canonical decision procedure, unlike
-   2017's concrete `ValueDescr`. Deciding `SatisfiesMFuel`/`SatisfiesFuel`
-   is only possible given a `DecidablePred c` for whichever `c`s a schema
-   actually uses, threaded through explicitly below.
+1. `Schema.anc` and `Schema.ancSet` (the ancestor sets of rule 18 of
+   Table 3, in `Syntax.lean`) are `noncomputable`. They use
+   `Classical.decPred`, because Mathlib has no general `Decidable`
+   instance for the reflexive-transitive closure. This file proves that
+   the same declarative proposition ("there is a path in `H_S`") is
+   decidable with one hypothesis that Definition 3 already assumes: the
+   edges of `H_S` out of each `x ∈ X` stay in `X`. (`Schema.XClosed`
+   below makes explicit the statement of Definition 3 "the vertex set of
+   `H_S` is `X`".) This file does not change `Schema.anc` and `ancSet`.
+   `ancReach` and `ancSetReach` below are separate computable definitions,
+   and the file proves that they are equal to `anc` and `ancSet`.
+2. `NodeConstraint := RDFNode → Prop` (rule 13 of Table 3,
+   `.constraint c`) is a general predicate with no canonical decision
+   procedure. (The concrete `ValueDescr` of 2017 has one.) Thus, you can
+   decide `SatisfiesMFuel` and `SatisfiesFuel` only if you give a
+   `DecidablePred c` for each `c` that a schema uses. These instances go
+   explicitly through the definitions below.
 -/
 
 namespace ShexLean.Inheritance
 
 open ShexLean
 
-/-! ### `Schema.anc`/`ancSet`, made computable -/
+/-! ### `Schema.anc` and `ancSet`, made computable -/
 
-/-- The paper's own standing assumption for Definition 3: `H_S`'s edges
-never leave `X`, i.e. `H_S` is a graph on vertex set `X`, not just
-filtered down to one afterward. -/
+/-- The assumption of the paper for Definition 3: the edges of `H_S` never
+go out of `X`. Thus, `H_S` is a graph on the vertex set `X`. It is not a
+larger graph that is filtered after. -/
 def Schema.XClosed (S : Schema) : Prop :=
   ∀ x ∈ S.X, (S.shapeDef x).extendsTargets ⊆ S.X
 
-/-- One step of ancestor-set closure: add every not-yet-included `X`-vertex
-reachable by one more `extEdge` hop from the current set. -/
+/-- One step of the closure of the ancestor set: add each `X` vertex that
+is not yet in the current set and that one more `extEdge` step can
+reach. -/
 private def ancStep (S : Schema) (t : Finset Label) : Finset Label :=
   t ∪ S.X.filter (fun y' => ∃ y ∈ t, S.extEdge y y')
 
@@ -73,22 +77,22 @@ private theorem start_subset_iterate {S : Schema} {x : Label}
       rw [Function.iterate_succ_apply']
       exact ih.trans (subset_ancStep _ (iterate_subset_X hx n))
 
-/-- The computable ancestor set: iterate `ancStep` from `{x}` until it
-stabilizes (guaranteed within `(S.X \ {x}).card` steps, `Finset.increasing_
-iterate_fixed`). -/
+/-- The computable ancestor set: iterate `ancStep` from `{x}` until it is
+stable. This occurs in `(S.X \ {x}).card` steps or fewer
+(`Finset.increasing_iterate_fixed`). -/
 def ancReach (S : Schema) (x : Label) : Finset Label :=
   (ancStep S)^[(S.X \ {x}).card] {x}
 
-/-- Every `extEdge`-step out of an `S.X`-point reached from `x` stays in
-`S.X` (this is what `XClosed`, propagated along a path, actually buys). -/
+/-- Each `extEdge` step out of a point of `S.X` that is reachable from `x`
+stays in `S.X`. (This is the result of `XClosed`, applied along a path.) -/
 private theorem reflTransGen_mem_X {S : Schema} (hXC : S.XClosed) {x : Label} (hx : x ∈ S.X)
     {x' : Label} (h : Relation.ReflTransGen S.extEdge x x') : x' ∈ S.X := by
   induction h with
   | refl => exact hx
   | tail _ hbc ih => exact hXC _ ih hbc
 
-/-- Forward direction: anything the iteration reaches really is
-`extEdge`-reachable. -/
+/-- The forward direction: each point that the iteration reaches is really
+reachable with `extEdge`. -/
 private theorem reflTransGen_of_mem_iterate {S : Schema} {x : Label} :
     ∀ n (x' : Label), x' ∈ (ancStep S)^[n] {x} → Relation.ReflTransGen S.extEdge x x' := by
   intro n
@@ -104,9 +108,9 @@ private theorem reflTransGen_of_mem_iterate {S : Schema} {x : Label} :
       · exact ih x' hx'
       · exact Relation.ReflTransGen.tail (ih y hy) hedge
 
-/-- Reverse direction: given `XClosed`, every `extEdge`-reachable point
-lands inside `ancReach` (which is exactly the fixed point of `ancStep`
-reached from `{x}`, by `Finset.increasing_iterate_fixed`). -/
+/-- The reverse direction: with `XClosed`, each point that is reachable
+with `extEdge` is in `ancReach`. (`ancReach` is exactly the fixed point of
+`ancStep` from `{x}`, by `Finset.increasing_iterate_fixed`.) -/
 private theorem mem_ancReach_of_reflTransGen {S : Schema} (hXC : S.XClosed) {x : Label}
     (hx : x ∈ S.X) {x' : Label} (h : Relation.ReflTransGen S.extEdge x x') :
     x' ∈ ancReach S x := by
@@ -122,8 +126,8 @@ private theorem mem_ancReach_of_reflTransGen {S : Schema} (hXC : S.XClosed) {x :
       rw [← hFPfix]
       exact mem_ancStep_iff.mpr (Or.inr ⟨hXC b hbX hbc, b, ih, hbc⟩)
 
-/-- `ancReach` is exactly `Schema.anc`, given the natural closure hypothesis
-Definition 3 already assumes. -/
+/-- `ancReach` is exactly `Schema.anc`, with the natural closure
+hypothesis that Definition 3 already assumes. -/
 theorem ancReach_eq_anc {S : Schema} (hXC : S.XClosed) {x : Label} (hx : x ∈ S.X) :
     ancReach S x = S.anc x := by
   ext x'
@@ -146,14 +150,14 @@ theorem ancSetReach_eq_ancSet {S : Schema} (hXC : S.XClosed) {xs : Finset Label}
   intro x hx
   exact ancReach_eq_anc hXC (hxs hx)
 
-/-! ### `Me`/`Mnotin`, made computable
+/-! ### `Me` and `Mnotin`, made computable
 
-Unlike `anc`/`ancSet`, these never needed `Classical.decPred`: the
-existential `∃ z, (t.pred,z) ∈ e.tcs ∧ τ.has t.obj z` is already bounded to
-the finite `e.tcs`, just not in a form Lean's instance search recognizes
-(`z` ranges over all of `Label` as written). Restating it as a bounded
-search over `e.tcs` makes the same proposition directly decidable, with no
-extra hypothesis. -/
+`Me` and `Mnotin` never needed `Classical.decPred`, as `anc` and `ancSet`
+did. The existential `∃ z, (t.pred,z) ∈ e.tcs ∧ τ.has t.obj z` is already
+bounded to the finite `e.tcs`. But the instance search of Lean does not
+recognize this form, because, as written, `z` goes over all of `Label`.
+When we write it as a bounded search over `e.tcs`, the same proposition
+becomes directly decidable, with no extra hypothesis. -/
 
 theorem meCond_iff_bounded (τ : Typing) (e : TripleExpr) (t : Triple) :
     (∃ z, (t.pred, z) ∈ e.tcs ∧ τ.has t.obj z) ↔
@@ -168,7 +172,7 @@ instance decidableMeCond (τ : Typing) (e : TripleExpr) (t : Triple) :
     Decidable (∃ z, (t.pred, z) ∈ e.tcs ∧ τ.has t.obj z) :=
   decidable_of_iff _ (meCond_iff_bounded τ e t).symm
 
-/-- The computable `Me`, provably equal to the original. -/
+/-- The computable `Me`. A proof shows that it is equal to the original. -/
 def MeReach (τ : Typing) (M : Finset Triple) (e : TripleExpr) : Finset Triple :=
   M.filter (fun t => ∃ z, (t.pred, z) ∈ e.tcs ∧ τ.has t.obj z)
 
@@ -179,7 +183,8 @@ theorem MeReach_eq_Me {τ : Typing} {M : Finset Triple} {e : TripleExpr} :
   simp only [Finset.mem_filter]
   rw [mem_Me]
 
-/-- The computable `Mnotin`, provably equal to the original. -/
+/-- The computable `Mnotin`. A proof shows that it is equal to the
+original. -/
 def MnotinReach (τ : Typing) (M : Finset Triple) (e : TripleExpr) : Finset Triple :=
   (M.filter (fun t => t.pred ∈ e.props)) \ MeReach τ M e
 
@@ -191,30 +196,34 @@ theorem MnotinReach_eq_Mnotin {τ : Typing} {M : Finset Triple} {e : TripleExpr}
   simp only [Finset.mem_sdiff, Finset.mem_filter]
   rw [mem_Mnotin]
 
-/-! ### `.star`'s unbounded repetition, made decidable
+/-! ### The unbounded repetition of `.star`, made decidable
 
-Unlike 2017's `.rep`, chaining a repeated sub-expression doesn't work here:
-every piece of a `.star` witness is checked at the same `Fuel`, not a
-further-decremented one, so encoding "repeated `k` times" as a `k`-deep
-`.seq` chain would spuriously demand `k` fuel just to unfold the chain.
-Instead, existence of a partition is decided directly by well-founded
-recursion on `M.card`, peeling one `Q`-satisfying nonempty piece off the
-remaining triples at a time (`existsPartitionFuel`), bounded by the same
-`Finset` machinery 2017's `.rep` proof established
-(`ShexLean.Shex2017Schemas.RepBound`): nonempty pieces are pairwise
-disjoint subsets of `M`, so there are at most `M.card` of them. No padding
-is needed here, since `.star` has no minimum repetition count. -/
+The method of the 2017 `.rep` (a chain of the repeated sub-expression)
+does not work here. Each piece of a `.star` witness is checked at the same
+`Fuel`, not at a smaller one. Thus, if we encode "repeated `k` times" as a
+chain of `k` `.seq`, the chain needs `k` fuel only to unfold. This is not
+correct.
+
+In its place, we decide the existence of a partition directly, by
+well-founded recursion on `M.card` (`existsPartitionFuel`). Each step
+removes, from the remaining triples, one nonempty piece that satisfies `Q`.
+The bound uses the same `Finset` argument as the proof for the 2017 `.rep`
+(`ShexLean.Shex2017Schemas.RepBound`). The nonempty pieces are pairwise
+disjoint subsets of `M`. Thus, there are `M.card` or fewer of them. No
+padding is necessary here, because `.star` has no minimum number of
+repetitions. -/
 
 open ShexLean (mem_subset_foldr_union disjoint_foldr_union_of_forall
   foldr_union_filter_nonempty nonempty_filter_length_le_card)
 
-/-- `M` splits into a list of pieces, each satisfying `Q` — the shape of
-Table 1 rule 5's own witness. -/
+/-- `M` splits into a list of pieces, and each piece satisfies `Q`. This is
+the form of the witness of rule 5 of Table 1. -/
 def existsPartition (Q : Finset Triple → Prop) (M : Finset Triple) : Prop :=
   ∃ Ns : List (Finset Triple), DisjointUnionList M Ns ∧ ∀ Ni ∈ Ns, Q Ni
 
-/-- The nonempty-only reformulation `.star` needs no padding to reach (no
-`min` to satisfy, unlike 2017's `.rep`). -/
+/-- The form with only nonempty pieces. `.star` needs no padding to get
+this form, because it has no `min` to satisfy (the 2017 `.rep` has
+one). -/
 theorem existsPartition_iff_nonempty (Q : Finset Triple → Prop) (M : Finset Triple) :
     existsPartition Q M ↔
       ∃ Ns : List (Finset Triple), (∀ Ni ∈ Ns, Ni.Nonempty) ∧ DisjointUnionList M Ns ∧
@@ -227,9 +236,11 @@ theorem existsPartition_iff_nonempty (Q : Finset Triple → Prop) (M : Finset Tr
   · rintro ⟨Ns, -, hd, hQ⟩
     exact ⟨Ns, hd, hQ⟩
 
-/-- The one-step recursive characterization: either `M` is empty (the
-empty list works), or some nonempty `Q`-satisfying piece can be peeled off,
-leaving a strictly smaller (`M \ piece`) sub-problem. -/
+/-- The one-step recursive characterization. One of these is true:
+
+* `M` is empty (the empty list is a witness).
+* You can remove a nonempty piece that satisfies `Q`. The remaining
+  problem (`M \ piece`) is strictly smaller. -/
 theorem existsPartitionNE_iff (Q : Finset Triple → Prop) (M : Finset Triple) :
     (∃ Ns : List (Finset Triple), (∀ Ni ∈ Ns, Ni.Nonempty) ∧ DisjointUnionList M Ns ∧
         ∀ Ni ∈ Ns, Q Ni) ↔
@@ -267,13 +278,14 @@ theorem existsPartitionNE_iff (Q : Finset Triple → Prop) (M : Finset Triple) :
         · exact hQpiece
         · exact hQ Ni hNi
 
-/-- Decidability of `existsPartition`, via an explicit `Fuel` parameter:
-the same idiom `SatisfiesEFuel` uses, structural recursion `fuel+1 →
-fuel`, rather than a `Finset.card`-measured well-founded recursion (which
-compiles to `WellFounded.fix` and doesn't reduce, defeating the point of
-deciding anything). `M.card ≤ fuel` ensures every case is justified: at
-`fuel = 0` it forces `M = ∅`, and each recursive step's `fuel` covers
-`(M \ piece).card`. -/
+/-- `existsPartition` is decidable, with an explicit `Fuel` parameter.
+This is the same method as `SatisfiesEFuel`: structural recursion from
+`fuel+1` to `fuel`. We do not use a well-founded recursion measured by
+`Finset.card`. That recursion compiles to `WellFounded.fix`, which does
+not reduce, so it cannot decide anything.
+
+`M.card ≤ fuel` justifies each case. At `fuel = 0`, it forces `M = ∅`. At
+each recursive step, `fuel` covers `(M \ piece).card`. -/
 def existsPartitionFuel (Q : Finset Triple → Prop) (hQ : ∀ N', Decidable (Q N')) :
     ∀ (fuel : ℕ) (M : Finset Triple), M.card ≤ fuel → Decidable (existsPartition Q M)
   | 0, M, hle => by
@@ -313,17 +325,17 @@ def existsPartitionFuel (Q : Finset Triple → Prop) (hQ : ∀ N', Decidable (Q 
       exact @instDecidableOr _ _ (inferInstance : Decidable (M = ∅))
         (decidable_of_iff _ hiff)
 
-/-- The `Fuel`-free wrapper: any `Finset Triple` needs at most `M.card`
-fuel. -/
+/-- The wrapper with no `Fuel`. Each `Finset Triple` needs `M.card` fuel or
+less. -/
 def existsPartitionDecidable (Q : Finset Triple → Prop) (hQ : ∀ N', Decidable (Q N'))
     (M : Finset Triple) : Decidable (existsPartition Q M) :=
   existsPartitionFuel Q hQ M.card M (le_refl _)
 
 /-! ### `SatisfiesEFuel` (Table 1) is decidable -/
 
-/-- Table 1 rule 2 (`.tc`), restated as a search bounded to `M` itself, as
-in 2017's `matches_tPattern_iff` but simpler since `.tc`'s property `p` is
-a single fixed `IRI`, not a whole `PropSet`. -/
+/-- Rule 2 of Table 1 (`.tc`), written as a search bounded to `M`. This is
+the same as `matches_tPattern_iff` of 2017, but simpler, because the
+property `p` of `.tc` is one fixed `IRI`, not a full `PropSet`. -/
 theorem satisfiesTc_iff_bounded (τ : Typing) (p : IRI) (z : Label) (M : Finset Triple) :
     (∃ n o, M = {(⟨n, p, o⟩ : Triple)} ∧ τ.has o z) ↔
       ∃ t ∈ M, M = {t} ∧ t.pred = p ∧ τ.has t.obj z := by
@@ -334,8 +346,8 @@ theorem satisfiesTc_iff_bounded (τ : Typing) (p : IRI) (z : Label) (M : Finset 
     refine ⟨t.subj, t.obj, ?_, hty⟩
     rw [hM, ← hp]
 
-/-- Table 1's `e1;e2` (rule 4), restated as a search bounded to
-`M.powerset`, as in 2017's `matches_eachOf_iff`. -/
+/-- `e1;e2` of Table 1 (rule 4), written as a search bounded to
+`M.powerset`. This is the same as `matches_eachOf_iff` of 2017. -/
 theorem satisfiesSeq_iff_bounded (S : Schema) (G : Graph) (τ : Typing) (M : Finset Triple)
     (e1 e2 : TripleExpr) (fuel : ℕ) :
     (∃ M1 M2, DisjointUnion M M1 M2 ∧ SatisfiesEFuel fuel S G τ M1 e1 ∧
@@ -351,10 +363,10 @@ theorem satisfiesSeq_iff_bounded (S : Schema) (G : Graph) (τ : Typing) (M : Fin
   · rintro ⟨M1, -, M2, -, hdisj, hm1, hm2⟩
     exact ⟨M1, M2, hdisj, hm1, hm2⟩
 
-/-- `SatisfiesEFuel` is decidable unconditionally: Table 1 never touches
-`NodeConstraint`/`extends`, so unlike `SatisfiesMFuel`/`SatisfiesFuel`
-below this needs no extra hypotheses. Structural recursion on
-`(fuel, e)`, mirroring `SatisfiesEFuel`'s own equations. -/
+/-- `SatisfiesEFuel` is decidable with no condition. Table 1 never uses
+`NodeConstraint` or `extends`. Thus, it needs no extra hypotheses, as
+`SatisfiesMFuel` and `SatisfiesFuel` below do. The proof is by structural
+recursion on `(fuel, e)`, and follows the equations of `SatisfiesEFuel`. -/
 def satisfiesEFuel_decidable :
     ∀ (fuel : ℕ) (S : Schema) (G : Graph) (τ : Typing) (M : Finset Triple) (e : TripleExpr),
       Decidable (SatisfiesEFuel fuel S G τ M e)
@@ -390,33 +402,41 @@ def satisfiesEFuel_decidable :
       show Decidable (existsPartition (SatisfiesEFuel fuel S G τ · e) M)
       exact existsPartitionDecidable _ (fun N' => satisfiesEFuel_decidable fuel S G τ N' e) M
 
-/-! ### `SatisfiesMFuel`/`SatisfiesFuel` (Tables 3/2) are decidable, on a
+/-! ### `SatisfiesMFuel` and `SatisfiesFuel` (Tables 3 and 2) are decidable, on a
 restricted fragment
 
-Two further obstacles, beyond `anc`/`ancSet`/`Me`/`Mnotin`/`.star` above:
+There are two more problems, in addition to `anc`, `ancSet`, `Me`,
+`Mnotin` and `.star` above:
 
-1. `subjectOf` (rule 13's `c (subjectOf M)`) is itself `noncomputable`
-   (`Classical.choice`-based, since the paper only pins its value down to
-   "some triple's subject"). There is no computable stand-in provably
-   agreeing with it in general, only under an untracked "every triple in
-   `M` shares one subject" invariant. Rather than risk a different answer,
-   `.constraint` is excluded from evaluation at the triple-set level
-   (`ShapeExpr.MOk` below); it is still decidable at the node level
-   (rule 6, `c n`, no `subjectOf`), the only place it is normally
-   dereferenced when checking a well-formed schema's `Y`-labels. It only
-   reaches the triple-set level if a schema nests a bare `.constraint`
-   inside an `extends`'s `restr(x)`, which none of the worked examples do.
-2. `NodeConstraint := RDFNode → Prop` is arbitrary (Def 1 leaves it fully
-   abstract, unlike 2017's concrete `ValueDescr`), so no single `Decidable`
-   instance covers every `.constraint c` a schema might use; each
-   occurrence needs its own `DecidablePred c` supplied by the caller
-   (`ShapeExpr.AllConstraintsDecidable`, mirroring `MOk`'s recursion).
+1. `subjectOf` (the `c (subjectOf M)` of rule 13) is also `noncomputable`.
+   It uses `Classical.choice`, because the paper only says that its value
+   is "the subject of a triple". There is no computable replacement that
+   agrees with it in general. There is one only with an invariant "all the
+   triples in `M` have the same subject", which the definitions do not
+   record. We do not want to risk a different answer. Thus, we exclude
+   `.constraint` from evaluation at the triple-set level
+   (`ShapeExpr.MOk` below).
+   * It is still decidable at the node level (rule 6, `c n`, with no
+     `subjectOf`). This is the usual location where the check of the `Y`
+     labels of a well-formed schema uses it.
+   * It gets to the triple-set level only if a schema puts a plain
+     `.constraint` in the `restr(x)` of an `extends`. No worked example
+     does this.
+2. `NodeConstraint := RDFNode → Prop` is a general predicate. (Def 1 keeps
+   it fully abstract. The concrete `ValueDescr` of 2017 is not abstract.)
+   Thus, no single `Decidable` instance covers each `.constraint c` that a
+   schema can use. The caller must give a `DecidablePred c` for each
+   occurrence (`ShapeExpr.AllConstraintsDecidable`, which follows the
+   recursion of `MOk`).
 -/
 
-/-- The fragment of `ShapeExpr` this file's `SatisfiesMFuel` decidability
-covers: no bare `.constraint` (obstacle 1 above), and every nested
-`.extends xs _`'s `xs` stays inside `S.X`, so `ancSetReach`/`ancReach`
-(equal to `S.ancSet`/`S.anc` only under that containment) actually apply. -/
+/-- The fragment of `ShapeExpr` where this file proves that
+`SatisfiesMFuel` is decidable:
+
+* It has no plain `.constraint` (problem 1 above).
+* For each nested `.extends xs _`, `xs` stays in `S.X`. Thus,
+  `ancSetReach` and `ancReach` apply. (They are equal to `S.ancSet` and
+  `S.anc` only with this condition.) -/
 def ShapeExpr.MOk (S : Schema) : ShapeExpr → Prop
   | .constraint _ => False
   | .ofShape _ => True
@@ -425,18 +445,18 @@ def ShapeExpr.MOk (S : Schema) : ShapeExpr → Prop
   | .and s1 s2 => s1.MOk S ∧ s2.MOk S
   | .not s => s.MOk S
 
-/-- The schema-level well-formedness `SatisfiesMFuel`'s decidability at
-rule 18 additionally needs: every present `restr(x)` (for `x ∈ X`) must
-itself be in the `MOk` fragment, since rule 18 evaluates it at the
-triple-set level too. -/
+/-- The extra schema-level well-formedness that the decidability of
+`SatisfiesMFuel` needs at rule 18. Each `restr(x)` that is present (for
+`x ∈ X`) must also be in the `MOk` fragment, because rule 18 also evaluates
+it at the triple-set level. -/
 def Schema.RestrOk (S : Schema) : Prop :=
   ∀ x ∈ S.X, ∀ u, (S.shapeDef x).restrOf = some u → u.MOk S
 
-/-- The recursive "every `.constraint` reachable via `or`/`and`/`not` has a
-`Decidable` predicate" hypothesis `SatisfiesFuel`'s decidability needs for
-rule 6 (obstacle 2 above). `.ofShape`/`.extends` contribute `True`: any
-`.constraint`s reachable through `restr(x)` are a separate schema-level
-lookup, covered by `MOk`, not this. -/
+/-- The recursive hypothesis "each `.constraint` that is reachable through
+`or`, `and` and `not` has a `Decidable` predicate". The decidability of
+`SatisfiesFuel` needs it for rule 6 (problem 2 above). `.ofShape` and
+`.extends` give `True`. The `.constraint`s that are reachable through
+`restr(x)` are a separate schema-level lookup, which `MOk` covers. -/
 def ShapeExpr.AllConstraintsDecidable : ShapeExpr → Prop
   | .constraint c => Nonempty (DecidablePred c)
   | .ofShape _ => True
@@ -445,10 +465,11 @@ def ShapeExpr.AllConstraintsDecidable : ShapeExpr → Prop
   | .and s1 s2 => s1.AllConstraintsDecidable ∧ s2.AllConstraintsDecidable
   | .not s => s.AllConstraintsDecidable
 
-/-- Extends a `Finset.pi`-style dependent witness `g : ∀ a ∈ Idx, Finset
-Triple` to an ordinary `Label → Finset Triple`, junk (`∅`) outside `Idx` —
-what rule 18's `Mx : Label → Finset Triple` needs, reformulated as a
-bounded search over `Idx = ancSetReach S xs`. -/
+/-- Extends a dependent witness `g : ∀ a ∈ Idx, Finset Triple` (as in
+`Finset.pi`) to an ordinary `Label → Finset Triple`. Outside `Idx`, the
+result is a junk value (`∅`). Rule 18 needs this for its
+`Mx : Label → Finset Triple`, written as a bounded search over
+`Idx = ancSetReach S xs`. -/
 def extendMx (Idx : Finset Label) (g : ∀ a ∈ Idx, Finset Triple) :
     Label → Finset Triple :=
   fun x => if h : x ∈ Idx then g x h else ∅
@@ -457,10 +478,10 @@ theorem extendMx_eq {Idx : Finset Label} {g : ∀ a ∈ Idx, Finset Triple}
     {x : Label} (hx : x ∈ Idx) : extendMx Idx g x = g x hx := by
   unfold extendMx; simp [hx]
 
-/-- Ancestors of a point already inside `ancSetReach S xs` stay inside it —
-what makes it sound to only ever query `Mx` at points of `ancSetReach S xs`
-in rule 18's `restr(x)` clause (`(S.anc x).biUnion Mx`, `x` ranging over the
-very same set). -/
+/-- The ancestors of a point in `ancSetReach S xs` stay in this set.
+Because of this, it is sound to use `Mx` only at points of
+`ancSetReach S xs` in the `restr(x)` clause of rule 18
+(`(S.anc x).biUnion Mx`, where `x` is in the same set). -/
 theorem ancReach_subset_ancSetReach {S : Schema} (hXC : S.XClosed) {xs : Finset Label}
     (hxs : xs ⊆ S.X) {x : Label} (hx : x ∈ ancSetReach S xs) :
     ancReach S x ⊆ ancSetReach S xs := by
@@ -480,10 +501,10 @@ theorem ancReach_subset_ancSetReach {S : Schema} (hXC : S.XClosed) {xs : Finset 
   simp only [Schema.anc, Finset.mem_filter]
   exact ⟨hxX', hrtg0.trans hrtg1⟩
 
-/-- `DisjointUnionOn` only ever queries `Mx` at points of `Idx`, so agreeing
-functions there give the same proposition — what lets rule 18's decidability
-freely swap `Mx` for `extendMx Idx g` (which is `Mx` on `Idx`, junk
-elsewhere). -/
+/-- `DisjointUnionOn` uses `Mx` only at points of `Idx`. Thus, two
+functions that agree there give the same proposition. Because of this, the
+decidability proof of rule 18 can replace `Mx` with `extendMx Idx g` (which
+is `Mx` on `Idx`, and a junk value at other points). -/
 theorem DisjointUnionOn_congr {M M' : Finset Triple} {Idx : Finset Label}
     {Mx Mx' : Label → Finset Triple} (hEq : ∀ x ∈ Idx, Mx x = Mx' x) :
     DisjointUnionOn M M' Idx Mx ↔ DisjointUnionOn M M' Idx Mx' := by
@@ -501,8 +522,8 @@ theorem DisjointUnionOn_congr {M M' : Finset Triple} {Idx : Finset Label}
     have hd : Disjoint (Mx' a) (Mx' b) := h ha hb hab
     rwa [← hEq a ha, ← hEq b hb] at hd
 
-/-- Every point of `ancSetReach S xs` is itself in `S.X` (it's a union of
-`S.anc`-images, and `S.anc _ ⊆ S.X` always, by construction). -/
+/-- Each point of `ancSetReach S xs` is also in `S.X`. (It is a union of
+images of `S.anc`, and `S.anc _ ⊆ S.X` always, by construction.) -/
 theorem ancSetReach_subset_X {S : Schema} (hXC : S.XClosed) {xs : Finset Label}
     (hxs : xs ⊆ S.X) : ancSetReach S xs ⊆ S.X := by
   intro x hx
@@ -512,11 +533,17 @@ theorem ancSetReach_subset_X {S : Schema} (hXC : S.XClosed) {xs : Finset Label}
   simp only [Schema.anc, Finset.mem_filter] at hx0
   exact hx0.1
 
-/-- Rule 18's existential (`∃ M' Mx, ...`), reformulated as a search
-bounded to `M.powerset` (for `M'`) and `Finset.pi (ancSetReach S xs) (fun _
-=> M.powerset)` (for `Mx`, restricted to where it's queried), with
-`ancSetReach S xs`/`ancReach S x` standing in for `S.ancSet xs`/`S.anc x`
-(sound since `xs ⊆ S.X`, from `.extends xs h`'s `MOk` requirement). -/
+/-- The existential of rule 18 (`∃ M' Mx, ...`), written as a bounded
+search:
+
+* For `M'`, the search is over `M.powerset`.
+* For `Mx`, the search is over
+  `Finset.pi (ancSetReach S xs) (fun _ => M.powerset)`, restricted to the
+  points where `Mx` is used.
+
+`ancSetReach S xs` and `ancReach S x` replace `S.ancSet xs` and `S.anc x`.
+This is sound because `xs ⊆ S.X`, from the `MOk` requirement of
+`.extends xs h`. -/
 theorem satisfiesExtends_iff_bounded {S : Schema} {G : Graph} {τ : Typing}
     (hXC : S.XClosed) {fuel : ℕ} {M : Finset Triple} {xs : Finset Label} {h : Shape}
     (hxs : xs ⊆ S.X) :
@@ -566,9 +593,9 @@ theorem satisfiesExtends_iff_bounded {S : Schema} {G : Graph} {τ : Typing}
       rw [← ancReach_eq_anc hXC hxX]
       exact hrestr x (hSet ▸ hx) u hu
 
-/-! `DisjointUnionOn`'s decidability, needed once `Mx` is a concrete
-computable function (e.g. `extendMx Idx g`): `Set.PairwiseDisjoint`
-restated as a `Finset`-bounded double `∀`. -/
+/-! The decidability of `DisjointUnionOn`. It is necessary when `Mx` is a
+concrete computable function (for example, `extendMx Idx g`). It writes
+`Set.PairwiseDisjoint` as a double `∀` bounded by a `Finset`. -/
 
 theorem pairwiseDisjoint_iff_bounded (Idx : Finset Label) (f : Label → Finset Triple) :
     (Idx : Set Label).PairwiseDisjoint f ↔
@@ -588,10 +615,15 @@ instance decidableDisjointUnionOn (M M' : Finset Triple) (Idx : Finset Label)
     (Mx : Label → Finset Triple) : Decidable (DisjointUnionOn M M' Idx Mx) := by
   unfold DisjointUnionOn; infer_instance
 
-/-- `SatisfiesMFuel` is decidable on the `MOk` fragment (see the section
-docstring above `ShapeExpr.MOk`), given `S.XClosed` (so `anc`/`ancSet`
-compute), `S.RestrOk` (so every `restr(x)` reached stays in the `MOk`
-fragment), and a proof `s.MOk S`. Structural recursion on `(fuel, s)`. -/
+/-- `SatisfiesMFuel` is decidable on the `MOk` fragment (refer to the
+section docstring above `ShapeExpr.MOk`). It needs these items:
+
+* `S.XClosed`, so that `anc` and `ancSet` compute.
+* `S.RestrOk`, so that each `restr(x)` that the evaluation reaches stays
+  in the `MOk` fragment.
+* A proof of `s.MOk S`.
+
+The proof is by structural recursion on `(fuel, s)`. -/
 def satisfiesMFuel_decidable (S : Schema) (G : Graph) (τ : Typing)
     (hXC : S.XClosed) (hRestr : S.RestrOk) :
     ∀ (fuel : ℕ) (M : Finset Triple) (s : ShapeExpr), s.MOk S →
@@ -676,16 +708,19 @@ def satisfiesMFuel_decidable (S : Schema) (G : Graph) (τ : Typing)
             (Finset.pi Idx (fun _ => M.powerset)) _ (fun g => hMain M' g))
       exact decidable_of_iff _ (satisfiesExtends_iff_bounded hXC hOk).symm
 
-/-- The fragment of `ShapeExpr` `SatisfiesFuel`'s decidability covers,
-analogous to `MOk`: `.constraint c` is fine here (rule 6 needs no
-`subjectOf`), so it just needs `c`'s own decidability; `.ofShape`/
-`.extends` hand off to `SatisfiesMFuel`, needing exactly what `MOk` needs
-at that node (trivially true / `xs ⊆ S.X`).
+/-- The fragment of `ShapeExpr` where the decidability of `SatisfiesFuel`
+applies. It is similar to `MOk`:
 
-`Type`-valued, not `Prop`-valued like `MOk`: the `.constraint` leaf must
-carry an actual `DecidablePred c` witness, not just assert one exists —
-`Nonempty (DecidablePred c)` would need `Classical.choice` to unerase,
-reintroducing the noncomputability this file works around. -/
+* `.constraint c` is permitted here (rule 6 does not need `subjectOf`).
+  Thus, it needs only the decidability of `c`.
+* `.ofShape` and `.extends` go to `SatisfiesMFuel`. They need exactly what
+  `MOk` needs at that node (trivially true, or `xs ⊆ S.X`).
+
+This is a `Type`, not a `Prop` as `MOk` is. The `.constraint` leaf must
+contain a real `DecidablePred c` witness, not only a statement that one
+exists. With `Nonempty (DecidablePred c)`, you need `Classical.choice` to
+get the witness. This adds again the noncomputability that this file
+avoids. -/
 def ShapeExpr.FOk (S : Schema) : ShapeExpr → Type
   | .constraint c => DecidablePred c
   | .ofShape _ => PUnit
@@ -694,11 +729,13 @@ def ShapeExpr.FOk (S : Schema) : ShapeExpr → Type
   | .and s1 s2 => s1.FOk S × s2.FOk S
   | .not s => s.FOk S
 
-/-- `SatisfiesFuel` is decidable on the `FOk` fragment. Table 2's
-`.ofShape`/`.extends` cases (rules 11/12) reduce directly to
-`SatisfiesMFuel` on `neigh G n`, so this is `satisfiesMFuel_decidable`
-plus rule 6 (`.constraint`, via `FOk`'s `DecidablePred c`) and threading
-`or`/`and`/`not` (rules 7–9). -/
+/-- `SatisfiesFuel` is decidable on the `FOk` fragment. The `.ofShape` and
+`.extends` cases of Table 2 (rules 11 and 12) go directly to
+`SatisfiesMFuel` on `neigh G n`. Thus, the proof is
+`satisfiesMFuel_decidable`, and also:
+
+* Rule 6 (`.constraint`), with the `DecidablePred c` of `FOk`.
+* `or`, `and` and `not` (rules 7–9). -/
 def satisfiesFuel_decidable (S : Schema) (G : Graph) (τ : Typing)
     (hXC : S.XClosed) (hRestr : S.RestrOk) :
     ∀ (fuel : ℕ) (n : RDFNode) (s : ShapeExpr), s.FOk S →

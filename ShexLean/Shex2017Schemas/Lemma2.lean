@@ -3,47 +3,48 @@ import Mathlib.Tactic.Ring
 import Mathlib.Data.Finset.Max
 
 /-!
-Lemma 2 (§3.3): `Typing(G, S, str)` (Definition 4) does not depend on
-which stratification `str` of `S` is chosen.
+Lemma 2 (§3.3): `Typing(G, S, str)` (Definition 4) does not depend on the
+stratification `str` of `S` that you select.
 
-The paper only sketches this proof ("Proof. (Idea)..."): it asserts a
-canonical "most refined" stratification exists and that every
-stratification agrees with it, without justifying why. This file gives a
-full independent proof:
+The paper gives only a sketch of this proof ("Proof. (Idea)..."). The
+sketch says that there is a canonical "most refined" stratification, and
+that each stratification agrees with it. It does not show why. This file
+gives a full proof that does not use the sketch:
 
-- `maxAgree_fusion`: revealing a schema's labels in one batch or in two
-  nested batches gives the same `maxAgree` result.
-- `combStrat` / `MTyping_combStrat`: a "lex-combine" stratification and
-  refinement invariance along it. Not needed by the final proof, but kept
-  as an independently useful fact. Exact checkpoint alignment with an
-  arbitrary second stratification is not possible in general (two
-  mutually independent labels can be ordered differently by different
-  valid stratifications), which is why the general proof takes a
-  different route below.
-- `maxAgree_swap`: two batches that each individually depend only on a
-  common base (not on each other) can be revealed in either order with
-  the same result, by two applications of Fusion.
-- `remMin` / `cont1`: a canonical process that, starting from `∅`,
-  repeatedly reveals the least-`str`-valued remaining batch (for some
-  arbitrarily fixed valid stratification, used only to make each step
-  well-defined) until every label is settled.
-- `cont1_indep`: `cont1`'s final answer does not change if the first step
-  instead reveals any other valid batch. Proved by strong induction on
-  the number of remaining labels, using Swap to reconcile `cont1`'s own
-  next step against the alternative one.
-- `cont1_chain` / `cont1_eq_MTyping`: chaining `cont1_indep` along any
-  valid stratification's own checkpoints shows `cont1 S _ G ∅ ∅ =
-  MTyping G S str'` for that stratification, so `str1` and `str2` both
-  equal the same `cont1` value, giving `lemma2`.
+- `maxAgree_fusion`: if you reveal the labels of a schema in one batch, or
+  in two nested batches, you get the same `maxAgree` result.
+- `combStrat` / `MTyping_combStrat`: a "lexicographic combination" of two
+  stratifications, and the invariance of refinement along it. The final
+  proof does not need it, but we keep it because it is a useful fact.
+  In general, its checkpoints cannot align exactly with a second
+  stratification of your choice. Two labels that do not depend on each
+  other can have a different order in two valid stratifications. For this
+  reason, the general proof below uses a different method.
+- `maxAgree_swap`: let two batches each depend only on a common base, and
+  not on each other. Then you can reveal them in the two orders and get the
+  same result. The proof uses Fusion two times.
+- `remMin` / `cont1`: a canonical process. It starts from `∅`. At each
+  step, it reveals the remaining batch with the smallest `str` value. It
+  continues until all the labels are settled. (The process uses one fixed
+  valid stratification. This stratification only makes each step
+  well-defined.)
+- `cont1_indep`: the final answer of `cont1` does not change if the first
+  step reveals a different valid batch. The proof is by strong induction
+  on the number of remaining labels. It uses Swap to compare the next step
+  of `cont1` with the other step.
+- `cont1_chain` / `cont1_eq_MTyping`: apply `cont1_indep` along the
+  checkpoints of a valid stratification. This shows that
+  `cont1 S _ G ∅ ∅ = MTyping G S str'` for that stratification. Thus,
+  `str1` and `str2` both give the same `cont1` value. This gives `lemma2`.
 -/
 
 namespace ShexLean
 
-/-- For any valid stratification, a stratum-checkpoint is self-contained:
-every label in `S.stratum str i` has both its positive and negative
-dependencies confined within that same checkpoint. (Negative dependencies
-land strictly inside `S.stratum str (i-1)`, but later lemmas only need
-the weaker `⊆ S.stratum str i` bound.) -/
+/-- For each valid stratification, a stratum checkpoint is self-contained.
+Each label in `S.stratum str i` has all its positive and negative
+dependencies in the same checkpoint. (The negative dependencies are
+strictly inside `S.stratum str (i-1)`. But the lemmas that follow need
+only the weaker bound `⊆ S.stratum str i`.) -/
 theorem Schema.stratum_self_contained (S : Schema) (str : Strat S)
     (hClosed : S.Closed) (i : ℕ) :
     ∀ L ∈ S.stratum str.str i,
@@ -56,9 +57,9 @@ theorem Schema.stratum_self_contained (S : Schema) (str : Strat S)
   · exact ⟨hL2labels, (str.pos_le L hLlabels L2 hpos).trans hLstrat⟩
   · exact ⟨hL2labels, (le_of_lt (str.neg_strict L hLlabels L2 hneg)).trans hLstrat⟩
 
-/-- `S` restricted to an arbitrary label set `Ls` (not necessarily a
-stratum-checkpoint of any particular stratification), keeping the same
-definitions. Generalizes `Schema.stratRestrict`. -/
+/-- The restriction of `S` to a set of labels `Ls`. `Ls` is not
+necessarily a stratum checkpoint of a stratification. The definitions do
+not change. This is a general form of `Schema.stratRestrict`. -/
 def Schema.restrictLabels (S : Schema) (Ls : Finset Label) : Schema where
   labels := Ls
   shapeDef := S.shapeDef
@@ -69,8 +70,8 @@ theorem Typing.restrictTo_mono {t t' : Typing} {Lo : Finset Label} (h : t ⊆ t'
   obtain ⟨hp1, hp2⟩ := Typing.mem_restrictTo.mp hp
   exact Typing.mem_restrictTo.mpr ⟨h hp1, hp2⟩
 
-/-- Restricting to `Lo₂ ⊆ Lo₁` and then to `Lo₂` again is the same as
-restricting to `Lo₂` directly. -/
+/-- A restriction to `Lo₂ ⊆ Lo₁` and then to `Lo₂` again is the same as a
+restriction to `Lo₂` directly. -/
 theorem Typing.restrictTo_restrictTo {t : Typing} {Lo₁ Lo₂ : Finset Label}
     (h : Lo₂ ⊆ Lo₁) : (t.restrictTo Lo₁).restrictTo Lo₂ = t.restrictTo Lo₂ := by
   apply Finset.ext
@@ -88,9 +89,9 @@ theorem Schema.univTyping_mono {S : Schema} {G : Graph} {Ls Ls' : Finset Label}
   simp only [Schema.univTyping, Schema.restrictLabels] at hp ⊢
   exact Finset.mem_product.mpr ⟨(Finset.mem_product.mp hp).1, h (Finset.mem_product.mp hp).2⟩
 
-/-- A typing correct for a schema stays correct when restricted to a
-self-contained (both `posDeps` and `negDeps` confined within it) subset of
-labels, via `Satisfies.agree`. -/
+/-- Let a typing be correct for a schema. Restrict it to a self-contained
+subset of labels (with `posDeps` and `negDeps` in that subset). Then the
+result is also correct. The proof uses `Satisfies.agree`. -/
 theorem restrictLabels_correct_restrictTo {S : Schema} {G : Graph} {Ls1 Ls2 : Finset Label}
     {t : Typing}
     (hself : ∀ L ∈ Ls1, (S.shapeDef L).posDeps ∪ (S.shapeDef L).negDeps ⊆ Ls1)
@@ -108,17 +109,25 @@ theorem restrictLabels_correct_restrictTo {S : Schema} {G : Graph} {Ls1 Ls2 : Fi
     · intro h; exact (Typing.mem_restrictTo.mp h).1
   exact (Satisfies.agree (G := G) (S.shapeDef L) hagree n).mp hSat
 
-/-- Fusion: revealing `Ls₂` in one shot (`Lo = Ls`) agrees with revealing
-it in two stages through the intermediate checkpoint `Ls₁` (`Lo = Ls` then
-`Lo = Ls₁`), provided everything new in `Ls₂` only negatively depends on
-`Ls`, and `Ls₁` is self-contained under positive dependencies. Both hold
-automatically when `Ls ⊆ Ls₁ ⊆ Ls₂` are stratum-checkpoints of the same
-stratification (`Schema.stratum_self_contained`).
+/-- Fusion. These two methods give the same result:
 
-The proof shows each side, as a whole object, is a valid candidate for
-the other's `maxAgree` construction; a per-candidate argument does not
-work since an individual correct typing of `Ls₁` need not be maximal
-there. -/
+* Reveal `Ls₂` in one step (`Lo = Ls`).
+* Reveal `Ls₂` in two steps through the intermediate checkpoint `Ls₁`
+  (`Lo = Ls`, and then `Lo = Ls₁`).
+
+The conditions are:
+
+* Each new label in `Ls₂` has negative dependencies only in `Ls`.
+* `Ls₁` is self-contained for positive dependencies.
+
+These two conditions are automatically true when `Ls ⊆ Ls₁ ⊆ Ls₂` are
+stratum checkpoints of the same stratification
+(`Schema.stratum_self_contained`).
+
+The proof shows that each side, as a full object, is a valid candidate for
+the `maxAgree` construction of the other side. An argument for each
+candidate separately does not work, because a correct typing of `Ls₁` is
+not necessarily maximal there. -/
 theorem maxAgree_fusion {S : Schema} {G : Graph} {Ls Ls1 Ls2 : Finset Label}
     {T : Typing} (hLsLs1 : Ls ⊆ Ls1) (hLs1Ls2 : Ls1 ⊆ Ls2)
     (hneg2 : ∀ L ∈ Ls2, (S.shapeDef L).negDeps ⊆ Ls)
@@ -144,7 +153,7 @@ theorem maxAgree_fusion {S : Schema} {G : Graph} {Ls Ls1 Ls2 : Finset Label}
     maxAgree_restrictTo hTsub1 hTcorrect1
   have hAsub2 : A ⊆ (S.restrictLabels Ls2).univTyping G := hAsub1.trans (Schema.univTyping_mono hLs1Ls2)
   have hAcorrect2 : (S.restrictLabels Ls2).CorrTyping G A := hAcorrect1
-  -- `A` is itself a valid `C`-candidate.
+  -- `A` is also a valid `C`-candidate.
   have hAC : A ⊆ C := subset_maxAgree hAsub2 hAcorrect2 hArestrict
   have hBsub2 : B ⊆ (S.restrictLabels Ls2).univTyping G := maxAgree_subset _ G _ _
   have hBcorrect2 : (S.restrictLabels Ls2).CorrTyping G B :=
@@ -185,9 +194,9 @@ theorem maxAgree_fusion {S : Schema} {G : Graph} {Ls Ls1 Ls2 : Finset Label}
     exact subset_maxAgree hCsub2 hCcorrect2 hCL1eqA
   exact Finset.Subset.antisymm hBC hCB
 
-/-- Sharper than `Schema.stratum_self_contained` on the negative side: a
-label's negative dependencies land strictly *inside the previous*
-checkpoint, not just inside its own. -/
+/-- A stronger result than `Schema.stratum_self_contained` for the
+negative side. The negative dependencies of a label are strictly *inside
+the previous* checkpoint, not only inside its own checkpoint. -/
 theorem Schema.stratum_neg_confined (S : Schema) (str : Strat S)
     (hClosed : S.Closed) (i : ℕ) :
     ∀ L ∈ S.stratum str.str i, (S.shapeDef L).negDeps ⊆ S.stratum str.str (i - 1) := by
@@ -206,9 +215,9 @@ theorem Schema.stratum_zero (S : Schema) (str : Strat S) :
   have := (str.mem_range L hL).1
   omega
 
-/-- `maxAgree` is a no-op when asked to reveal exactly the schema
-`fixed` is already correct+bounded for: the only self-agreeing candidate is
-`fixed` itself. -/
+/-- `maxAgree` does nothing if you ask it to reveal exactly the schema for
+which `fixed` is already correct and bounded. The only candidate that
+agrees with itself is `fixed`. -/
 theorem maxAgree_self {S' : Schema} {G : Graph} {T : Typing}
     (hTsub : T ⊆ S'.univTyping G) (hTcorrect : S'.CorrTyping G T) :
     maxAgree S' G S'.labels T = T := by
@@ -235,10 +244,11 @@ theorem maxAgree_self {S' : Schema} {G : Graph} {T : Typing}
   · exact subset_maxAgree hTsub hTcorrect rfl
 
 /-!
-The combined ("lex-refined") stratification: `str1` as the primary key,
-`str2` as a tiebreak. Its checkpoints at multiples of `str2.k + 1`
-recover `str1`'s own checkpoints, which lets it relate `MTyping str1` to
-`MTyping` of a stratification built from both `str1` and `str2`.
+The combined ("lexicographically refined") stratification. `str1` is the
+primary key, and `str2` breaks ties. Its checkpoints at multiples of
+`str2.k + 1` are the checkpoints of `str1`. Thus, we can relate
+`MTyping str1` to the `MTyping` of a stratification made from `str1` and
+`str2`.
 -/
 
 private theorem lex_strict_mono {a1 a2 b1 b2 k2 : ℕ} (ha1 : 1 ≤ a1) (ha2 : 1 ≤ a2)
@@ -279,7 +289,7 @@ private theorem lex_upper {a k1 b k2 : ℕ} (ha1 : 1 ≤ a) (ha2 : a ≤ k1) (hb
       _ = (a' + 1) * (k2 + 1) := by ring
   omega
 
-/-- `str1` as primary key, `str2` as tiebreak. -/
+/-- `str1` is the primary key, and `str2` breaks ties. -/
 noncomputable def combStrat {S : Schema} (hClosed : S.Closed) (str1 str2 : Strat S) :
     Strat S where
   k := str1.k * (str2.k + 1)
@@ -350,11 +360,13 @@ theorem stratum_combStrat_align {S : Schema} (hClosed : S.Closed)
     have hexpand : (a' + 1) * (str2.k + 1) = a' * (str2.k + 1) + (str2.k + 1) := by ring
     omega
 
-/-- Refinement invariance: `MTyping` under `str1` agrees with `MTyping`
-under `combStrat hClosed str1 str2` (which refines `str1` exactly, at
-multiples of `str2.k + 1`). Proved by induction on `str1`'s strata, with
-an inner induction (via repeated `maxAgree_fusion`) over the `str2.k + 1`
-finer steps `combStrat` takes within each `str1`-layer. -/
+/-- Invariance of refinement. `MTyping` with `str1` is equal to `MTyping`
+with `combStrat hClosed str1 str2`. (`combStrat` refines `str1` exactly,
+at multiples of `str2.k + 1`.)
+
+The proof is by induction on the strata of `str1`. It has an inner
+induction (with `maxAgree_fusion` many times) over the `str2.k + 1` finer
+steps of `combStrat` in each layer of `str1`. -/
 theorem typ_combStrat_align {S : Schema} (hClosed : S.Closed)
     (str1 str2 : Strat S) (G : Graph) :
     ∀ i ≤ str1.k,
@@ -463,8 +475,8 @@ theorem typ_combStrat_align {S : Schema} (hClosed : S.Closed)
               rw [halign (i + 1)]
         _ = typ S str1.str G (i + 1) := rfl
 
-/-- `combStrat hClosed str1 str2` reduces to `MTyping G S str1`: the
-`i = str1.k` instance of `typ_combStrat_align`, phrased via `MTyping`. -/
+/-- `combStrat hClosed str1 str2` gives `MTyping G S str1`. This is the
+instance `i = str1.k` of `typ_combStrat_align`, written with `MTyping`. -/
 theorem MTyping_combStrat (S : Schema) (hClosed : S.Closed)
     (str1 str2 : Strat S) (G : Graph) :
     MTyping G S (combStrat hClosed str1 str2) = MTyping G S str1 := by
@@ -475,24 +487,30 @@ theorem MTyping_combStrat (S : Schema) (hClosed : S.Closed)
 /-!
 Lemma 2, general statement.
 
-`combStrat hClosed str1 str2` aligns with `str1`'s checkpoints but not
-`str2`'s in general: two mutually independent labels (no dependency edge
-either way) can be ordered differently by different valid
-stratifications, so no single fixed combination aligns with an arbitrary
-second stratification. Instead, we define one canonical process that at
-each step reveals some valid next batch (not tied to `str1` or `str2`),
-and show its final result doesn't depend on which valid batch was chosen
-at each step (`cont1_indep` below, via `maxAgree_swap`). That process's
-final value equals `MTyping str1` by walking it through `str1`'s own
-checkpoints (each such step is a valid batch choice), and likewise for
-`str2`, giving `MTyping str1 = MTyping str2` without needing `str1` and
-`str2` to agree on any intermediate checkpoint.
+In general, `combStrat hClosed str1 str2` aligns with the checkpoints of
+`str1`, but not with the checkpoints of `str2`. Two labels with no
+dependency edge between them can have a different order in two valid
+stratifications. Thus, no fixed combination aligns with a second
+stratification of your choice.
+
+We use a different method:
+
+1. We define one canonical process. At each step, it reveals a valid next
+   batch. This batch does not depend on `str1` or `str2`.
+2. We show that the final result does not depend on the valid batch that
+   each step selects (`cont1_indep` below, with `maxAgree_swap`).
+3. We follow the process through the checkpoints of `str1`. Each such step
+   is a valid batch. Thus, the final value is equal to `MTyping str1`.
+4. We do step 3 again for `str2`.
+
+This gives `MTyping str1 = MTyping str2`. The proof does not need `str1`
+and `str2` to agree on an intermediate checkpoint.
 -/
 
-/-- The labels of least `str`-value among those not yet in `Fixed`: a
-canonical (but not the only valid) choice of "next batch". Nonempty
-whenever labels remain, and confined the way `maxAgree`'s construction
-needs (shown below). -/
+/-- The labels, not yet in `Fixed`, with the smallest `str` value. This is
+a canonical choice of "next batch", but it is not the only valid choice.
+If labels remain, this set is not empty. Its dependencies satisfy the
+conditions that the `maxAgree` construction needs (shown below). -/
 def remMin (S : Schema) (str : Label → ℕ) (Fixed : Finset Label) :
     Finset Label :=
   (S.labels \ Fixed).filter (fun L => ∀ L' ∈ S.labels \ Fixed, str L ≤ str L')
@@ -505,8 +523,8 @@ theorem remMin_nonempty {S : Schema} {str : Label → ℕ} {Fixed : Finset Label
   obtain ⟨L₀, hL₀, hmin⟩ := Finset.exists_min_image (S.labels \ Fixed) str h
   exact ⟨L₀, Finset.mem_filter.mpr ⟨hL₀, hmin⟩⟩
 
-/-- `remMin`'s batch (for any valid stratification `str`) only
-negatively depends on `Fixed`. -/
+/-- The batch of `remMin` (for each valid stratification `str`) has
+negative dependencies only in `Fixed`. -/
 theorem remMin_neg {S : Schema} (str : Strat S) (hClosed : S.Closed)
     (Fixed : Finset Label) :
     ∀ L ∈ remMin S str.str Fixed, (S.shapeDef L).negDeps ⊆ Fixed := by
@@ -520,7 +538,7 @@ theorem remMin_neg {S : Schema} (str : Strat S) (hClosed : S.Closed)
   have h2 := hLmin L2 hL2rem
   omega
 
-/-- `Fixed ∪ remMin str Fixed` is self-contained under positive
+/-- `Fixed ∪ remMin str Fixed` is self-contained for positive
 dependencies. -/
 theorem remMin_pos {S : Schema} (str : Strat S) (hClosed : S.Closed)
     (Fixed : Finset Label) :
@@ -540,8 +558,8 @@ theorem remMin_pos {S : Schema} (str : Strat S) (hClosed : S.Closed)
     have h3 := hLmin L' hL'
     omega
 
-/-- Repeatedly reveal `str`'s `remMin` batch, `n` times (or until
-nothing is left — `n` is fuel, not meant to be tight). -/
+/-- Reveal the `remMin` batch of `str` `n` times, or until no labels
+remain. `n` is fuel. It does not have to be a tight bound. -/
 noncomputable def cont1Fuel (S : Schema) (str : Strat S) (G : Graph) :
     ℕ → Finset Label → Typing → Typing
   | 0, _, T => T
@@ -576,8 +594,8 @@ private theorem cont1Fuel_of_not_nonempty (S : Schema) (str : Strat S) (G : Grap
   | 0 => rfl
   | (n + 1) => by simp only [cont1Fuel, ite_eq_right h]
 
-/-- Once fuel is enough to exhaust the remaining labels, more fuel doesn't
-change the result. -/
+/-- When the fuel is sufficient to use all the remaining labels, more fuel
+does not change the result. -/
 theorem cont1Fuel_stable (S : Schema) (str : Strat S) (G : Graph) :
     ∀ Fixed : Finset Label, ∀ T : Typing, ∀ n n' : ℕ, (S.labels \ Fixed).card ≤ n →
       (S.labels \ Fixed).card ≤ n' → cont1Fuel S str G n Fixed T = cont1Fuel S str G n' Fixed T := by
@@ -598,9 +616,10 @@ theorem cont1Fuel_stable (S : Schema) (str : Strat S) (G : Graph) :
     · rw [cont1Fuel_of_not_nonempty S str G hne T n, cont1Fuel_of_not_nonempty S str G hne T n']
 
 /-- `cont1 S str G Fixed T`: continue the `remMin` process from
-`(Fixed, T)` all the way to `S.labels`, using `str` throughout to choose
-each batch. `cont1_indep` below shows any valid first step gives the same
-final answer, so this concrete choice of `str` is not load-bearing. -/
+`(Fixed, T)` until it gets to `S.labels`. At each step, `str` selects the
+batch. `cont1_indep` below shows that each valid first step gives the same
+final answer. Thus, this specific choice of `str` has no effect on the
+result. -/
 noncomputable def cont1 (S : Schema) (str : Strat S) (G : Graph)
     (Fixed : Finset Label) (T : Typing) : Typing :=
   cont1Fuel S str G S.labels.card Fixed T
@@ -630,12 +649,13 @@ theorem cont1_step (S : Schema) (str : Strat S) (G : Graph)
   have := remMin_card_lt S str.str h
   omega
 
-/-- Swap: two disjoint batches `A`, `B` that each individually depend
-(negatively) only on the common base `Ls0` and (positively) on `Ls0` plus
-themselves — neither needs the other — can be revealed in either order
-with the same result. Both sides reduce, via `maxAgree_fusion`, to the
-one-shot construction over `Ls0 ∪ A ∪ B`. Used below (`cont1_indep`) to
-show `cont1`'s first step doesn't matter. -/
+/-- Swap. Let `A` and `B` be two disjoint batches. Let each batch depend
+negatively only on the common base `Ls0`, and positively only on `Ls0` and
+on itself. (Neither batch needs the other.) Then you can reveal them in
+the two orders and get the same result. With `maxAgree_fusion`, the two
+sides both become the one-step construction over `Ls0 ∪ A ∪ B`.
+`cont1_indep` below uses this lemma to show that the first step of
+`cont1` has no effect on the result. -/
 theorem maxAgree_swap {S : Schema} {G : Graph} {Ls0 A B : Finset Label}
     {T : Typing}
     (hLs0self : ∀ L ∈ Ls0, (S.shapeDef L).posDeps ∪ (S.shapeDef L).negDeps ⊆ Ls0)
@@ -685,11 +705,11 @@ theorem maxAgree_swap {S : Schema} {G : Graph} {Ls0 A B : Finset Label}
     hTsub hTcorrect
   rw [hLHS, hRHS]
 
-/-- `cont1`'s final answer, starting from a self-contained `(Fixed, T)`,
-doesn't change if we first jump ahead by revealing any other valid batch
-`C` (not necessarily `remMin`'s own choice, nor disjoint from `Fixed`).
-So `cont1` doesn't depend on which valid batch its underlying `str`
-picks at each step. -/
+/-- Start `cont1` from a self-contained `(Fixed, T)`. Its final answer does
+not change if we first reveal a different valid batch `C`. (`C` is not
+necessarily the choice of `remMin`, and is not necessarily disjoint from
+`Fixed`.) Thus, `cont1` does not depend on the valid batch that its `str`
+selects at each step. -/
 theorem cont1_indep (S : Schema) (str : Strat S) (hClosed : S.Closed) (G : Graph) :
     ∀ Fixed : Finset Label, ∀ T : Typing,
       (∀ L ∈ Fixed, (S.shapeDef L).posDeps ∪ (S.shapeDef L).negDeps ⊆ Fixed) →
@@ -724,7 +744,7 @@ theorem cont1_indep (S : Schema) (str : Strat S) (hClosed : S.Closed) (G : Graph
         have hcardA₁ : (S.labels \ (Fixed ∪ remMin S str.str Fixed)).card < card :=
           hcard ▸ remMin_card_lt S str.str hne
         set A₁ := remMin S str.str Fixed with hA₁_def
-        -- `Fixed ∪ A₁` is self-contained, and `T_{A₁}` is correct+bounded for it.
+        -- `Fixed ∪ A₁` is self-contained, and `T_{A₁}` is correct and bounded for it.
         have hFA₁self : ∀ L ∈ Fixed ∪ A₁, (S.shapeDef L).posDeps ∪ (S.shapeDef L).negDeps ⊆ Fixed ∪ A₁ := by
           intro L hL
           simp only [Finset.mem_union] at hL
@@ -744,12 +764,12 @@ theorem cont1_indep (S : Schema) (str : Strat S) (hClosed : S.Closed) (G : Graph
         have hTA₁correct : (S.restrictLabels (Fixed ∪ A₁)).CorrTyping G
             (maxAgree (S.restrictLabels (Fixed ∪ A₁)) G Fixed T) :=
           maxAgree_correct hTsubA₁ hTcorrect hFA₁neg
-        -- First `ih` application: base `Fixed ∪ A₁`, jump `C`.
+        -- First use of `ih`: base `Fixed ∪ A₁`, jump `C`.
         have hstep1 := ih _ hcardA₁ (Fixed ∪ A₁) rfl
           (maxAgree (S.restrictLabels (Fixed ∪ A₁)) G Fixed T) hFA₁self hTA₁sub hTA₁correct
           C hCsub (fun L hL => (hCneg L hL).trans Finset.subset_union_left)
           (fun L hL => (hCpos L hL).trans (Finset.union_subset_union_left Finset.subset_union_left))
-        -- `Fixed ∪ C` is self-contained, and `T''` is correct+bounded for it.
+        -- `Fixed ∪ C` is self-contained, and `T''` is correct and bounded for it.
         have hFCself : ∀ L ∈ Fixed ∪ C, (S.shapeDef L).posDeps ∪ (S.shapeDef L).negDeps ⊆ Fixed ∪ C := by
           intro L hL
           simp only [Finset.mem_union] at hL
@@ -782,11 +802,11 @@ theorem cont1_indep (S : Schema) (str : Strat S) (hClosed : S.Closed) (G : Graph
             have hcontra := hsub hL₀rem
             simp only [Finset.mem_sdiff, Finset.mem_union] at hcontra
             exact hcontra.2 (Or.inr hL₀C)
-        -- Second `ih` application: base `Fixed ∪ C`, jump `A₁`.
+        -- Second use of `ih`: base `Fixed ∪ C`, jump `A₁`.
         have hstep2 := ih _ hcardC (Fixed ∪ C) rfl T'' hFCself hT''sub hT''correct
           A₁ hA₁sub (fun L hL => (hA₁neg L hL).trans Finset.subset_union_left)
           (fun L hL => (hA₁pos L hL).trans (Finset.union_subset_union_left Finset.subset_union_left))
-        -- Combine via `cont1_step` and `maxAgree_swap`.
+        -- Combine with `cont1_step` and `maxAgree_swap`.
         have hswap := maxAgree_swap (S := S) (G := G) (Ls0 := Fixed) (A := A₁) (B := C)
           hFixedSelf hA₁neg hA₁pos hCneg hCpos hTsub hTcorrect
         have hcomm : Fixed ∪ A₁ ∪ C = Fixed ∪ C ∪ A₁ := by
@@ -800,15 +820,15 @@ theorem cont1_indep (S : Schema) (str : Strat S) (hClosed : S.Closed) (G : Graph
                 (maxAgree (S.restrictLabels ((Fixed ∪ A₁) ∪ C)) G (Fixed ∪ C) T'') := by
                 rw [hswap]
           _ = cont1 S str G (Fixed ∪ C) T'' := hcomm ▸ hstep2.symm
-      · -- Nothing left at all: `Fixed ⊇ S.labels`, so `C ⊆ Fixed` too, contradicting `hCnew`.
+      · -- No labels remain: `Fixed ⊇ S.labels`. Thus, `C ⊆ Fixed`, which contradicts `hCnew`.
         exfalso
         obtain ⟨L₀, hL₀⟩ := hCnew
         obtain ⟨hL₀C, hL₀nFixed⟩ := Finset.mem_sdiff.mp hL₀
         exact hne ⟨L₀, Finset.mem_sdiff.mpr ⟨hCsub hL₀C, hL₀nFixed⟩⟩
 
-/-- Chain `cont1_indep` along `str'`'s own checkpoints: `cont1`, built
-using any fixed `str0` internally, agrees with `str'` at every one of
-`str'`'s own checkpoints, regardless of `str0`. -/
+/-- Apply `cont1_indep` along the checkpoints of `str'`. `cont1` uses a
+fixed `str0` internally. It agrees with `str'` at each checkpoint of
+`str'`, for each `str0`. -/
 theorem cont1_chain (S : Schema) (str0 : Strat S) (hClosed : S.Closed) (G : Graph)
     (str' : Strat S) :
     ∀ i ≤ str'.k,
@@ -843,8 +863,8 @@ theorem cont1_chain (S : Schema) (str0 : Strat S) (hClosed : S.Closed) (G : Grap
       rw [hIH, hindep, hUnion]
       congr 1
 
-/-- `cont1 S str0 G ∅ ∅` equals `MTyping` for any valid stratification,
-in particular for both `str1` and `str2`. -/
+/-- `cont1 S str0 G ∅ ∅` is equal to `MTyping` for each valid
+stratification. Thus, it is equal for `str1` and also for `str2`. -/
 theorem cont1_eq_MTyping (S : Schema) (str0 : Strat S) (hClosed : S.Closed) (G : Graph)
     (str' : Strat S) : cont1 S str0 G ∅ ∅ = MTyping G S str' := by
   have h := cont1_chain S str0 hClosed G str' str'.k (le_refl _)
@@ -855,11 +875,11 @@ theorem cont1_eq_MTyping (S : Schema) (str0 : Strat S) (hClosed : S.Closed) (G :
   simp only [Schema.stratum, Finset.mem_filter]
   exact ⟨hL, (str'.mem_range L hL).2⟩
 
-/-- Lemma 2. `Typing(G, S, str)` (Definition 4) does not depend on which
-stratification of `S` is chosen: both sides equal `cont1 S str1 G ∅ ∅`,
-a canonical process built by always revealing every "ready" label
-(`remMin`), independent of which valid stratification justifies each
-step (`cont1_indep`). -/
+/-- Lemma 2. `Typing(G, S, str)` (Definition 4) does not depend on the
+stratification of `S` that you select. The two sides are equal to
+`cont1 S str1 G ∅ ∅`. This is a canonical process that always reveals
+each "ready" label (`remMin`). It does not depend on the valid
+stratification that justifies each step (`cont1_indep`). -/
 theorem lemma2 (S : Schema) (hClosed : S.Closed) (str1 str2 : Strat S) (G : Graph) :
     MTyping G S str1 = MTyping G S str2 := by
   rw [← cont1_eq_MTyping S str1 hClosed G str1, ← cont1_eq_MTyping S str1 hClosed G str2]

@@ -9,17 +9,18 @@ private def usage : String :=
   "  shex_lean list        List the available worked examples and proofs.\n" ++
   "  shex_lean run <name>  Print an example's schema/graph/typing, or a\n" ++
   "                        proof's Lean source.\n\n" ++
-  "shex_lean run must be run from the project root (it reads proof source\n" ++
-  "files by their path relative to it)."
+  "Run 'shex_lean run' from the project root. It reads the proof source\n" ++
+  "files with paths that are relative to the project root."
 
 private def paperLabel (name : String) : String :=
   if name.startsWith "schemas2017-" then "2017 — Semantics and Validation of Shapes Schemas for RDF"
   else if name.startsWith "inheritance2025-" then "2025 — Shape Expressions with Inheritance"
   else "2026 — Shape Expressions with Inheritance, disjunctive extends explored (§6)"
 
-/-- Print `items` (already paired with their display line) grouped under a
-`2017`/`2025` sub-header per name prefix, skipping any paper with nothing
-to show. -/
+/-- Print each item in `items` under a sub-header for its paper. The name
+prefix of each item (`schemas2017-`, `inheritance2025-` or
+`inheritance2026-`) selects the paper. Each item already has its display
+line. If a paper has no items, do not print its sub-header. -/
 private def listGrouped (items : List (String × String)) : IO Unit := do
   for paper in ["schemas2017-", "inheritance2025-", "inheritance2026-"] do
     let inPaper := items.filter (fun (name, _) => name.startsWith paper)
@@ -37,8 +38,9 @@ private def listAll : IO Unit := do
   IO.println "Proofs:"
   listGrouped (Examples.proofs.map (fun p => (p.name, p.summary)))
 
-/-- Print a proof's Lean source, read from `p.path` so it can never drift
-from what `lake build` actually checks. -/
+/-- Print the Lean source of a proof. The function reads the source from
+the file `p.path`. Thus, the text that it prints is always the same as the
+text that `lake build` checks. -/
 private def runProof (p : Examples.ProofItem) : IO Unit := do
   IO.println s!"{p.name} — {p.summary}\n"
   match ← (IO.FS.readFile p.path).toBaseIO with
@@ -47,7 +49,7 @@ private def runProof (p : Examples.ProofItem) : IO Unit := do
       IO.println content
   | .error e =>
       IO.eprintln s!"Could not read {p.path}: {e}"
-      IO.eprintln "(shex_lean run must be invoked from the project root.)"
+      IO.eprintln "(Run shex_lean run from the project root.)"
 
 private def runItem (name : String) : IO Unit := do
   match Examples.find? name with

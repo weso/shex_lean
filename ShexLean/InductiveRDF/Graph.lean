@@ -3,61 +3,72 @@ import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Finset.Image
 
 /-!
-An alternative representation of RDF graphs as *inductive triple graphs*,
-following Labra Gayo, Jeuring, Álvarez Rodríguez, "Inductive representations
-of RDF Graphs" (2013), §2.2 ("Inductive triple graphs") and §4 ("Functional
-representation of RDF Graphs") — a specialization of Erwig's inductive
-functional graphs to RDF's "predicates are nodes too" shape.
+A different representation of RDF graphs: *inductive triple graphs*. It
+follows Labra Gayo, Jeuring, Álvarez Rodríguez, "Inductive representations
+of RDF Graphs" (2013):
 
-The paper's `TGraph a`/`TContext a` (§2.2):
+* §2.2 ("Inductive triple graphs").
+* §4 ("Functional representation of RDF Graphs").
+
+This representation is a special case of the inductive functional graphs
+of Erwig. In RDF, a predicate can also be a node. The representation
+supports this.
+
+The paper defines `TGraph a` and `TContext a` (§2.2):
 
 ```
 data TGraph a = Empty | TContext a :& TGraph a
 type TContext a = (a, [(a,a)], [(a,a)], [(a,a)])
 ```
 
-i.e. a graph is either empty, or a *context* — a node together with its
-predecessors, successors, and (since an edge label can itself be a node,
-Fig. 3) the pairs it relates when acting as a predicate — extending a
-smaller graph. Ported below as `TContext`/`TGraph`. This file only defines
-the datatype and the two conversions to/from this project's existing
-`Finset Triple`-based `Graph` (`ShexLean.Common.RDF`); whether this
-representation actually buys *decidability* of `Satisfies`/`Matches`
-(`ShexLean.Shex2017Schemas.Semantics`) is investigated separately, in
-`ShexLean.Shex2017Schemas.Decidable` — spoiler: it doesn't, see that file's
-docstring.
+Thus, a graph is one of these two items:
 
-Not ported: the paper's `RDFGraph = Ground (TGraph Resource) | Exists
-(BNodeId -> RDFGraph)` (§4), which models a blank node as a
-higher-order/existential binder (`Exists`) rather than a concrete
-identifier. This project already represents blank nodes concretely as
-`RDFNode.bnode : BNodeId → RDFNode` (`ShexLean.Common.RDF`), matching the
-2017/2025 papers being formalized elsewhere in this repo, so the `Ground`/
-`Exists` split has no counterpart here — `Resource` below is just
-`RDFNode` itself.
+* The empty graph.
+* A *context* that extends a smaller graph. A context is a node together
+  with its predecessors, its successors, and the pairs that it relates
+  when it is a predicate. (An edge label can also be a node, Fig. 3.)
+
+This file gives `TContext` and `TGraph` in Lean. It defines only the
+datatype and the two conversions between it and the `Graph` of this
+project (`Finset Triple`, in `ShexLean.Common.RDF`).
+
+Does this representation make `Satisfies` and `Matches`
+(`ShexLean.Shex2017Schemas.Semantics`) decidable? The file
+`ShexLean.Shex2017Schemas.Decidable` examines this question. The answer
+is no. Refer to the docstring of that file.
+
+This file does not include the `RDFGraph` type of the paper (§4):
+`RDFGraph = Ground (TGraph Resource) | Exists (BNodeId -> RDFGraph)`. That
+type uses a higher-order (existential) binder `Exists` for a blank node,
+not a concrete identifier. This project uses a concrete identifier for
+blank nodes: `RDFNode.bnode : BNodeId → RDFNode` (`ShexLean.Common.RDF`).
+The 2017 and 2025 papers also do this. Thus, there is no `Ground`/`Exists`
+split here, and `Resource` below is equal to `RDFNode`.
 -/
 
 namespace ShexLean.InductiveRDF
 
 open ShexLean (RDFNode IRI Triple Graph)
 
-/-- §4's `Resource`: the shared node/edge-label universe. The paper unifies
-nodes and edge labels into one type, since an IRI can be both a node and a
-predicate; we reuse `RDFNode` for both roles, wrapping a predicate `IRI` as
-`RDFNode.iri` wherever it appears as an edge label below. -/
+/-- `Resource` of §4: one type for nodes and edge labels. The paper uses
+one type for the two roles, because an IRI can be a node and also a
+predicate. We use `RDFNode` for the two roles. Below, when a predicate
+`IRI` is an edge label, we wrap it as `RDFNode.iri`. -/
 abbrev Resource := RDFNode
 
-/-- §2.2's `TContext a = (a, [(a,a)], [(a,a)], [(a,a)])`: the context of
-`node`, i.e. `node` together with its predecessors, successors, and (Fig. 3)
-the pairs it relates when used as an edge label. `pred` pairs each
-predecessor with the edge label pointing *from* it; `succ` pairs each edge
-label with the successor it points *to*.
+/-- `TContext a = (a, [(a,a)], [(a,a)], [(a,a)])` of §2.2: the context of
+`node`. The context contains `node`, its predecessors, its successors, and
+the pairs that it relates when it is an edge label (Fig. 3).
 
-`rels` is never populated by `ofGraph`/`toGraph` below: this repo's
-`Triple.pred : IRI` is a plain string, never literally one of a triple's own
-subject/object `RDFNode`s, so the "edge that is also a node" scenario the
-paper motivates `rels` with (Fig. 3, §2.2) cannot arise for graphs built via
-`ofGraph`. Kept only so `TContext` matches the paper's shape exactly. -/
+* `pred` pairs each predecessor with the edge label that goes *from* it.
+* `succ` pairs each edge label with the successor that it goes *to*.
+
+`ofGraph` and `toGraph` below never put data in `rels`. In this project,
+`Triple.pred : IRI` is a plain string. It is never one of the subject or
+object `RDFNode`s of a triple. Thus, the paper's case "an edge that is
+also a node" (Fig. 3, §2.2) cannot occur in a graph that `ofGraph` makes.
+We keep `rels` only to make `TContext` have the same structure as in the
+paper. -/
 structure TContext where
   node : Resource
   pred : List (Subject × Resource)
@@ -65,7 +76,7 @@ structure TContext where
   rels : List (Resource × Resource)
   deriving Repr
 
-/-- §2.2's `TGraph a = Empty | TContext a :& TGraph a`. -/
+/-- `TGraph a = Empty | TContext a :& TGraph a` of §2.2. -/
 inductive TGraph where
   | empty : TGraph
   | ext   : TContext → TGraph → TGraph
@@ -73,22 +84,28 @@ inductive TGraph where
 
 /-! ### `Graph → TGraph`
 
-Erwig's inductive graphs satisfy an invariant that makes decomposition
-well-defined: a `Context` only ever records an edge to a node that is still
-"in the rest of the graph" it extends — an edge to a node processed earlier
-(so already unwound off the front of the `:&` chain) was already recorded
-*there*, and would double-count if repeated. `buildContext`/`buildFrom`
-below implement that invariant explicitly, processing nodes in a fixed
-order `ns` and, for the node `n` at the head, only recording edges whose
-other endpoint lies in `later := ns.tail.toFinset` (or *is* `n` itself, for
-a self-loop, which — having no distinct "other endpoint" — is recorded once
-in `succ` regardless of `later`). -/
+The inductive graphs of Erwig have an invariant. This invariant makes
+decomposition well-defined. A `Context` records an edge only if the other
+node of the edge is still in the rest of the graph that the context
+extends. An edge to a node from an earlier step is already in the context
+of that node. If you record it again, you count it two times.
 
-/-- The context of `n`, recording only its edges to nodes still in `later`
-(plus any self-loop at `n`, recorded once, in `succ`). Noncomputable only
-because it goes via `Finset.toList` (itself noncomputable in Mathlib, since
-`Finset`/`Multiset` pick a representative list via `Quot.out`); this doesn't
-affect `decide`-based reasoning about it, only native code generation. -/
+`buildContext` and `buildFrom` below implement this invariant explicitly:
+
+* They process the nodes in a fixed order `ns`.
+* For the node `n` at the head, they record an edge only if its other
+  endpoint is in `later := ns.tail.toFinset`.
+* A self-loop at `n` has no different "other endpoint". They record it one
+  time, in `succ`, and do not look at `later`. -/
+
+/-- The context of `n`. It records only the edges of `n` to nodes in
+`later`, and a self-loop at `n` one time, in `succ`.
+
+This definition is noncomputable only because it uses `Finset.toList`.
+`Finset.toList` is noncomputable in Mathlib, because `Finset` and
+`Multiset` use `Quot.out` to select a representative list. This has no
+effect on proofs that use `decide`. It has an effect only on native code
+generation. -/
 noncomputable def buildContext (n : Resource) (later : Finset Resource) (G : Graph) : TContext where
   node := n
   pred := (G.filter (fun t => t.obj = n ∧ t.subj ∈ later)).toList.map
@@ -97,30 +114,34 @@ noncomputable def buildContext (n : Resource) (later : Finset Resource) (G : Gra
             (fun t => (RDFNode.iri t.pred, t.obj))
   rels := []
 
-/-- Build a `TGraph` from `G`, processing the nodes listed in `ns` in order.
-Called with `ns := G.nodes.toList` by `ofGraph`; kept as an explicit
-recursion argument so each step's `later` set is exactly the (structurally
-smaller) tail. -/
+/-- Make a `TGraph` from `G`. Process the nodes in `ns` in their order.
+`ofGraph` calls this function with `ns := G.nodes.toList`. We keep `ns` as
+an explicit recursion argument. Thus, the `later` set of each step is the
+tail, which is structurally smaller. -/
 noncomputable def buildFrom : List Resource → Graph → TGraph
   | [], _ => .empty
   | n :: ns, G => .ext (buildContext n ns.toFinset G) (buildFrom ns G)
 
-/-- `Graph → TGraph`: decompose `G` into an inductive triple graph, one
-context per node of `G`. -/
+/-- `Graph → TGraph`: decompose `G` into an inductive triple graph, with
+one context for each node of `G`. -/
 noncomputable def ofGraph (G : Graph) : TGraph := buildFrom G.nodes.toList G
 
 /-! ### `TGraph → Graph` -/
 
-/-- The triples recorded directly in one context: `(source, label, node)`
-for each `pred` entry (only when `label` is an `IRI`, always true for
-contexts built by `buildContext`; `pred`'s source is already a `Subject`,
-since it's `t.subj` for some real triple `t`) and `(node, label, target)`
-for each `succ` entry — here `node` needs converting *to* a `Subject` via
-`RDFNode.toSubject?` first (dropping the entry on `none`, which never
-actually happens for contexts built by `buildContext`: `succ` is only ever
-populated from a real triple's own `Subject` subject, so `c.node` is
-always `Subject`-representable whenever `succ` is nonempty — see
-`RoundTrip.lean`'s `mem_context_succ_triples` for the proof). -/
+/-- The triples that one context records directly:
+
+* `(source, label, node)` for each `pred` entry. This occurs only if
+  `label` is an `IRI`. This is always true for a context from
+  `buildContext`. The `source` of `pred` is already a `Subject`, because it
+  is `t.subj` for a real triple `t`.
+* `(node, label, target)` for each `succ` entry. Here, `RDFNode.toSubject?`
+  must first change `node` to a `Subject`. If the result is `none`, the
+  entry is removed.
+
+For a context from `buildContext`, the result `none` never occurs. Only
+the `Subject` of a real triple puts data in `succ`. Thus, if `succ` is not
+empty, `c.node` is always a `Subject`. For the proof, refer to
+`mem_context_succ_triples` in `RoundTrip.lean`. -/
 def TContext.toTriples (c : TContext) : List Triple :=
   c.pred.filterMap (fun (src, lbl) =>
     match lbl with
@@ -131,12 +152,12 @@ def TContext.toTriples (c : TContext) : List Triple :=
     | some ns, .iri p => some (⟨ns, p, tgt⟩ : Triple)
     | _, _ => none)
 
-/-- All triples recorded across a `TGraph`'s contexts. -/
+/-- All the triples that the contexts of a `TGraph` record. -/
 def TGraph.toTriples : TGraph → List Triple
   | .empty => []
   | .ext c g => c.toTriples ++ TGraph.toTriples g
 
-/-- `TGraph → Graph`: collect every context's triples back into a
+/-- `TGraph → Graph`: collect the triples of each context into one
 `Finset Triple`. -/
 def toGraph (g : TGraph) : Graph := g.toTriples.toFinset
 

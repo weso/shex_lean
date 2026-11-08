@@ -4,21 +4,23 @@ import Example
 
 /-!
 Example 7 from Boneva, Labra Gayo, Prud'hommeaux (2017) (§4.2): the full
-execution trace of `prove(ex:n1, <L1>, [])` (Algorithm 2) on `G₃`/`S₃`
-from Example 6 (`Example6_prove_motivation.lean`): the recursive calls
-`prove(ex:n2,<L2>,_)`/`prove(ex:n3,<L3>,_)` return `true`, while
-`prove(ex:n2,<Str>,_)`/`prove(4,<L2>,_)`/`prove(4,<Str>,_)` return `false`.
+execution trace of `prove(ex:n1, <L1>, [])` (Algorithm 2) on `G₃` and `S₃`
+from Example 6 (`Example6_prove_motivation.lean`).
 
-Algorithm 2's own recursive `prove` function isn't formalized/executable
-here (per Example 6's own module docstring: the paper's algorithm and
-the declarative `⊢`/`⊨` semantics, Fig. 2, are two different things,
-related only by Proposition 2, which lives in a different, unported part
-of the paper). But `⊢`/`⊨` themselves are now decidable
-(`ShexLean.Shex2017Schemas.Decidable`), and Example 7's own trace is
-entirely about the declarative semantics' verdict on each call. This file
-reproduces the trace's three `false` outcomes as theorems, and the
-`Example` below computes all six outcomes, including the `true`s, via
-`native_decide`, rather than transcribing them from the paper by hand.
+* The recursive calls `prove(ex:n2,<L2>,_)` and `prove(ex:n3,<L3>,_)`
+  return `true`.
+* The recursive calls `prove(ex:n2,<Str>,_)`, `prove(4,<L2>,_)` and
+  `prove(4,<Str>,_)` return `false`.
+
+`Algorithm2.lean` formalizes `prove` and proves Proposition 2. But that
+`prove` decides `⊢` with classical logic. Thus, it does not run. The
+declarative semantics `⊢` and `⊨` (Fig. 2) are decidable
+(`ShexLean.Shex2017Schemas.Decidable`). The trace of Example 7 is only
+about the result of the declarative semantics for each call.
+
+This file gives the three `false` results of the trace as theorems. The
+`Example` below computes all six results, also the `true` results, with
+`native_decide`. Nobody copied them from the paper by hand.
 -/
 
 namespace Examples.ProveAlgorithmExample
@@ -26,14 +28,17 @@ namespace Examples.ProveAlgorithmExample
 open ShexLean
 open Examples.StratificationExample (S₃)
 
-/-! ### Example 7's negative trace facts
+/-! ### The negative facts of the trace of Example 7
 
-`prove(ex:n1, <L1>, [])`'s recursive calls that return `false`: `ex:n2` is
-never typed `<Str>` (it's an IRI, and `<Str>`'s value set only contains a
-placeholder string literal; see `StratificationExample`'s own module
-docstring), and `4` has neither shape (it's not the placeholder string
-literal either, and, being a literal, has no outgoing triples, so it can
-never match `<L2>`'s own `ex:c @<L3>` neighbourhood description). -/
+These are the recursive calls of `prove(ex:n1, <L1>, [])` that return
+`false`:
+
+* `ex:n2` never has the type `<Str>`. It is an IRI, and the value set of
+  `<Str>` contains only a placeholder string literal. (Refer to the module
+  docstring of `StratificationExample`.)
+* `4` has neither shape. It is not the placeholder string literal. Also,
+  it is a literal, so it has no outgoing triples. Thus, it can never match
+  the neighbourhood description `ex:c @<L3>` of `<L2>`. -/
 
 theorem n2_not_Str : ¬ Satisfies G₃ t n2 (S₃.shapeDef Str) := by
   rw [shapeDef_Str]
@@ -61,13 +66,14 @@ open Examples.ProveAlgorithmExample (G₃ t n1 n2 n3 four L1 L2 L3 Str)
 open Examples.StratificationExample (S₃)
 open ShexLean (Schema.render Graph.render renderDecide satisfies_decidable)
 
-/-- Every line of the trace below is `renderDecide (satisfies_decidable …)`,
-a `Decidable` computation of `Satisfies` at each call's node and shape,
-not a value transcribed from the paper. -/
+/-- Each line of the trace below is `renderDecide (satisfies_decidable …)`.
+This is a `Decidable` computation of `Satisfies` at the node and the shape
+of each call. It is not a value copied from the paper. -/
 private def sat (n : ShexLean.RDFNode) (L : ShexLean.Label) : String :=
   renderDecide (satisfies_decidable G₃ t n (S₃.shapeDef L))
 
-/-- Example 7: the execution trace of `prove(ex:n1, <L1>, [])` on `G₃`/`S₃`. -/
+/-- Example 7: the execution trace of `prove(ex:n1, <L1>, [])` on `G₃` and
+`S₃`. -/
 def proveAlgorithmTrace : Example where
   name := "schemas2017-example7-trace"
   summary := "Execution trace of prove(ex:n1,<L1>,[]) (Algorithm 2) on G₃/S₃."

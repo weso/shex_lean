@@ -1,9 +1,10 @@
 # Formalizing Shape Expressions in Lean 4
 
-A Lean 4 formalization of [ShEx (Shape Expressions)](https://shex.io/), the
-schema language for validating RDF graphs. 
+This repository is a Lean 4 formalization of
+[ShEx (Shape Expressions)](https://shex.io/). ShEx is a schema language
+that validates RDF graphs.
 
-This repository formalizes **two** papers and contains some experiments about RDF and ShEx:
+The repository formalizes **two** papers:
 
 > Iovka Boneva, Jose Emilio Labra Gayo, Eric Prud'hommeaux,
 > *"Semantics and Validation of Shapes Schemas for RDF"*, ISWC 2017.
@@ -12,213 +13,253 @@ This repository formalizes **two** papers and contains some experiments about RD
 > Thornton, Andra Waagmeester, *"Shape Expressions with Inheritance"*,
 > arXiv:2503.24299, 2025.
 
-The 2025 paper extends ShEx 2.1 with an `extends`/`abstract` inheritance
-mechanism. It is not a strict extension of the 2017 formalism — node
-constraints, `closed`/`extra`, and the extension hierarchy all differ — so
-the two live as separate developments, sharing only the paper-independent
-RDF/typing vocabulary they agree on.
+It also contains some experiments about RDF and ShEx.
 
-The goal is a machine-checked model of each paper (RDF graphs, shape
-expression syntax, satisfaction relations, and for 2017 a full
-soundness/completeness proof for two validation algorithms), not a
-production ShEx validator. The repository also contains the LaTeX source
-of a paper describing this formalization — see [`paper/`](paper/).
+The 2025 paper adds an inheritance mechanism (`extends` and `abstract`) to
+ShEx 2.1. It is not a strict extension of the 2017 formalism: the node
+constraints, `closed`/`extra` and the extension hierarchy are all
+different. Thus, the two papers are separate developments. They share
+only the RDF and typing vocabulary, which does not depend on a paper.
+
+The goal is a machine-checked model of each paper. The model contains RDF
+graphs, the syntax of shape expressions and the satisfaction relations.
+For the 2017 paper, it also contains a full proof of soundness and
+completeness for two validation algorithms. The goal is not a production
+ShEx validator.
 
 A third directory, `ShexLean/Shex2026InheritanceDisjunction/`, is an
-**exploration**, not a third paper: it asks whether the 2025 paper's own
-§6 ("Design Choices") — which explicitly *declines* to allow `extends` on
-a disjunction of shapes, citing an unresolved multiple-inheritance
-ambiguity — could be relaxed while keeping the same correctness results.
-It's a copy of `Shex2025Inheritance/` with that one restriction lifted and
-a fix for the ambiguity designed and proved sound; see "What's implemented
-(2026 exploration)" below.
+**exploration**. It is not a third paper. §6 ("Design Choices") of the
+2025 paper explicitly does *not* allow `extends` on a disjunction of
+shapes, because of an ambiguity with multiple inheritance. The exploration
+asks if we can remove this restriction and keep the same correctness
+results. The directory is a copy of `Shex2025Inheritance/` with that one
+restriction removed, and with a fix for the ambiguity that is designed and
+proved sound. Refer to "What is implemented (2026 exploration)" below.
 
 ## Repository structure
 
 ```
 ShexLean/
-  Common/                 -- vocabulary shared by both papers (RDF, Typing, ...)
-  InductiveRDF/               -- an alternative RDF graph representation,
-                                investigated (see "Decidability" below) as a
-                                possible route to decidability and kept as a
-                                proved-correct but non-load-bearing detour
-  Shex2017Schemas/         -- 2017 paper: syntax, semantics, algorithms, decidability
-    examples/               -- worked examples from the paper
-  Shex2025Inheritance/     -- 2025 paper: syntax, semantics, algorithm, decidability
-    examples/               -- worked examples from the paper
-  Shex2026InheritanceDisjunction/ -- exploration: 2025's §6 "extends on a
-                                disjunction" relaxation, same shape as
-                                Shex2025Inheritance/ (syntax through
-                                decidability/renderer)
-examples/                 -- shex_lean CLI infrastructure (paper-agnostic)
-paper/                    -- LaTeX source of the accompanying paper
+  Common/                          -- vocabulary that the two papers share (RDF, Typing, ...)
+  InductiveRDF/                    -- a different representation of RDF graphs. We examined it
+                                      as a possible route to decidability (refer to
+                                      "Decidability" below). It is proved correct, but no
+                                      other part uses it.
+  Shex2017Schemas/                 -- 2017 paper: syntax, semantics, algorithms, decidability
+    examples/                      -- worked examples from the paper
+  Shex2025Inheritance/             -- 2025 paper: syntax, semantics, algorithm, decidability
+    examples/                      -- worked examples from the paper
+  Shex2026InheritanceDisjunction/  -- exploration: "extends on a disjunction" (§6 of 2025).
+                                      Same structure as Shex2025Inheritance/ (from the syntax
+                                      to decidability and rendering)
+    examples/                      -- worked example for the exploration
+examples/                          -- infrastructure of the shex_lean CLI (does not depend on a paper)
+STYLE.md                           -- writing rules for comments and documentation
 ```
 
-`ShexLean.lean` imports every non-example file, so `lake build ShexLean`
-type-checks the whole formalization. The worked examples are built
-separately via the `Examples` library and the `shex_lean` executable (see
-"Running" below).
+`ShexLean.lean` imports each file that is not an example. Thus,
+`lake build ShexLean` type-checks the full formalization. The `Examples`
+library and the `shex_lean` executable build the worked examples
+separately (refer to "Running" below).
 
 ## Decidability
 
-Both papers' satisfaction relations are stated as `Prop`s quantifying over
-infinite types, so as written they are not executable. Each paper has a
-`Decidable.lean` that shows every such quantifier can be bounded to the
-finite graph/typing/schema at hand, giving genuine `Decidable` instances
-(`decide`/`native_decide`-able). On the 2025 side, one restriction is
-needed: `subjectOf` relies on `Classical.choice`, so `.constraint` is only
-decided at the node level (`ShapeExpr.MOk`/`FOk`); no worked example hits
-the excluded case. Each paper's `Render.lean` pretty-prints real `Schema`/
-`Graph`/`Typing` values and computes true/false claims via these instances.
+In the two papers, the satisfaction relations are `Prop`s with quantifiers
+over infinite types. Thus, as written, you cannot execute them.
 
-## What's implemented (2017 paper)
+Each paper has a `Decidable.lean` file. This file shows that you can bound
+each such quantifier to the finite graph, typing or schema. This gives
+real `Decidable` instances, which `decide` and `native_decide` can use.
 
-- `Common/RDF.lean`, `Common/Typing.lean` — RDF graphs and typings (§1, §3.1).
-- `Shex2017Schemas/Syntax.lean`, `Semantics.lean` — grammar and satisfaction
-  relations (Fig. 1, 2).
-- `Shex2017Schemas/Stratification.lean` — stratified negation (§3.2).
-- `Shex2017Schemas/MaximalTyping.lean`, `Proposition1.lean` — the maximal
-  correct typing construction, Lemma 1 and Proposition 1 (§3.3).
-- `Shex2017Schemas/Lemma2.lean` — stratification-independence of the
-  maximal typing; the paper gives only a proof sketch here.
-- `Shex2017Schemas/ShapesSem.lean` — Definitions 5-6, `SHAPES_SEM`.
-- `Shex2017Schemas/Algorithm1.lean` — Algorithm 1 (§4.1), proved equal to
-  the semantics.
-- `Shex2017Schemas/Algorithm2.lean` — Algorithm 2 (§4.2), the recursive
-  cycle-detecting validation procedure, proved sound and complete (the
-  paper's own proof sketch covers only termination).
-- `Shex2017Schemas/examples/` — every numbered example from the paper, one
-  file per example, with proofs and rendered output generated from real
-  `Schema`/`Graph`/`Typing` values rather than transcribed by hand.
+The 2025 side needs one restriction. `subjectOf` uses `Classical.choice`.
+Thus, `.constraint` is decided only at the node level (`ShapeExpr.MOk`
+and `FOk`). No worked example uses the excluded case.
 
-## What's implemented (2025 paper: Shape Expressions with Inheritance)
+The 2026 exploration needs one more bound. Rule 18 has a new existential
+witness, `pick : Label → ℕ`. `ShapeExpr.extTeAt_mod` shows that only the
+index modulo the number of disjuncts is important. Thus, `Decidable.lean`
+searches only over the finite set `ShapeExpr.pickBound S x` for each
+ancestor `x`.
 
-Lives in the `ShexLean.Inheritance` namespace, reusing `Common/RDF.lean`
-and `Common/Typing.lean` unchanged.
+The `Render.lean` file of each paper pretty-prints real `Schema`, `Graph`
+and `Typing` values. It computes the `true` and `false` claims with these
+instances.
 
-- `Shex2025Inheritance/Syntax.lean` — grammar, `Schema = (Y, X, def, A)`,
+## What is implemented (2017 paper)
+
+- `Common/RDF.lean`, `Common/Typing.lean`: RDF graphs and typings (§1,
+  §3.1).
+- `Shex2017Schemas/Syntax.lean`, `Semantics.lean`: the grammar and the
+  satisfaction relations (Fig. 1, Fig. 2).
+- `Shex2017Schemas/Stratification.lean`: stratified negation (§3.2).
+- `Shex2017Schemas/MaximalTyping.lean`, `Proposition1.lean`: the
+  construction of the maximal correct typing, Lemma 1 and Proposition 1
+  (§3.3).
+- `Shex2017Schemas/Lemma2.lean`: the maximal typing does not depend on the
+  stratification. The paper gives only a proof sketch for this result.
+- `Shex2017Schemas/ShapesSem.lean`: Definitions 5 and 6, `SHAPES_SEM`.
+- `Shex2017Schemas/Algorithm1.lean`: Algorithm 1 (§4.1). It is proved
+  equal to the semantics.
+- `Shex2017Schemas/Algorithm2.lean`: Algorithm 2 (§4.2), the recursive
+  validation procedure that detects cycles. It is proved sound and
+  complete. (The proof sketch of the paper covers only termination.)
+- `Shex2017Schemas/examples/`: each numbered example from the paper, one
+  file for each example. Each file has proofs, and its rendered output is
+  generated from real `Schema`, `Graph` and `Typing` values. Nobody copied
+  the output by hand.
+
+## What is implemented (2025 paper: Shape Expressions with Inheritance)
+
+This part is in the namespace `ShexLean.Inheritance`. It uses
+`Common/RDF.lean` and `Common/Typing.lean` with no change.
+
+- `Shex2025Inheritance/Syntax.lean`: the grammar, `Schema = (Y, X, def, A)`,
   and the extension hierarchy `H_S` (Definitions 1-3).
-- `Shex2025Inheritance/Semantics.lean` — the three satisfaction relations
-  (Tables 1-3), defined with a fuel parameter since `extends` recursion
-  isn't structural.
-- `Shex2025Inheritance/Termination.lean` — Lemma 1: a large-enough fuel
-  makes the relations fuel-independent, fully proved.
-- `Shex2025Inheritance/Stratification.lean` — dependency graph and
+- `Shex2025Inheritance/Semantics.lean`: the three satisfaction relations
+  (Tables 1-3). They have a fuel parameter, because the recursion of
+  `extends` is not structural.
+- `Shex2025Inheritance/Termination.lean`: Lemma 1. A sufficiently large
+  fuel makes the relations independent of fuel. The proof is complete. It
+  needs only `WellFormedX` and `ExtAcyclic`.
+- `Shex2025Inheritance/Stratification.lean`: the dependency graph and
   well-definedness (Definitions 5-6).
-- `Shex2025Inheritance/CorrectTyping.lean` — correct typing with the
-  abstract-label case (Definition 4).
-- `Shex2025Inheritance/Proposition1.lean` — the maximal typing and
-  Proposition 1, fully proved.
-- `Shex2025Inheritance/Lemma2.lean` — stratification-independence (§4.3),
-  fully proved; the paper only sketches this.
-- `Shex2025Inheritance/Algorithm1.lean` — the §5 validation algorithm,
+- `Shex2025Inheritance/CorrectTyping.lean`: correct typing, with the case
+  of abstract labels (Definition 4).
+- `Shex2025Inheritance/Proposition1.lean`: the maximal typing and
+  Proposition 1. The proof is complete.
+- `Shex2025Inheritance/Lemma2.lean`: the maximal typing does not depend on
+  the stratification (§4.3). The proof is complete. The paper gives only a
+  sketch.
+- `Shex2025Inheritance/Algorithm1.lean`: the validation algorithm of §5,
   proved correct.
-- `Shex2025Inheritance/Decidable.lean`, `Render.lean` — see "Decidability".
-- `Shex2025Inheritance/examples/` — every numbered example from the paper,
-  same structure as the 2017 side.
+- `Shex2025Inheritance/Decidable.lean`, `Render.lean`: refer to
+  "Decidability".
+- `Shex2025Inheritance/examples/`: each numbered example from the paper,
+  with the same structure as the 2017 side.
 
-## What's implemented (2026 exploration: disjunctive `extends`)
+## What is implemented (2026 exploration: disjunctive `extends`)
 
-§6 ("Design Choices") of the 2025 paper restricts `extends X h [and u]` so
-`h` must be a single plain shape, not a general shape expression — in
-particular, not a disjunction `s1 or s2`. The paper explains why: if a
-node inherits from the same disjunctive ancestor along two different
-paths (their own example — a hypothetical `Figure → ⟨coord@Cartesian⟩ or
-⟨coord@Polar⟩`, reached by `ColouredCircle` via both `ColouredFigure` and
-`Circle`), nothing stops the two paths from independently picking
-different disjuncts, letting one node satisfy both — which the paper
-calls undesirable — and fixing it properly would need "(1) recording
-which disjunct... has been satisfied by each subtype, and (2) checking
-whether all the subtypes satisfy the same disjunct." The paper doesn't
-work out that fix; this directory does, and checks whether Proposition 1
-and Lemma 2 still hold once it's in place. **They do, with no `sorry`
-anywhere in the directory.**
+§6 ("Design Choices") of the 2025 paper restricts `extends X h [and u]`.
+`h` must be one plain shape, not a general shape expression. Thus, it
+cannot be a disjunction `s1 or s2`.
 
-- `ShexLean/Shex2026InheritanceDisjunction/Syntax.lean` — `ShapeExpr.
-  extends`'s payload generalized from a single `Shape` to a *nonempty
-  `List Shape`* (`hs`); a singleton list reproduces the original paper's
-  grammar exactly, so the unmodified formalism is the `hs.length = 1`
-  special case of this one. `ShapeExpr.extTeAt i` resolves `ext-te(x)` at
-  a chosen disjunct index (`extTeAt_one`/`extTeAt_two` connect this back
-  to concrete triple expressions for the singleton/pair cases;
-  `extTeAt_mod` — the fact `extTeAt` only depends on its index mod the
-  disjunct count — is what later makes the new existential decidable).
-- `ShexLean/Shex2026InheritanceDisjunction/Semantics.lean` — identical to
-  `Shex2025Inheritance/Semantics.lean` except rule 18 (`SatisfiesMFuel`'s
-  `.extends` case), which gains one more existential witness, `pick :
-  ShapeLabel → ℕ`, chosen once per `.extends` occurrence and shared
-  across every ancestor that occurrence reaches. This is the actual fix:
-  `S.ancSet` already deduplicates every ancestor reachable from one
-  `.extends` clause into a single `Finset` (multiple inheritance is
-  expressed as multiple labels in one `xs`, not multiple separate
-  `.extends` nodes — a shape `WellFormedX`/`WellFormedExtends` already
-  rule out), so the *same* shared `pick`/`Mx` witness is forced onto two
-  inheritance paths that converge on the same disjunctive ancestor —
-  exactly "(1) record the choice, (2) check subtypes agree," without a
-  schema- or typing-global parameter anywhere else.
-- `ShexLean/Shex2026InheritanceDisjunction/Stratification.lean`,
-  `Termination.lean` — the dependency graph and Lemma 1 (fuel-
-  independence), re-derived against `hs`/`pick`: `Shape.listDepInfo`
-  (the union of every disjunct's own dependency info — any of them could
-  be `pick`ed, so a sound stratification analysis must count them all) and
-  `Shape.listSize`/`extTeAt_size_le` (an AST-size bound covering every
-  disjunct at once) are the two new pieces; the stabilization induction
-  itself carries over unchanged in shape.
-- `ShexLean/Shex2026InheritanceDisjunction/CorrectTyping.lean`,
-  `Algorithm1.lean` — unchanged from the 2025 versions, verbatim mechanical
-  ports (neither touches `.extends`'s payload at all).
-- `ShexLean/Shex2026InheritanceDisjunction/Proposition1.lean` — the paper's
-  own Proposition 1, re-derived and **proved** for the relaxed semantics.
-  The `agreeM`/`stratMonoM`/`schemaAgreeM` agreement/monotonicity lemmas
-  (the ones that actually dereference `.extends`) each gain the same
-  `pick` existential rule 18 itself gained, threaded through exactly where
-  the existing `Mx` witness already was — every other case (`or`/`and`/
-  `not`/`.ofShape`) is untouched.
-- `ShexLean/Shex2026InheritanceDisjunction/Lemma2.lean` — the paper's
-  Lemma 2 (stratification-independence), a verbatim mechanical port: it
-  consumes `Proposition1.lean`'s machinery abstractly and never itself
-  references `.extends`/`extTeAt`.
-- `ShexLean/Shex2026InheritanceDisjunction/Decidable.lean`,
-  `Render.lean` — decidability and rendering for the relaxed semantics,
-  see "Decidability" above for the new `pick`-bounding piece.
-- `ShexLean/Shex2026InheritanceDisjunction/examples/
-  Example1_coloured_circle.lean` — a formalized version of the paper's own
-  §6 hypothetical: `Figure`'s body relaxed to `[⟨coord@CartesianCoord⟩,
-  ⟨coord@PolarCoord⟩]`, with `Circle`/`ColouredFigure` both extending it
-  and `ColouredCircle` multiply-inheriting from both (§2's motivating
-  schema, `Attribute`/`Colour`/`Radius` stripped out as irrelevant to the
-  coordinate question). Three `native_decide`-verified claims: a node with
-  *consistent* Cartesian-only or Polar-only coordinates is a
-  `ColouredCircle` (the legitimate use the paper says motivated wanting
-  this), and a node whose coordinate data matches *neither* disjunct is
-  rejected — for every possible witness, not just the ones tried, since
-  `f3_not_satisfies_ColouredCircle` is a genuine non-existence proof, not
-  an omission.
+The paper tells why. Let a node inherit from the same disjunctive ancestor
+along two different paths. The example of the paper is a hypothetical
+`Figure → ⟨coord@Cartesian⟩ or ⟨coord@Polar⟩`, which `ColouredCircle`
+reaches through `ColouredFigure` and through `Circle`. Then the two paths
+can select different disjuncts, and one node can satisfy the two. The
+paper says that this is undesirable. It says that a correct fix needs
+"(1) recording which disjunct... has been satisfied by each subtype, and
+(2) checking whether all the subtypes satisfy the same disjunct."
+
+The paper does not give that fix. This directory gives it, and checks if
+Proposition 1 and Lemma 2 are still true with the fix. **They are true.
+There is no `sorry` in the directory.**
+
+- `Shex2026InheritanceDisjunction/Syntax.lean`: the payload of
+  `ShapeExpr.extends` is now a *nonempty `List Shape`* (`hs`), not one
+  `Shape`. A singleton list gives exactly the grammar of the original
+  paper. Thus, the original formalism is the special case
+  `hs.length = 1` of this one.
+  - `ShapeExpr.extTeAt i` resolves `ext-te(x)` at a selected disjunct
+    index.
+  - `extTeAt_one` and `extTeAt_two` connect it to concrete triple
+    expressions for the singleton case and the pair case.
+  - `extTeAt_mod` shows that `extTeAt` depends only on its index modulo
+    the number of disjuncts. This fact makes the new existential
+    decidable.
+- `Shex2026InheritanceDisjunction/Semantics.lean`: the same as
+  `Shex2025Inheritance/Semantics.lean`, except rule 18 (the `.extends` case
+  of `SatisfiesMFuel`). Rule 18 has one more existential witness,
+  `pick : ShapeLabel → ℕ`. Each `.extends` occurrence selects `pick` one
+  time, and all the ancestors that this occurrence reaches share it. This
+  is the fix:
+  - `S.ancSet` already puts each ancestor that one `.extends` clause can
+    reach into one `Finset`, with no duplicates. (Multiple inheritance is
+    written as many labels in one `xs`, not as many separate `.extends`
+    nodes. `WellFormedX` and `WellFormedExtends` already exclude the
+    second form.)
+  - Thus, two inheritance paths that go to the same disjunctive ancestor
+    must use the *same* shared `pick` and `Mx` witness.
+  - This is exactly "(1) record the choice, (2) check that the subtypes
+    agree". The fix needs no global parameter for the schema or the
+    typing.
+- `Shex2026InheritanceDisjunction/Stratification.lean`, `Termination.lean`:
+  the dependency graph and Lemma 1 (independence from fuel), done again
+  for `hs` and `pick`. There are two new parts:
+  - `Shape.listDepInfo` is the union of the dependency information of all
+    the disjuncts. `pick` can select any of them, so a sound
+    stratification analysis must count them all.
+  - `Shape.listSize` and `extTeAt_size_le` give a bound on the syntax-tree
+    size that covers all the disjuncts together.
+
+  Note: this version of Lemma 1 needs an extra hypothesis,
+  `Schema.WellFormedExtends`, which forbids an `extends` nested in a
+  restriction `u`. (The 2025 version needs only `WellFormedX` and
+  `ExtAcyclic`.) The module docstring of `Termination.lean` tells why.
+- `Shex2026InheritanceDisjunction/CorrectTyping.lean`, `Algorithm1.lean`:
+  almost the same as the 2025 versions. They do not use the payload of
+  `.extends`. Their hypotheses use `WellFormedExtends` (from
+  `Termination.lean` above) where the 2025 versions use `ExtAcyclic`.
+- `Shex2026InheritanceDisjunction/Proposition1.lean`: Proposition 1 of
+  the paper, done again and **proved** for the relaxed semantics. The
+  agreement and monotonicity lemmas `agreeM`, `stratMonoM` and
+  `schemaAgreeM` are the lemmas that dereference `.extends`. Each of them
+  gets the same `pick` existential as rule 18, at the location where the
+  `Mx` witness already was. The other cases (`or`, `and`, `not`,
+  `.ofShape`) do not change.
+- `Shex2026InheritanceDisjunction/Lemma2.lean`: Lemma 2 of the paper (the
+  maximal typing does not depend on the stratification). It is a
+  mechanical port. It uses the results of `Proposition1.lean` abstractly,
+  and never refers to `.extends` or `extTeAt` itself.
+- `Shex2026InheritanceDisjunction/Decidable.lean`, `Render.lean`:
+  decidability and rendering for the relaxed semantics. Refer to
+  "Decidability" above for the new bound on `pick`.
+- `Shex2026InheritanceDisjunction/examples/Example1_coloured_circle.lean`:
+  a formalized version of the hypothetical case of §6 of the paper.
+  - The body of `Figure` is relaxed to
+    `[⟨coord@CartesianCoord⟩, ⟨coord@PolarCoord⟩]`.
+  - `Circle` and `ColouredFigure` both extend `Figure`.
+  - `ColouredCircle` inherits from the two (the motivating schema of §2,
+    with `Attribute`, `Colour` and `Radius` removed, because they are not
+    related to the coordinate question).
+
+  There are three claims, verified with `native_decide`:
+  - A node with *consistent* Cartesian coordinates is a `ColouredCircle`.
+  - A node with *consistent* polar coordinates is a `ColouredCircle`.
+    (The paper says that this legitimate use is the reason to want the
+    relaxation.)
+  - A node whose coordinate data matches *neither* disjunct is not a
+    `ColouredCircle`. This is true for each possible witness, not only for
+    the witnesses that we tried. `f3_not_satisfies_ColouredCircle` is a
+    real proof of non-existence, not an omission.
 
 ## CLI infrastructure (`examples/`)
 
-- `Example.lean`, `Registry.lean` — a record wrapping each worked example
-  (name, summary, schema/graph/typing as text) and the registry the
-  executable lists and selects from.
-- `Proof.lean`, `ProofRegistry.lean` — a record pointing at the `.lean`
-  file containing a given theorem, so proofs are shown by their actual
-  source rather than curated text.
+- `Example.lean`, `Registry.lean`: a record for each worked example (name,
+  summary, and the schema, graph and typing as text), and the registry
+  from which the executable lists and selects the examples.
+- `Proof.lean`, `ProofRegistry.lean`: a record that points to the `.lean`
+  file that contains a theorem. Thus, the executable shows each proof from
+  its real source, not from text that a person selected.
 
 ## Requirements
 
-- [`elan`](https://github.com/leanprover/elan) with the Lean toolchain
-  pinned in `lean-toolchain` (installed automatically on first build).
-- Internet access on first build to fetch Mathlib via `lake`.
+- [`elan`](https://github.com/leanprover/elan), with the Lean toolchain
+  that `lean-toolchain` specifies. (The first build installs it
+  automatically.)
+- Internet access on the first build, so that `lake` can get Mathlib.
 
 ## Running
 
-Build the library and executable:
+Build the library and the executable:
 
 ```
 lake build
 ```
 
-List the worked examples and proofs (also the default with no arguments):
+List the worked examples and the proofs (this is also the default when
+there are no arguments):
 
 ```
 $ lake exe shex_lean list
@@ -234,14 +275,14 @@ Examples:
 
 Proofs:
   2017 — Semantics and Validation of Shapes Schemas for RDF:
-    schemas2017-lemma1 — A negation-free schema has a maximal correct typing (§3.3).
+    schemas2017-lemma1 — A schema with no negation has a maximal correct typing (§3.3).
     ...
   2025 — Shape Expressions with Inheritance:
     inheritance2025-lemma1 — Evaluation of n,τ⊨def(z) always terminates (§4.2).
     ...
 ```
 
-Print one example's schema, graph, and typing:
+Print the schema, the graph and the typing of one example:
 
 ```
 $ lake exe shex_lean run schemas2017-example2-issue-tracker
@@ -261,16 +302,24 @@ Typing:
 {("Bob",<Str>), ("Ren",<Str>), (<i1>,<IssueSh>), (<i2>,<IssueSh>)}   (correct = true)
 ```
 
-The schema/graph/typing text is pretty-printed from the real Lean values,
-and `correct = true` is a `native_decide` computation run at CLI time,
-independent of the theorem checked by `lake build`.
+The executable pretty-prints the schema, graph and typing text from the
+real Lean values. `correct = true` is a `native_decide` computation that
+runs when you run the CLI. It is independent of the theorem that
+`lake build` checks.
 
-Print a proof's Lean source (run from the project root, since this reads
-the `.lean` file directly):
+Print the Lean source of a proof. Run this command from the project root,
+because it reads the `.lean` file directly:
 
 ```
 lake exe shex_lean run schemas2017-lemma1
 ```
 
-Open the project in an editor with Lean support (e.g. VS Code with the
-Lean 4 extension) to step through definitions and proofs interactively.
+To step through the definitions and proofs interactively, open the
+project in an editor with Lean support (for example, VS Code with the
+Lean 4 extension).
+
+## Writing style
+
+The comments, docstrings and this README use a style based on
+Simplified Technical English (ASD-STE100). Refer to [`STYLE.md`](STYLE.md)
+for the rules.
