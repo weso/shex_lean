@@ -1,6 +1,6 @@
 /-!
-Plain data that describes one worked example. The `list` and `run`
-commands of the `shex_lean` executable show this data.
+Plain data that describes one worked example.
+The `list` and `run` commands of the `shex_lean` executable show this data.
 -/
 
 namespace Examples

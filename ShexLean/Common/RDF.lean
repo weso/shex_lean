@@ -35,10 +35,11 @@ inductive RDFNode where
   deriving DecidableEq, Repr
 
 /-- An RDF *subject*: an element of `IRI ∪ Blank`. This is an `RDFNode`
-that is not a literal. In the grammar of the paper (§1), a triple is an
-element of `(IRI ∪ Blank) × IRI × (IRI ∪ Lit ∪ Blank)`. With the type
-`Subject`, it is not possible to write a triple that has a literal as
-its subject. -/
+that is not a literal.
+In the grammar of the paper (§1), a triple is an element
+of `(IRI ∪ Blank) × IRI × (IRI ∪ Lit ∪ Blank)`.
+With the type `Subject`, it is not possible to write a triple
+that has a literal as its subject. -/
 inductive Subject where
   | iri   : IRI → Subject
   | bnode : BNodeId → Subject
@@ -51,8 +52,8 @@ def Subject.toNode : Subject → RDFNode
 
 instance : Coe Subject RDFNode := ⟨Subject.toNode⟩
 
-/-- The partial inverse of `Subject.toNode`. An `RDFNode` is a `Subject` if
-and only if it is not a literal. -/
+/-- The partial inverse of `Subject.toNode`.
+  An `RDFNode` is a `Subject` if and only if it is not a literal. -/
 def RDFNode.toSubject? : RDFNode → Option Subject
   | .iri i => some (.iri i)
   | .bnode b => some (.bnode b)

@@ -2,6 +2,8 @@
 .lake/
 /.lake
 
+scratch.lean
+
 # cache and other artifacts produced by Lean's Lake build tool
 .lake/
 /.lake

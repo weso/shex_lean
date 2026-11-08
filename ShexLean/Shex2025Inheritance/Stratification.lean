@@ -2,9 +2,8 @@ import ShexLean.Shex2025Inheritance.Semantics
 import Mathlib.Logic.Relation
 
 /-!
-Definitions 5 and 6 (§4.2) of the 2025 paper "Shape Expressions with
-Inheritance": the dependency graph `D_S`, and well-defined schemas
-("stratified negation").
+Definitions 5 and 6 (§4.2) of the 2025 paper "Shape Expressions with Inheritance":
+the dependency graph `D_S`, and well-defined schemas ("stratified negation").
 
 > For every shape expression or triple expression `s`, let `sub-expr(s)`
 > be the set of its sub-expressions, viewed as syntactic objects.
