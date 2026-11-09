@@ -118,10 +118,13 @@ instances.
 ## What is implemented (2025 paper: Shape Expressions with Inheritance)
 
 This part is in the namespace `ShexLean.Inheritance`. It uses
-`Common/RDF.lean` and `Common/Typing.lean` with no change.
+`Common/RDF.lean` and `Common/Typing.lean` with no change, and the shared
+definitions of `InheritanceCore/` (refer to the next list).
 
-- `Shex2025Inheritance/Syntax.lean`: the grammar, `Schema = (Y, X, def, A)`,
-  and the extension hierarchy `H_S` (Definitions 1-3).
+- `Shex2025Inheritance/Syntax.lean`: the grammar of shape expressions
+  (Definition 1) and `Schema = (Y, X, def, A)` (Definition 2).
+- `Shex2025Inheritance/Stratification.lean`: the walk `depsAux` of
+  Definition 5.
 - `Shex2025Inheritance/Semantics.lean`: the three satisfaction relations
   (Tables 1-3). Table 1 and Table 2 are structural. Table 3 has a fuel
   parameter only for the evaluation of `restr(x)` in rule 18, because that
@@ -129,21 +132,35 @@ This part is in the namespace `ShexLean.Inheritance`. It uses
 - `Shex2025Inheritance/Termination.lean`: Lemma 1. A sufficiently large
   fuel makes the relations independent of fuel. The proof is complete. It
   needs only `ExtAcyclic`.
-- `Shex2025Inheritance/Stratification.lean`: the dependency graph and
-  well-definedness (Definitions 5-6).
-- `Shex2025Inheritance/CorrectTyping.lean`: correct typing, with the case
-  of abstract labels (Definition 4).
-- `Shex2025Inheritance/Proposition1.lean`: the maximal typing and
-  Proposition 1. The proof is complete.
-- `Shex2025Inheritance/Lemma2.lean`: the maximal typing does not depend on
-  the stratification (§4.3). The proof is complete. The paper gives only a
-  sketch.
-- `Shex2025Inheritance/Algorithm1.lean`: the validation algorithm of §5,
-  proved correct.
+- `Shex2025Inheritance/Proposition1.lean`: the agreement and monotonicity
+  lemmas of `Satisfies`, which use the rules of Table 3. With them, this
+  file gives the instance of `InheritanceSemantics` and Proposition 1.
+- `Shex2025Inheritance/Lemma2.lean`, `Algorithm1.lean`: Lemma 2 and the
+  correctness of the algorithm of §5, for this development.
 - `Shex2025Inheritance/Decidable.lean`, `Render.lean`: refer to
   "Decidability".
 - `Shex2025Inheritance/examples/`: each numbered example from the paper,
   with the same structure as the 2017 side.
+
+The proofs of Proposition 1, Lemma 2 and Algorithm 1 do not depend on the
+rules of Table 3. They are in `InheritanceCore/` and apply to each
+development that gives an instance of `InheritanceSemantics`:
+
+- `InheritanceCore/Syntax.lean`, `TripleMatch.lean`, `Decidable.lean`,
+  `Render.lean`: triple expressions, shapes, Table 1 and rule 17.
+- `InheritanceCore/Schema.lean`: schemas for any type of shape
+  expressions (the class `ShapeSyntax`), the extension hierarchy `H_S`
+  (Definition 3), the dependency graph `D_S` (Definitions 5-6),
+  stratifications (Definition 7) and the restrictions of a schema.
+- `InheritanceCore/MaxTyping.lean`: the class `InheritanceSemantics`,
+  correct typings (Definition 4), the maximal typing (Definition 8) and
+  Proposition 1.
+- `InheritanceCore/Lemma2.lean`: the maximal typing does not depend on the
+  stratification (§4.3). The proof is complete. The paper gives only a
+  sketch.
+- `InheritanceCore/Algorithm1.lean`: the validation algorithm of §5,
+  proved correct.
+- `InheritanceCore/SchemaDecidable.lean`: computable ancestor sets.
 
 ## What is implemented (2026 exploration: disjunctive `extends`)
 
@@ -199,9 +216,9 @@ There is no `sorry` in the directory.**
   information of all the disjuncts. `pick` can select any of them, so a
   sound stratification analysis must count them all. The proof of Lemma 1
   is the same as in 2025, and needs only `ExtAcyclic`.
-- `Shex2026InheritanceDisjunction/CorrectTyping.lean`, `Algorithm1.lean`:
-  the same as the 2025 versions. They do not use the payload of
-  `.extends`.
+- The results of `InheritanceCore/MaxTyping.lean`, `Lemma2.lean` and
+  `Algorithm1.lean` apply with no change, through the instance of
+  `InheritanceSemantics` in `Proposition1.lean`.
 - `Shex2026InheritanceDisjunction/Proposition1.lean`: Proposition 1 of
   the paper, done again and **proved** for the relaxed semantics. The
   agreement and monotonicity lemmas `SatisfiesMAt_transfer` and
@@ -209,10 +226,9 @@ There is no `sorry` in the directory.**
   Each of them gets the same `pick` existential as rule 18, at the
   location where the `Mx` witness already was. The other cases (`or`,
   `and`, `not`, `.ofShape`) do not change.
-- `Shex2026InheritanceDisjunction/Lemma2.lean`: Lemma 2 of the paper (the
-  maximal typing does not depend on the stratification). It is a
-  mechanical port. It uses the results of `Proposition1.lean` abstractly,
-  and never refers to `.extends` or `extTeAt` itself.
+- `Shex2026InheritanceDisjunction/Lemma2.lean`, `Algorithm1.lean`: Lemma 2
+  and the correctness of Algorithm 1, for this development (the generic
+  proofs of `InheritanceCore/`).
 - `Shex2026InheritanceDisjunction/Decidable.lean`, `Render.lean`:
   decidability and rendering for the relaxed semantics. Refer to
   "Decidability" above for the new bound on `pick`.

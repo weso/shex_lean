@@ -1,4 +1,4 @@
-import ShexLean.Shex2026InheritanceDisjunction.Stratification
+import ShexLean.Shex2026InheritanceDisjunction.Semantics
 import Mathlib.Data.Finset.Card
 import Mathlib.Data.Finset.Lattice.Fold
 
@@ -21,56 +21,7 @@ nodes.
 
 namespace ShexLean.InheritanceDisjunction
 
-open ShexLean.InheritanceCore
-
-/-! ### Extension-hierarchy acyclicity -/
-
-/-- `S.anc` becomes strictly smaller along each edge of `H_S`, if
-`S.ExtAcyclic` is true (the acyclicity condition of Definition 6).
-
-If `x` extends `y`, then `x` also extends each label that `y` extends
-transitively. But `x ∈ S.anc x`, and `x ∈ S.anc y` closes a cycle through
-the edge `x → y`. This is the usual argument with the number of ancestors
-as a rank function on a DAG. Because of it, `ExtAcyclic` alone gives a
-well-founded measure. -/
-theorem Schema.anc_ssubset_of_extEdge {S : Schema} (hAcyclic : S.ExtAcyclic)
-    {x y : Label} (hxX : x ∈ S.X) (hxy : S.extEdge x y) :
-    S.anc y ⊂ S.anc x := by
-  have hsub : S.anc y ⊆ S.anc x := by
-    intro z hz
-    rw [Schema.mem_anc] at hz ⊢
-    exact ⟨hz.1, Relation.ReflTransGen.head hxy hz.2⟩
-  refine ⟨hsub, fun hsub' => ?_⟩
-  have hxy' : Relation.ReflTransGen S.extEdge y x :=
-    (Schema.mem_anc.mp (hsub' (Schema.mem_anc_self hxX))).2
-  rcases Relation.reflTransGen_iff_eq_or_transGen.mp hxy' with heq | htrans
-  · exact hAcyclic x hxX (Relation.TransGen.single (heq.symm ▸ hxy))
-  · exact hAcyclic x hxX (Relation.TransGen.head hxy htrans)
-
-/-- `S.extRank x := (S.anc x).card`: a rank in `ℕ` that is a witness of the
-acyclicity of `H_S`. It decreases strictly along each edge
-(`extRank_lt_of_extEdge` below). The termination argument in the rest of
-this file uses this well-founded measure. -/
-noncomputable def Schema.extRank (S : Schema) (x : Label) : ℕ := (S.anc x).card
-
-/-- The rank form of `anc_ssubset_of_extEdge`: `extRank` decreases
-strictly along each edge of `H_S` that starts at a label of `S`. -/
-theorem Schema.extRank_lt_of_extEdge {S : Schema} (hAcyclic : S.ExtAcyclic)
-    {x y : Label} (hxX : x ∈ S.X) (hxy : S.extEdge x y) :
-    S.extRank y < S.extRank x :=
-  Finset.card_lt_card (S.anc_ssubset_of_extEdge hAcyclic hxX hxy)
-
-/-- `extRank` does not increase along an ancestor path. If `x' ∈ S.anc x`,
-then `extRank x' ≤ extRank x`. (The inequality is not strict, because
-`x ∈ S.anc x` reflexively.) This bounds the rank of each label that a
-rule-18 partition reaches (`x' ∈ S.ancSet xs`), not only the direct
-targets `xs`. -/
-theorem Schema.extRank_le_of_mem_anc {S : Schema} {x x' : Label} (hx' : x' ∈ S.anc x) :
-    S.extRank x' ≤ S.extRank x := by
-  apply Finset.card_le_card
-  intro z hz
-  rw [Schema.mem_anc] at hx' hz ⊢
-  exact ⟨hz.1, hx'.2.trans hz.2⟩
+open ShexLean.InheritanceCore hiding Schema
 
 /-! ### The base case: `NoExtends` shapes need no schema lookups -/
 
@@ -151,13 +102,6 @@ theorem Schema.RankOk.mono_le {S : Schema} {r r' : ℕ} (h : r ≤ r') :
   induction h with
   | refl => intro s hs; exact hs
   | step _ ih => intro s hs; exact Schema.RankOk.mono _ s (ih s hs)
-
-/-- Each `x ∈ S.X` has `extRank x ≥ 1` (reflexively, `x ∈ S.anc x`). Thus,
-you can always write `extRank x` as `m + 1`. -/
-theorem Schema.extRank_succ {S : Schema} {x : Label} (hx : x ∈ S.X) :
-    ∃ m, S.extRank x = m + 1 := by
-  have h1 : 1 ≤ S.extRank x := Finset.one_le_card.mpr ⟨x, Schema.mem_anc_self hx⟩
-  exact ⟨S.extRank x - 1, by omega⟩
 
 /-- From the `RankOk` of the definition of `x` (`extends xs hs [and u]`),
 get the `RankOk` of its restriction `u`. -/
@@ -258,9 +202,6 @@ theorem Schema.rankOk_any {S : Schema} (hAcyclic : S.ExtAcyclic) :
   | or s1 s2 ih1 ih2 => exact ⟨ih1, ih2⟩
   | and s1 s2 ih1 ih2 => exact ⟨ih1, ih2⟩
   | not s ih => exact ih
-
-/-- The fuel that is always sufficient for `S` (refer to `rankOk_any`). -/
-noncomputable def Schema.fuelBound (S : Schema) : ℕ := S.X.sup S.extRank + 1
 
 theorem Schema.rankOk_fuelBound {S : Schema} (hAcyclic : S.ExtAcyclic) {r : ℕ}
     (hr : S.fuelBound ≤ r) (s : ShapeExpr) : Schema.RankOk S r s :=

@@ -22,7 +22,7 @@ shows that you cannot mix extension and negation in all possible ways.
 
 namespace ShexLean.Inheritance
 
-open ShexLean.InheritanceCore
+open ShexLean.InheritanceCore hiding Schema
 
 /-- `S1` is well-defined (Example 7). `H_{S1}` is trivially acyclic
 (`X1 = ∅`), and `S1` has no negative dependency for any pair of labels:

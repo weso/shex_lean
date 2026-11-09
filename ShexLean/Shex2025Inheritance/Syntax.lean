@@ -3,7 +3,7 @@ import ShexLean.Common.Typing
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Finset.Union
 import Mathlib.Logic.Relation
-import ShexLean.InheritanceCore.Syntax
+import ShexLean.InheritanceCore.Schema
 
 /-!
 Definitions 1–3 (§3) of Boneva, Labra Gayo, Prud'hommeaux, Thornton,
@@ -72,7 +72,7 @@ first operand is `t`. Thus, it is
 
 namespace ShexLean.Inheritance
 
-open ShexLean.InheritanceCore
+open ShexLean.InheritanceCore hiding Schema
 
 /-- The grammar of shape expressions of Def 1 (`u`, `t`, `c` and the
 Boolean connectives). This is all that the `def` of a schema can map a
@@ -125,25 +125,12 @@ def ShapeExpr.restrOf : ShapeExpr → Option ShapeExpr
   | .and (.extends _ _) u => some u
   | _ => none
 
-/-- Definition 2 (ShEx schema). `S = (Y, X, def, A)`:
-
-* `Y`: the simple labels.
-* `X`: the extendable labels, disjoint from `Y`.
-* `A ⊆ X`: the abstract labels.
-* `shapeDef` (the `def` of the paper): gives a definition to each label of
-  `Y ∪ X`.
-
-`shapeDef` is total on all of `Label` (as in the 2017 formalization),
-because Lean functions must be total. Because of this, we need the extra
-hypothesis `Schema.WellFormedX` below. (It has the same role as
-`Schema.Closed` in `ShexLean/Shex2017Schemas/Proposition1.lean`.) -/
-structure Schema where
-  Y : Finset Label
-  X : Finset Label
-  A : Finset Label
-  disjointYX : Disjoint Y X
-  A_subX : A ⊆ X
-  shapeDef : Label → ShapeExpr
+/-- Definition 2 (ShEx schema) `S = (Y, X, def, A)`, with the shape
+expressions of this file. `ShexLean.InheritanceCore.Schema` gives the
+fields, the extension hierarchy `H_S` (Definition 3: `anc`, `desc`,
+`ancSet`) and the dependency graph `D_S` (Definition 5), for each type of
+shape expressions. -/
+abbrev Schema := InheritanceCore.Schema ShapeExpr
 
 /-- The second bullet of Definition 2: for `x ∈ X`, `def(x)` must have the
 form `extends X h [and u]`. Thus, it is `.extends xs h` or
@@ -155,65 +142,6 @@ expression". This is automatically true here, because `ShapeExpr` has no
 expression. -/
 def Schema.WellFormedX (S : Schema) : Prop :=
   ∀ x ∈ S.X, ∃ xs h, S.shapeDef x = .extends xs h ∨ ∃ u, S.shapeDef x = .and (.extends xs h) u
-
-/-- The edge relation of `H_S` in Definition 3. There is an edge from `x`
-to `x'` if and only if `x'` comes directly after `extends` at the top of
-`def(x)`. -/
-abbrev Schema.extEdge (S : Schema) (x x' : Label) : Prop :=
-  x' ∈ (S.shapeDef x).extendsTargets
-
-/-- Definition 3 (extension hierarchy). `x' ∈ S.anc x` if and only if
-there is a path (possibly empty) from `x` to `x'` in `H_S`. Thus, `x'` is
-an ancestor of `x`, and `x` is a descendant of `x'`.
-
-The result is restricted to `S.X` (the vertex set of `H_S`). It has a
-meaning only for `x ∈ S.X`. The definition uses `Classical.decPred`,
-because `extEdge` is a `Prop` and, in general, reachability is not
-decidable. The 2017 formalization does the same in other locations. -/
-noncomputable def Schema.anc (S : Schema) (x : Label) : Finset Label :=
-  haveI := Classical.decPred (Relation.ReflTransGen S.extEdge x)
-  S.X.filter (Relation.ReflTransGen S.extEdge x)
-
-/-- `S.desc x`: the descendants of `x` (the dual of `S.anc`). -/
-noncomputable def Schema.desc (S : Schema) (x : Label) : Finset Label :=
-  haveI := Classical.decPred (Relation.ReflTransGen S.extEdge · x)
-  S.X.filter (Relation.ReflTransGen S.extEdge · x)
-
-/-- `anc(X) = ⋃_{x ∈ X} anc(x)`. Table 3 extends `anc` to a set of labels
-in this way. Rule 18 uses it. -/
-noncomputable def Schema.ancSet (S : Schema) (xs : Finset Label) : Finset Label :=
-  xs.biUnion S.anc
-
-/-! ### Membership lemmas
-
-`anc` and `desc` are filters with a `Classical.decPred` instance. These
-lemmas fix the instance one time, here. Thus, the proofs in the other
-files use `rw` or `simp` with these lemmas, and never unfold the filters.
-This prevents instance mismatches at the call sites. -/
-
-theorem Schema.mem_anc {S : Schema} {x y : Label} :
-    y ∈ S.anc x ↔ y ∈ S.X ∧ Relation.ReflTransGen S.extEdge x y := by
-  unfold Schema.anc; simp only [Finset.mem_filter]
-
-theorem Schema.mem_desc {S : Schema} {x y : Label} :
-    y ∈ S.desc x ↔ y ∈ S.X ∧ Relation.ReflTransGen S.extEdge y x := by
-  unfold Schema.desc; simp only [Finset.mem_filter]
-
-theorem Schema.mem_ancSet {S : Schema} {xs : Finset Label} {y : Label} :
-    y ∈ S.ancSet xs ↔ ∃ x ∈ xs, y ∈ S.anc x := by
-  unfold Schema.ancSet; exact Finset.mem_biUnion
-
-/-- Each label of `X` is its own ancestor (the empty path of `H_S`). -/
-theorem Schema.mem_anc_self {S : Schema} {x : Label} (hx : x ∈ S.X) : x ∈ S.anc x :=
-  Schema.mem_anc.mpr ⟨hx, Relation.ReflTransGen.refl⟩
-
-theorem Schema.anc_subset_X {S : Schema} {x : Label} : S.anc x ⊆ S.X :=
-  fun _ hy => (Schema.mem_anc.mp hy).1
-
-theorem Schema.ancSet_subset_X {S : Schema} {xs : Finset Label} : S.ancSet xs ⊆ S.X := by
-  intro y hy
-  obtain ⟨_, _, hy⟩ := Schema.mem_ancSet.mp hy
-  exact Schema.anc_subset_X hy
 
 /-- `restr(x) = some u` exactly when `def(x)` has the form
 `extends X h and u`. The proofs about `restr(x)` use this lemma, and do not

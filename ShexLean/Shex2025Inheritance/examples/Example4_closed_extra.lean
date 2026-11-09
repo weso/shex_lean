@@ -18,7 +18,7 @@ this is the first file that tests that bookkeeping.
 
 namespace ShexLean.Inheritance
 
-open ShexLean.InheritanceCore
+open ShexLean.InheritanceCore hiding Schema
 
 /-- The triple expression of Example 4, `e = p @T_even ; p @T_lt5`. -/
 def e_ex4 : TripleExpr := .seq (.tc "p" "T_even") (.tc "p" "T_lt5")

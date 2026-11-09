@@ -1,4 +1,5 @@
-import ShexLean.Shex2026InheritanceDisjunction.CorrectTyping
+import ShexLean.Shex2026InheritanceDisjunction.Termination
+import ShexLean.InheritanceCore.MaxTyping
 import Mathlib.Data.Finset.Prod
 import Mathlib.Data.Finset.Powerset
 import Mathlib.Data.Finset.Lattice.Fold
@@ -21,87 +22,7 @@ the structure of the proofs.
 
 namespace ShexLean.InheritanceDisjunction
 
-open ShexLean.InheritanceCore
-
-/-! ### Definition 7: stratification -/
-
-/-- `Z` is closed under `D_S`: each label that a member of `Z` depends on
-(`dep` or `depExtends`) is also in `Z`. `Schema.DClosed` is the case
-`Z = Y ∪ X`. Proposition 1 below also needs it for `Z = ` a stratum. -/
-def Schema.DClosedOn (S : Schema) (Z : Finset Label) : Prop :=
-  ∀ z ∈ Z, ∀ z', S.DEdge z z' → z' ∈ Z
-
-/-- Membership in a `D_S`-closed `Z` continues along each `D_S` path. -/
-theorem Schema.reach_mem {S : Schema} {Z : Finset Label} (hZ : S.DClosedOn Z)
-    {z z' : Label} (hz : z ∈ Z) (h : Relation.ReflTransGen S.DEdge z z') : z' ∈ Z := by
-  induction h with
-  | refl => exact hz
-  | tail _ hstep ih => exact hZ _ ih _ hstep
-
-/-- Well-formedness in addition to `ExtAcyclic`: each
-label that is `D_S`-reachable from a declared label (`z ∈ Y ∪ X`) is also
-declared.
-
-The reason is the same as for `Schema.Closed` of 2017 (refer to the module
-docstring of `ShexLean/Shex2017Schemas/Proposition1.lean`). `shapeDef` is
-total on `Label`. Thus, a schema can refer to a label that is not
-declared. But the conditions of `Stratification` apply only when the
-source of the edge is in `Y ∪ X`. -/
-def Schema.DClosed (S : Schema) : Prop := S.DClosedOn (S.Y ∪ S.X)
-
-/-- Definition 7 (stratification). It uses the edges of `D_S` (`DEdge` and
-`DNegEdge`), not the paths of the paper. The two forms are equivalent by
-induction on the path length. (`Stratification.lt_of_negPath` below gets
-the path form.) `maxTypingAgreeing_correct` (later in the file) needs the
-edge form. This definition has the same role as `Stratification` of 2017
-(`ShexLean/Shex2017Schemas/Stratification.lean`). -/
-structure Stratification (S : Schema) where
-  k : ℕ
-  strat : Label → ℕ
-  mem_range : ∀ z ∈ S.Y ∪ S.X, 1 ≤ strat z ∧ strat z ≤ k
-  dep_le : ∀ z ∈ S.Y ∪ S.X, ∀ z', S.DEdge z z' → strat z' ≤ strat z
-  negDep_lt : ∀ z ∈ S.Y ∪ S.X, ∀ z', S.DNegEdge z z' → strat z' < strat z
-
-/-- `S` has a stratification (the existence part of Definition 7). The
-paper says, with no proof, that stratified negation makes sure that a
-stratification exists ("well known that stratified negation ... guarantees
-the existence of a stratification"). This file also does not prove it.
-The 2017 formalization does the same: `Schema.StratifiedNegation` is only
-`Nonempty (Stratification S)`, with no separate existence theorem. -/
-def Schema.StratifiedNegation (S : Schema) : Prop := Nonempty (Stratification S)
-
-/-- "`dep` subsumes `dep-shape-neg`/`dep-extra-neg`", applied to `DEdge`.
-Each negative edge is also an ordinary `D_S` edge. -/
-theorem Schema.DEdge_of_DNegEdge {S : Schema} {z z' : Label} (h : S.DNegEdge z z') :
-    S.DEdge z z' := by
-  rcases h with h | h
-  · exact Or.inl (Schema.dep_of_depShapeNeg h)
-  · exact Or.inl (Schema.dep_of_depExtraNeg h)
-
-/-- `strat` never increases along a `D_S` path (the first bullet of
-Definition 7, in path form). -/
-theorem Stratification.le_of_path {S : Schema} (hDClosed : S.DClosed) (strat : Stratification S)
-    {z z' : Label} (hzY : z ∈ S.Y ∪ S.X) (h : Relation.ReflTransGen S.DEdge z z') :
-    strat.strat z' ≤ strat.strat z := by
-  induction h with
-  | refl => exact le_refl _
-  | tail hprev hstep ih => exact le_trans (strat.dep_le _ (S.reach_mem hDClosed hzY hprev) _ hstep) ih
-
-/-- Take a `D_S` path from `z` to `z'` that goes through a negative edge
-`a → b` (`z ↝ a`, `a → b` negative, `b ↝ z'`). Along this path, `strat`
-decreases strictly in total (the second bullet of Definition 7, in path
-form). The proof applies `le_of_path` on each side of the strict step
-`negDep_lt` in the middle. -/
-theorem Stratification.lt_of_negPath {S : Schema} (hDClosed : S.DClosed)
-    (strat : Stratification S) {z a b z' : Label} (hzY : z ∈ S.Y ∪ S.X)
-    (hza : Relation.ReflTransGen S.DEdge z a) (hab : S.DNegEdge a b)
-    (hbz' : Relation.ReflTransGen S.DEdge b z') :
-    strat.strat z' < strat.strat z := by
-  have haY : a ∈ S.Y ∪ S.X := S.reach_mem hDClosed hzY hza
-  have hbY : b ∈ S.Y ∪ S.X := hDClosed a haY b (S.DEdge_of_DNegEdge hab)
-  calc strat.strat z' ≤ strat.strat b := strat.le_of_path hDClosed hbY hbz'
-    _ < strat.strat a := strat.negDep_lt a haY b hab
-    _ ≤ strat.strat z := strat.le_of_path hDClosed hzY hza
+open ShexLean.InheritanceCore hiding Schema
 
 /-! ### An agreement lemma for `Satisfies`
 
@@ -129,8 +50,7 @@ and `Satisfies_stratRestrict_agree` below (a change of schema). -/
 * The `extends` targets at any location in it
   (`ShapeExpr.extendsTargets`, a full recursive walk. Refer to the
   docstring of that definition to know why.) -/
-def ShapeExpr.depsIn (s : ShapeExpr) (Z : Finset Label) : Prop :=
-  (s.depsAux false).refs ⊆ Z ∧ s.extendsTargets ⊆ Z
+abbrev ShapeExpr.depsIn (s : ShapeExpr) (Z : Finset Label) : Prop := InheritanceCore.depsIn s Z
 
 /-- A well-formedness condition that `stratMono` needs, in addition to
 `ExtAcyclic` and `WellFormedExtra`: a `not` never contains an `extends`.
@@ -174,38 +94,23 @@ theorem ShapeExpr.depsAux_refs_indep (s : ShapeExpr) (neg1 neg2 : Bool) :
 
 theorem ShapeExpr.depsIn_or {a b : ShapeExpr} {Z : Finset Label} :
     (ShapeExpr.or a b).depsIn Z ↔ a.depsIn Z ∧ b.depsIn Z := by
-  simp only [ShapeExpr.depsIn, ShapeExpr.depsAux, DepInfo.union_refs, ShapeExpr.extendsTargets,
+  simp only [ShapeExpr.depsIn, InheritanceCore.depsIn, ShapeExpr.shapeSyntax_deps,
+    ShapeExpr.shapeSyntax_extendsTargets, ShapeExpr.depsAux, DepInfo.union_refs, ShapeExpr.extendsTargets,
     Finset.union_subset_iff]
   tauto
 
 theorem ShapeExpr.depsIn_and {a b : ShapeExpr} {Z : Finset Label} :
     (ShapeExpr.and a b).depsIn Z ↔ a.depsIn Z ∧ b.depsIn Z := by
-  simp only [ShapeExpr.depsIn, ShapeExpr.depsAux, DepInfo.union_refs, ShapeExpr.extendsTargets,
+  simp only [ShapeExpr.depsIn, InheritanceCore.depsIn, ShapeExpr.shapeSyntax_deps,
+    ShapeExpr.shapeSyntax_extendsTargets, ShapeExpr.depsAux, DepInfo.union_refs, ShapeExpr.extendsTargets,
     Finset.union_subset_iff]
   tauto
 
 theorem ShapeExpr.depsIn_not {a : ShapeExpr} {Z : Finset Label} :
     (ShapeExpr.not a).depsIn Z ↔ a.depsIn Z := by
-  simp only [ShapeExpr.depsIn, ShapeExpr.depsAux, ShapeExpr.extendsTargets,
+  simp only [ShapeExpr.depsIn, InheritanceCore.depsIn, ShapeExpr.shapeSyntax_deps,
+    ShapeExpr.shapeSyntax_extendsTargets, ShapeExpr.depsAux, ShapeExpr.extendsTargets,
     a.depsAux_refs_indep true false]
-
-/-- If `x ∈ Z` and `Z` is `D_S`-closed, then the definition of `x` reaches
-only labels in `Z`. The closure of `Z` is what is necessary to do the
-recursion one more `extends` step deep and stay in `Z`. -/
-theorem Schema.shapeDef_depsIn {S : Schema} {Z : Finset Label} (hZ : S.DClosedOn Z)
-    {x : Label} (hx : x ∈ Z) : (S.shapeDef x).depsIn Z :=
-  ⟨fun _ hz' => hZ x hx _ (Or.inl hz'), fun _ hz' => hZ x hx _ (Or.inr (Or.inl hz'))⟩
-
-/-- `S.ancSet xs ⊆ Z` if `xs ⊆ Z` and `Z` is `D_S`-closed. Each ancestor
-that a rule-18 partition reaches also stays in `Z`. -/
-theorem Schema.ancSet_subset {S : Schema} {Z : Finset Label} (hZ : S.DClosedOn Z)
-    {xs : Finset Label} (hxs : xs ⊆ Z) : S.ancSet xs ⊆ Z := by
-  intro x hx
-  obtain ⟨y, hy, hyx⟩ := Schema.mem_ancSet.mp hx
-  rw [Schema.mem_anc] at hyx
-  have hstep : Relation.ReflTransGen S.DEdge y x :=
-    Relation.ReflTransGen.mono (fun _ _ hab => Or.inr (Or.inl hab)) y x hyx.2
-  exact S.reach_mem hZ (hxs hy) hstep
 
 /-- The references of `ext-te(x)`, at each selected disjunct index, are in
 the references of `def(x)`. For a definition that does not have the form
@@ -579,425 +484,32 @@ theorem SatisfiesFuel_stratMono {S : Schema} (hAcyclic : S.ExtAcyclic)
         rw [h1, h2]
         exact SatisfiesMAt_agree_noExtends hagree t hn hrf M
 
-/-! ### Definition 8 and Proposition 1 -/
+/-! ### The instance for the generic results
 
-/-- `nodes(G) × (Y ∪ X)`: the universe of all the possible node-type
-associations for `G` by `S`. -/
-def Schema.univTyping (S : Schema) (G : Graph) : Typing := G.nodes ×ˢ (S.Y ∪ S.X)
+`ShexLean/InheritanceCore/MaxTyping.lean`, `Lemma2.lean` and
+`Algorithm1.lean` prove Definition 8, Proposition 1, Lemma 2 and the
+correctness of Algorithm 1 for each instance of `InheritanceSemantics`.
+This instance gives them `Satisfies` and the two facts above. -/
 
-/-- `Y_i^σ ∪ X_i^σ = {z ∈ Y ∪ X | σ(z) ≤ i}`. -/
-def Schema.stratum (S : Schema) (strat : Label → ℕ) (i : ℕ) : Finset Label :=
-  (S.Y ∪ S.X).filter (fun z => strat z ≤ i)
+instance : InheritanceSemantics ShapeExpr where
+  Satisfies := Satisfies
+  WellFormedExtra := ShapeExpr.WellFormedExtra
+  NotIsExtendsFree := ShapeExpr.NotIsExtendsFree
+  satisfies_transfer {S1 S2 G τ1 τ2 _ s} hAc1 hAc2 hdef hZ hagree hanc hdeps n :=
+    (stableFuel hAc1 le_rfl (le_max_left S1.fuelBound S2.fuelBound) G τ1 n s).trans
+      ((SatisfiesFuel_transfer hAc1 (le_max_left _ _) hZ hagree hdef hanc hdeps n).trans
+        (stableFuel hAc2 le_rfl (le_max_right S1.fuelBound S2.fuelBound) G τ2 n s).symm)
+  satisfies_stratMono {_ _ _ _ _ _ s} hAcyclic hWFExtra hNEF hZ hsub hagree hLo n hdeps hWF
+      hNEF' hneg :=
+    SatisfiesFuel_stratMono hAcyclic hWFExtra hNEF le_rfl hZ hsub hagree hLo n s hdeps hWF hNEF' hneg
 
-theorem Schema.mem_stratum {S : Schema} {strat : Label → ℕ} {i : ℕ} {z : Label} :
-    z ∈ S.stratum strat i ↔ z ∈ S.Y ∪ S.X ∧ strat z ≤ i := by
-  simp only [Schema.stratum, Finset.mem_filter]
-
-theorem Schema.stratum_mono {S : Schema} {strat : Label → ℕ} {i j : ℕ} (h : i ≤ j) :
-    S.stratum strat i ⊆ S.stratum strat j := by
-  intro z hz
-  simp only [Schema.stratum, Finset.mem_filter] at hz ⊢
-  exact ⟨hz.1, hz.2.trans h⟩
-
-/-- `S_i^σ = (Y_i^σ, X_i^σ, def, A_i^σ)`: the restriction of `S` to the
-labels with a stratum `≤ i`. The definitions do not change. -/
-def Schema.stratRestrict (S : Schema) (strat : Label → ℕ) (i : ℕ) : Schema where
-  Y := S.Y.filter (fun z => strat z ≤ i)
-  X := S.X.filter (fun z => strat z ≤ i)
-  A := S.A.filter (fun z => strat z ≤ i)
-  disjointYX := Finset.disjoint_filter_filter S.disjointYX
-  A_subX := by
-    intro z hz
-    simp only [Finset.mem_filter] at hz ⊢
-    exact ⟨S.A_subX hz.1, hz.2⟩
-  shapeDef := S.shapeDef
-
-/-- `maxTypingAgreeing S' G Lo fixed`: the union of all the correct typings
-of `G` by `S'` that agree with `fixed` on `Lo`. This is a general form of
-the "maximal correct typing" of `S'` (the case `Lo = ∅`). It adds the
-agreement constraint that Definition 8 needs to connect the strata. It
-agrees with `maxAgree` of 2017
-(`ShexLean/Shex2017Schemas/Proposition1.lean`), with
-`Schema.CorrectTyping` and `restrictTyping` in place of the 2017
-versions. -/
-noncomputable def maxTypingAgreeing (S' : Schema) (G : Graph) (Lo : Finset Label)
-    (fixed : Typing) : Typing :=
-  haveI := Classical.decPred
-    (fun t => S'.CorrectTyping G t ∧ restrictTyping t Lo = restrictTyping fixed Lo)
-  ((S'.univTyping G).powerset.filter
-    (fun t => S'.CorrectTyping G t ∧ restrictTyping t Lo = restrictTyping fixed Lo)).sup id
-
-theorem subset_maxTypingAgreeing {S' : Schema} {G : Graph} {Lo : Finset Label}
-    {fixed t : Typing} (hsub : t ⊆ S'.univTyping G) (hcorrect : S'.CorrectTyping G t)
-    (hagree : restrictTyping t Lo = restrictTyping fixed Lo) :
-    t ⊆ maxTypingAgreeing S' G Lo fixed := by
-  have := Classical.decPred
-    (fun t => S'.CorrectTyping G t ∧ restrictTyping t Lo = restrictTyping fixed Lo)
-  apply Finset.le_sup (f := id)
-  simp only [Finset.mem_filter, Finset.mem_powerset]
-  exact ⟨hsub, hcorrect, hagree⟩
-
-theorem maxTypingAgreeing_subset (S' : Schema) (G : Graph) (Lo : Finset Label)
-    (fixed : Typing) : maxTypingAgreeing S' G Lo fixed ⊆ S'.univTyping G := by
-  have := Classical.decPred
-    (fun t => S'.CorrectTyping G t ∧ restrictTyping t Lo = restrictTyping fixed Lo)
-  apply Finset.sup_le
-  intro t ht
-  simp only [Finset.mem_filter, Finset.mem_powerset] at ht
-  exact ht.1
-
-theorem maxTypingAgreeing_restrictTo {S' : Schema} {G : Graph} {Lo : Finset Label}
-    {fixed : Typing} (hfixed_sub : fixed ⊆ S'.univTyping G)
-    (hfixed_correct : S'.CorrectTyping G fixed) :
-    restrictTyping (maxTypingAgreeing S' G Lo fixed) Lo = restrictTyping fixed Lo := by
-  have := Classical.decPred
-    (fun t => S'.CorrectTyping G t ∧ restrictTyping t Lo = restrictTyping fixed Lo)
-  apply Finset.ext
-  rintro ⟨n, L⟩
-  rw [mem_restrictTyping, mem_restrictTyping]
-  constructor
-  · rintro ⟨hmem, hL⟩
-    simp only [maxTypingAgreeing, Finset.mem_sup, Finset.mem_filter, Finset.mem_powerset,
-      id] at hmem
-    obtain ⟨t, ⟨_, _, htagree⟩, htmem⟩ := hmem
-    have hin : (n, L) ∈ restrictTyping t Lo := mem_restrictTyping.mpr ⟨htmem, hL⟩
-    rw [htagree] at hin
-    exact ⟨(mem_restrictTyping.mp hin).1, hL⟩
-  · rintro ⟨hmem, hL⟩
-    exact ⟨subset_maxTypingAgreeing hfixed_sub hfixed_correct rfl hmem, hL⟩
-
-/-- `maxTypingAgreeing` is also a correct typing, if `Lo` contains the
-negative dependencies of each label of `S'`. The abstract-label case (the
-second bullet of `Schema.CorrectTyping`) goes from `τ` to `τ'` in the same
-way as the plain case. It applies `stratMono` to `S'.shapeDef x` (the
-descendant that is the witness), not to `S'.shapeDef L`. -/
-theorem maxTypingAgreeing_correct {S' : Schema} (hAcyclic : S'.ExtAcyclic) (hWFExtra : S'.WellFormedExtra)
-    (hNEF : S'.NotIsExtendsFree) (hDClosed : S'.DClosedOn (S'.Y ∪ S'.X)) {G : Graph}
-    {Lo : Finset Label} {fixed : Typing} (hfixed_sub : fixed ⊆ S'.univTyping G)
-    (hfixed_correct : S'.CorrectTyping G fixed)
-    (hLo : ∀ z ∈ S'.Y ∪ S'.X, ((S'.shapeDef z).depsAux false).negRefs ⊆ Lo) :
-    S'.CorrectTyping G (maxTypingAgreeing S' G Lo fixed) := by
-  have := Classical.decPred
-    (fun t => S'.CorrectTyping G t ∧ restrictTyping t Lo = restrictTyping fixed Lo)
-  intro n L hmem
-  simp only [maxTypingAgreeing, Finset.mem_sup, Finset.mem_filter, Finset.mem_powerset,
-    id] at hmem
-  obtain ⟨t, ⟨htsub, htcorrect, htagree⟩, htmem⟩ := hmem
-  have hL : L ∈ S'.Y ∪ S'.X := (Finset.mem_product.mp (htsub htmem)).2
-  have hsub_t : t ⊆ maxTypingAgreeing S' G Lo fixed :=
-    subset_maxTypingAgreeing htsub htcorrect htagree
-  have hagree_t : AgreeOn t (maxTypingAgreeing S' G Lo fixed) Lo := by
-    apply restrictTyping_agree
-    rw [htagree, maxTypingAgreeing_restrictTo hfixed_sub hfixed_correct]
-  have htcorrectL := htcorrect n L htmem
-  refine ⟨fun hLA => ?_, fun hLA => ?_⟩
-  · exact SatisfiesFuel_stratMono hAcyclic hWFExtra hNEF le_rfl hDClosed hsub_t hagree_t hLo n
-      (S'.shapeDef L) (S'.shapeDef_depsIn hDClosed hL) (hWFExtra L) (hNEF L) (hLo L hL)
-      (htcorrectL.1 hLA)
-  · obtain ⟨x, hxmem, hSatx⟩ := htcorrectL.2 hLA
-    have hxY : x ∈ S'.Y ∪ S'.X := by
-      have hxdesc : x ∈ S'.desc L := (Finset.mem_sdiff.mp hxmem).1
-      exact Finset.mem_union_right _ (Schema.mem_desc.mp hxdesc).1
-    exact ⟨x, hxmem, SatisfiesFuel_stratMono hAcyclic hWFExtra hNEF le_rfl hDClosed hsub_t
-      hagree_t hLo n (S'.shapeDef x) (S'.shapeDef_depsIn hDClosed hxY) (hWFExtra x) (hNEF x)
-      (hLo x hxY) hSatx⟩
-
-/-! ### Schema invariance of `Satisfies` across `stratRestrict`
-
-This is the last part that Proposition 1 needs. `Satisfies` uses the
-schema in rule 18 (`.ancSet`, `.anc` and `shapeDef`), and its fuel
-`S.fuelBound` depends on the schema. Thus,
-`Satisfies (S.stratRestrict strat i) G τ n s` and
-`Satisfies (S.stratRestrict strat j) G τ n s` are different propositions.
-
-In 2017, `stratTypingSeq_correct` does not have this problem, because
-`Satisfies` never uses the schema. Here, `SatisfiesFuel_transfer` (a change
-of schema at the same fuel) and `stableFuel` (a change of fuel) solve it. -/
-
-/-- `ExtAcyclic` stays true for each `stratRestrict`. Its `X` only becomes
-smaller, and `extEdge` uses only
-`shapeDef` (`stratRestrict` never changes `shapeDef`). Thus, a cycle in
-the restriction is also a cycle in `S`. -/
-theorem Schema.stratRestrict_ExtAcyclic {S : Schema} (hAcyclic : S.ExtAcyclic)
-    (strat : Label → ℕ) (i : ℕ) : (S.stratRestrict strat i).ExtAcyclic := by
-  intro x hx
-  simp only [Schema.stratRestrict, Finset.mem_filter] at hx
-  exact hAcyclic x hx.1
-
-/-- Each stratum `S.stratum strat i` is `D_S`-closed. The edges of `D_S`
-never increase `strat` (the first bullet of Definition 7), and
-`Schema.DClosed` keeps the membership in `Y ∪ X` along the path. -/
-theorem Schema.stratum_DClosedOn {S : Schema} (hDClosed : S.DClosed) (strat : Stratification S)
-    (i : ℕ) : S.DClosedOn (S.stratum strat.strat i) := by
-  intro z hz z' hedge
-  simp only [Schema.stratum, Finset.mem_filter] at hz ⊢
-  have hzY : z ∈ S.Y ∪ S.X := hz.1
-  have hz'Y : z' ∈ S.Y ∪ S.X := hDClosed z hzY z' hedge
-  exact ⟨hz'Y, le_trans (strat.dep_le z hzY z' hedge) hz.2⟩
-
-/-- `(S.stratRestrict strat i).anc x = S.anc x` if `x` is in a stratum
-`≤ i`. Each element of the unrestricted `S.anc x` already has
-`strat ≤ strat x ≤ i` (the first bullet of Definition 7, through
-`extEdge ⊆ depExtends ⊆ DEdge`). Thus, if you filter `S.X` to
-`strat ≤ i` before you compute `anc`, you remove nothing.
-
-Because of this, `Satisfies` computed with two different `stratRestrict`
-levels agrees for each label in the lower level. The `ancSet` and
-`extends`-step data that the `.extends` case of `SatisfiesMFuel` uses do
-not depend on the (sufficiently high) stratum level of the schema
-restriction. -/
-theorem Schema.stratRestrict_anc_eq {S : Schema} (hDClosed : S.DClosed) (strat : Stratification S)
-    {x : Label} (hxY : x ∈ S.Y ∪ S.X) {i : ℕ} (hxi : strat.strat x ≤ i) :
-    (S.stratRestrict strat.strat i).anc x = S.anc x := by
-  apply Finset.ext
-  intro y
-  unfold Schema.anc Schema.stratRestrict Schema.extEdge
-  simp only [Finset.mem_filter]
-  constructor
-  · rintro ⟨⟨hyX, _⟩, hpath⟩
-    exact ⟨hyX, hpath⟩
-  · rintro ⟨hyX, hpath⟩
-    have hDEdgePath : Relation.ReflTransGen S.DEdge x y :=
-      Relation.ReflTransGen.mono (fun _ _ h => Or.inr (Or.inl h)) x y hpath
-    have hstratY : strat.strat y ≤ strat.strat x := strat.le_of_path hDClosed hxY hDEdgePath
-    exact ⟨⟨hyX, by omega⟩, hpath⟩
-
-/-- **The key schema-invariance fact.** For a label `x` in a stratum
-`≤ i`, `Satisfies` with `S.stratRestrict strat i` agrees with `Satisfies`
-with each higher restriction `S.stratRestrict strat j` (`i ≤ j`).
-
-These are syntactically different schemas (a different `X`, and thus
-different `fuelBound` and `ancSet` bookkeeping). But the evaluation of
-`def(x)` never goes outside the strata `≤ i` (`Schema.shapeDef_depsIn`
-and `Schema.stratum_DClosedOn`). In that region, the `.anc` of the two
-schemas is the same (`Schema.stratRestrict_anc_eq`). Thus, all that
-`SatisfiesFuel` and `SatisfiesMFuel` use also agrees.
-
-The proof combines two lemmas:
-
-* `stableFuel` (same schema): it connects the canonical fuel of each side
-  to a shared sufficient value.
-* `SatisfiesFuel_transfer` (same fuel): it connects the two schemas.
-
-This solves the problem that stops a direct port, in the 2017 style, of
-the inductive step of `stratTypingSeq_correct`. In 2017, `Satisfies` does
-not depend on the schema. Here, it does. -/
-theorem Satisfies_stratRestrict_agree {S : Schema}
-    (hAcyclic : S.ExtAcyclic) (hDClosed : S.DClosed) (strat : Stratification S)
-    {i j : ℕ} (hij : i ≤ j) {x : Label} (hxY : x ∈ S.Y ∪ S.X) (hxi : strat.strat x ≤ i)
-    {G : Graph} {τ : Typing} {n : RDFNode} :
-    Satisfies (S.stratRestrict strat.strat i) G τ n (S.shapeDef x) ↔
-    Satisfies (S.stratRestrict strat.strat j) G τ n (S.shapeDef x) := by
-  have hZ : S.DClosedOn (S.stratum strat.strat i) := Schema.stratum_DClosedOn hDClosed strat i
-  have hxZ : x ∈ S.stratum strat.strat i := Schema.mem_stratum.mpr ⟨hxY, hxi⟩
-  have hAnc : ∀ y ∈ S.stratum strat.strat i,
-      (S.stratRestrict strat.strat i).anc y = (S.stratRestrict strat.strat j).anc y := by
-    intro y hy
-    obtain ⟨hyY, hyi⟩ := Schema.mem_stratum.mp hy
-    rw [Schema.stratRestrict_anc_eq hDClosed strat hyY hyi,
-      Schema.stratRestrict_anc_eq hDClosed strat hyY (hyi.trans hij)]
-  have hAc1 := Schema.stratRestrict_ExtAcyclic hAcyclic strat.strat i
-  have hAc2 := Schema.stratRestrict_ExtAcyclic hAcyclic strat.strat j
-  have hF1 := le_max_left (S.stratRestrict strat.strat i).fuelBound
-    (S.stratRestrict strat.strat j).fuelBound
-  have hF2 := le_max_right (S.stratRestrict strat.strat i).fuelBound
-    (S.stratRestrict strat.strat j).fuelBound
-  calc Satisfies (S.stratRestrict strat.strat i) G τ n (S.shapeDef x)
-      _ ↔ SatisfiesFuel _ (S.stratRestrict strat.strat i) G τ n (S.shapeDef x) :=
-        stableFuel hAc1 le_rfl hF1 G τ n _
-      _ ↔ SatisfiesFuel _ (S.stratRestrict strat.strat j) G τ n (S.shapeDef x) :=
-        SatisfiesFuel_transfer (S2 := S.stratRestrict strat.strat j) hAc1 hF1 hZ
-          (fun _ _ _ => Iff.rfl) rfl hAnc
-          (S.shapeDef_depsIn hZ hxZ) n
-      _ ↔ Satisfies (S.stratRestrict strat.strat j) G τ n (S.shapeDef x) :=
-        (stableFuel hAc2 le_rfl hF2 G τ n _).symm
-
-/-- `(S.stratRestrict strat i).Y ∪ (S.stratRestrict strat i).X` (a union of
-two sets, each with its own filter) and `S.stratum strat i` (one filter
-over the union) are the same `Finset`, made in different ways. This lemma
-connects the `Y ∪ X` form of `Schema.univTyping` with the form of
-`Schema.stratum_mono`. -/
-theorem Schema.stratRestrict_YX_eq_stratum (S : Schema) (strat : Label → ℕ) (i : ℕ) :
-    (S.stratRestrict strat i).Y ∪ (S.stratRestrict strat i).X = S.stratum strat i := by
-  unfold Schema.stratRestrict Schema.stratum
-  rw [Finset.filter_union]
-
-/-- The labels of `S.stratRestrict strat i` are the labels of `S` with a
-stratum `≤ i`. -/
-theorem Schema.mem_stratRestrict_YX {S : Schema} {strat : Label → ℕ} {i : ℕ} {z : Label} :
-    z ∈ (S.stratRestrict strat i).Y ∪ (S.stratRestrict strat i).X ↔
-      z ∈ S.Y ∪ S.X ∧ strat z ≤ i := by
-  rw [Schema.stratRestrict_YX_eq_stratum, Schema.mem_stratum]
-
-theorem Schema.mem_stratRestrict_X {S : Schema} {strat : Label → ℕ} {i : ℕ} {z : Label} :
-    z ∈ (S.stratRestrict strat i).X ↔ z ∈ S.X ∧ strat z ≤ i := by
-  simp only [Schema.stratRestrict, Finset.mem_filter]
-
-theorem Schema.mem_stratRestrict_A {S : Schema} {strat : Label → ℕ} {i : ℕ} {z : Label} :
-    z ∈ (S.stratRestrict strat i).A ↔ z ∈ S.A ∧ strat z ≤ i := by
-  simp only [Schema.stratRestrict, Finset.mem_filter]
-
-/-- At the top stratum `k`, the restriction removes nothing. -/
-theorem Schema.stratRestrict_top {S : Schema} (strat : Stratification S) :
-    S.stratRestrict strat.strat strat.k = S := by
-  unfold Schema.stratRestrict
-  congr 1
-  · exact Finset.filter_true_of_mem
-      (fun z hz => (strat.mem_range z (Finset.mem_union_left _ hz)).2)
-  · exact Finset.filter_true_of_mem
-      (fun z hz => (strat.mem_range z (Finset.mem_union_right _ hz)).2)
-  · exact Finset.filter_true_of_mem
-      (fun z hz => (strat.mem_range z (Finset.mem_union_right _ (S.A_subX hz))).2)
-
-/-- `stratRestrict` does not change the edge relation of `D_S`. (It changes
-only `Y`, `X` and `A`, never `shapeDef`, and `DEdge` uses only
-`shapeDef`.)
-
-This fact is a separate `rfl` lemma, so that later proofs can use it
-directly with `rw`. Do not let the elaborator find it again by
-unification. `DEdge` unfolds through much `Schema` and `Finset` data, so
-the unification is very slow. It causes a timeout in the `hDClosed`
-argument of `maxTypingAgreeing_correct`. -/
-theorem Schema.stratRestrict_DEdge_eq (S : Schema) (strat : Label → ℕ) (i : ℕ) :
-    (S.stratRestrict strat i).DEdge = S.DEdge := rfl
-
-/-- `S.stratRestrict strat i` is also `DClosed`, if `S` is. This is the
-`stratRestrict` form of `Schema.stratum_DClosedOn`. It is connected
-explicitly with `Schema.stratRestrict_YX_eq_stratum` and
-`Schema.stratRestrict_DEdge_eq` (not with `hDClosed` directly), for the
-same performance reason as in `Schema.stratRestrict_DEdge_eq`. -/
-theorem Schema.stratRestrict_DClosed {S : Schema} (hDClosed : S.DClosed) (strat : Stratification S)
-    (i : ℕ) : (S.stratRestrict strat.strat i).DClosed := by
-  intro z hz z' hedge
-  rw [Schema.stratRestrict_YX_eq_stratum] at hz ⊢
-  rw [Schema.stratRestrict_DEdge_eq] at hedge
-  exact Schema.stratum_DClosedOn hDClosed strat i z hz z' hedge
-
-/-- A correct typing of `S.stratRestrict strat i` is also a correct typing
-of `S.stratRestrict strat j`, for `i ≤ j`. The inductive step of
-`stratTypingSeq_correct` needs this step: "go up one stratum level and keep
-correctness".
-
-Each part (`.A` membership, and the `.desc \ .A` witnesses) is monotone in
-the restriction level, because `stratRestrict` only makes `Y`, `X` and `A`
-larger when `i` becomes larger. The important step is to move the
-`Satisfies` witnesses with `Satisfies_stratRestrict_agree`. -/
-theorem Schema.correctTyping_stratRestrict_mono {S : Schema}
-    (hAcyclic : S.ExtAcyclic) (hDClosed : S.DClosed) (strat : Stratification S)
-    {i j : ℕ} (hij : i ≤ j) {G : Graph} {t : Typing}
-    (ht_sub : t ⊆ (S.stratRestrict strat.strat i).univTyping G)
-    (ht_correct : (S.stratRestrict strat.strat i).CorrectTyping G t) :
-    (S.stratRestrict strat.strat j).CorrectTyping G t := by
-  intro n L hmem
-  obtain ⟨hLY, hLi⟩ := Schema.mem_stratRestrict_YX.mp (Finset.mem_product.mp (ht_sub hmem)).2
-  have hAiff : L ∈ (S.stratRestrict strat.strat i).A ↔ L ∈ (S.stratRestrict strat.strat j).A := by
-    rw [Schema.mem_stratRestrict_A, Schema.mem_stratRestrict_A]
-    constructor
-    · rintro ⟨hLA, _⟩; exact ⟨hLA, hLi.trans hij⟩
-    · rintro ⟨hLA, _⟩; exact ⟨hLA, hLi⟩
-  obtain ⟨hcorrectPlain, hcorrectAbs⟩ := ht_correct n L hmem
-  refine ⟨fun hLnotA => ?_, fun hLA => ?_⟩
-  · exact (Satisfies_stratRestrict_agree hAcyclic hDClosed strat hij hLY hLi).mp
-      (hcorrectPlain (fun h => hLnotA (hAiff.mp h)))
-  · obtain ⟨x, hxmem, hSatx⟩ := hcorrectAbs (hAiff.mpr hLA)
-    rw [Finset.mem_sdiff, Schema.mem_desc] at hxmem
-    obtain ⟨⟨hxX', hxpath⟩, hxnA⟩ := hxmem
-    rw [Schema.mem_stratRestrict_X] at hxX'
-    rw [Schema.mem_stratRestrict_A] at hxnA
-    obtain ⟨hxX, hxi⟩ := hxX'
-    have hxY : x ∈ S.Y ∪ S.X := Finset.mem_union_right _ hxX
-    have hxmem' : x ∈ (S.stratRestrict strat.strat j).desc L \ (S.stratRestrict strat.strat j).A := by
-      rw [Finset.mem_sdiff, Schema.mem_desc, Schema.mem_stratRestrict_X, Schema.mem_stratRestrict_A]
-      exact ⟨⟨⟨hxX, hxi.trans hij⟩, hxpath⟩, fun h => hxnA ⟨h.1, hxi⟩⟩
-    exact ⟨x, hxmem',
-      (Satisfies_stratRestrict_agree hAcyclic hDClosed strat hij hxY hxi).mp hSatx⟩
-
-/-- The sequence `τ_i` of Definition 8, as one recursion on `ℕ`:
-
-* `τ_0 := ∅`. This is vacuously correct for `S^σ_0`, because each label
-  has `σ(z) ≥ 1`. Thus, stratum 0 is empty.
-* `τ_{i+1}` is the union of all the correct typings of `G` by `S^σ_{i+1}`
-  that agree with `τ_i` on `Y^σ_i ∪ X^σ_i`.
-
-This agrees with the recursion of the paper. The base case `τ_1` of
-Definition 8 ("the union of all correct typings of `G` by `S^σ_1`") is the
-special case `Lo = ∅` of the general step. -/
-noncomputable def stratTypingSeq (S : Schema) (strat : Label → ℕ) (G : Graph) : ℕ → Typing
-  | 0 => ∅
-  | i + 1 => maxTypingAgreeing (S.stratRestrict strat (i + 1)) G (S.stratum strat i)
-      (stratTypingSeq S strat G i)
-
-/-- Definition 8: the maximal typing of `G` by `S` with `σ`,
-`τ_max(S,σ,G)`. -/
-noncomputable def Typing8 (G : Graph) (S : Schema) (strat : Stratification S) : Typing :=
-  stratTypingSeq S strat.strat G strat.k
-
-/-- The two invariants of `stratTypingSeq` at each stratum `i`:
-
-* It is a subset of the universe of typings of `S^σ_i`.
-* It is a correct typing of `G` by `S^σ_i`.
-
-The base case (`i = 0`) is vacuous. (`stratum strat 0 = ∅`, and
-`Y^σ_0 ∪ X^σ_0 = ∅`, because each label has `σ ≥ 1`, `mem_range`.)
-
-The inductive step combines two lemmas:
-
-* `maxTypingAgreeing_correct`: the new correctness at stratum `i+1`.
-* `Schema.correctTyping_stratRestrict_mono`: it moves the correctness of
-  the previous typing at stratum `i` up to the schema of stratum `i+1`.
-
-This solves the problem that a direct port in the 2017 style does not
-solve. Refer to the docstring of `Satisfies_stratRestrict_agree`. -/
-theorem stratTypingSeq_correct {S : Schema} (hAcyclic : S.ExtAcyclic)
-    (hWFExtra : S.WellFormedExtra) (hNEF : S.NotIsExtendsFree) (hDClosed : S.DClosed)
-    (strat : Stratification S) (G : Graph) (i : ℕ) :
-      stratTypingSeq S strat.strat G i ⊆ (S.stratRestrict strat.strat i).univTyping G ∧
-      (S.stratRestrict strat.strat i).CorrectTyping G (stratTypingSeq S strat.strat G i) := by
-  induction i with
-  | zero =>
-      refine ⟨by simp [stratTypingSeq], ?_⟩
-      intro n L hmem
-      simp [stratTypingSeq] at hmem
-  | succ i ih =>
-      obtain ⟨hsub_i, hcorrect_i⟩ := ih
-      have hsub_i' : stratTypingSeq S strat.strat G i ⊆
-          (S.stratRestrict strat.strat (i + 1)).univTyping G := by
-        intro p hp
-        have hp' := Finset.mem_product.mp (hsub_i hp)
-        refine Finset.mem_product.mpr ⟨hp'.1, ?_⟩
-        obtain ⟨hpY, hpi⟩ := Schema.mem_stratRestrict_YX.mp hp'.2
-        exact Schema.mem_stratRestrict_YX.mpr ⟨hpY, hpi.trans (Nat.le_succ i)⟩
-      have hcorrect_i' : (S.stratRestrict strat.strat (i + 1)).CorrectTyping G
-          (stratTypingSeq S strat.strat G i) :=
-        Schema.correctTyping_stratRestrict_mono hAcyclic hDClosed strat (Nat.le_succ i)
-          hsub_i hcorrect_i
-      have hLo : ∀ z ∈ (S.stratRestrict strat.strat (i + 1)).Y ∪
-            (S.stratRestrict strat.strat (i + 1)).X,
-          (((S.stratRestrict strat.strat (i + 1)).shapeDef z).depsAux false).negRefs ⊆
-            S.stratum strat.strat i := by
-        intro z hz z' hz'
-        obtain ⟨hzY, hzi1⟩ := Schema.mem_stratRestrict_YX.mp hz
-        have hDNeg : S.DNegEdge z z' := Or.inl hz'
-        have hz'Y : z' ∈ S.Y ∪ S.X := hDClosed z hzY z' (S.DEdge_of_DNegEdge hDNeg)
-        have hlt : strat.strat z' < strat.strat z := strat.negDep_lt z hzY z' hDNeg
-        exact Schema.mem_stratum.mpr ⟨hz'Y, by omega⟩
-      have hDClosed1 : (S.stratRestrict strat.strat (i + 1)).DClosed :=
-        Schema.stratRestrict_DClosed hDClosed strat (i + 1)
-      have hAcyclic1 : (S.stratRestrict strat.strat (i + 1)).ExtAcyclic :=
-        Schema.stratRestrict_ExtAcyclic hAcyclic strat.strat (i + 1)
-      refine ⟨maxTypingAgreeing_subset _ G _ _, ?_⟩
-      show (S.stratRestrict strat.strat (i + 1)).CorrectTyping G
-        (maxTypingAgreeing (S.stratRestrict strat.strat (i + 1)) G (S.stratum strat.strat i)
-          (stratTypingSeq S strat.strat G i))
-      exact maxTypingAgreeing_correct hAcyclic1 hWFExtra hNEF hDClosed1 hsub_i' hcorrect_i' hLo
-
-/-- **Proposition 1.** For every schema `S`, stratification `σ` of `S`, and
-graph `G`, the typing `τ_max(S,σ,G)` is a correct typing. -/
+/-- **Proposition 1** (the 2026 exploration). For every schema `S`, stratification `σ`
+of `S`, and graph `G`, the typing `τ_max(S,σ,G)` is a correct typing. The
+proof is `ShexLean.InheritanceCore.proposition1`. -/
 theorem proposition1 {S : Schema} (hAcyclic : S.ExtAcyclic)
     (hWFExtra : S.WellFormedExtra) (hNEF : S.NotIsExtendsFree) (hDClosed : S.DClosed)
     (strat : Stratification S) (G : Graph) :
-    S.CorrectTyping G (Typing8 G S strat) := by
-  have := (stratTypingSeq_correct hAcyclic hWFExtra hNEF hDClosed strat G strat.k).2
-  rwa [Schema.stratRestrict_top] at this
+    S.CorrectTyping G (Typing8 G S strat) :=
+  InheritanceCore.proposition1 hAcyclic hWFExtra hNEF hDClosed strat G
 
 end ShexLean.InheritanceDisjunction

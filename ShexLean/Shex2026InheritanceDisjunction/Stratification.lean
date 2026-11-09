@@ -1,4 +1,4 @@
-import ShexLean.Shex2026InheritanceDisjunction.Semantics
+import ShexLean.Shex2026InheritanceDisjunction.Syntax
 import Mathlib.Logic.Relation
 
 /-!
@@ -61,7 +61,7 @@ is that relation, made symmetric.
 
 namespace ShexLean.InheritanceDisjunction
 
-open ShexLean.InheritanceCore
+open ShexLean.InheritanceCore hiding Schema
 
 /-! ### Definition 5: the dependency graph `D_S` -/
 
@@ -176,25 +176,6 @@ def ShapeExpr.depsAux (neg : Bool) : ShapeExpr → DepInfo
   | .and s1 s2 => s1.depsAux neg ∪ s2.depsAux neg
   | .not s => s.depsAux true
 
-/-- `dep-extends_S(z,z')`: `H_S` has an edge between `z` and `z'`, in one
-of the two directions. -/
-def Schema.depExtends (S : Schema) (z z' : Label) : Prop := S.extEdge z z' ∨ S.extEdge z' z
-
-/-- `dep_S(z,z')`: `z'` occurs as a reference (`@z'`) in `def(z)`. -/
-def Schema.dep (S : Schema) (z z' : Label) : Prop :=
-  z' ∈ ((S.shapeDef z).depsAux false).refs
-
-/-- `dep-shape-neg_S(z,z')`: `def(z)` has a reference to `z'` below a
-`not`. (Refer to `ShapeExpr.depsAux`: this file counts "below any `not`",
-not "below an odd number of `not`".) -/
-def Schema.depShapeNeg (S : Schema) (z z' : Label) : Prop :=
-  z' ∈ ((S.shapeDef z).depsAux false).negRefs
-
-/-- `dep-extra-neg_S(z,z')`: a sub-expression `[closed][extra P]⟨e⟩` of
-`def(z)` has a triple constraint `p @z'` with `p ∈ P`. -/
-def Schema.depExtraNeg (S : Schema) (z z' : Label) : Prop :=
-  z' ∈ ((S.shapeDef z).depsAux false).extraNegRefs
-
 /-- `negRefs ⊆ refs` for each shape expression, at each `neg`. This is
 the structural fact for "`dep` subsumes `dep-shape-neg`". -/
 theorem ShapeExpr.negRefs_subset_refs (s : ShapeExpr) (neg : Bool) :
@@ -251,41 +232,20 @@ theorem ShapeExpr.extraNegRefs_subset_refs (s : ShapeExpr) (neg : Bool) :
       exact Finset.union_subset_union (ih1 neg) (ih2 neg)
   | not s ih => simpa only [ShapeExpr.depsAux] using ih true
 
-/-- "`dep` subsumes `dep-shape-neg`" (the remark after Definition 5). -/
-theorem Schema.dep_of_depShapeNeg {S : Schema} {z z' : Label} (h : S.depShapeNeg z z') :
-    S.dep z z' :=
-  ShapeExpr.negRefs_subset_refs (S.shapeDef z) false h
+/-- The schema-level definitions of `ShexLean/InheritanceCore/Schema.lean`
+(`H_S`, `D_S`, `dep`, `dep-shape-neg`, `dep-extra-neg`, `dep-extends`,
+Definition 6 and Definition 7) use a shape expression through these
+functions. -/
+instance : ShapeSyntax ShapeExpr where
+  extendsTargets := ShapeExpr.extendsTargets
+  deps s := s.depsAux false
+  negRefs_subset_refs s := s.negRefs_subset_refs false
+  extraNegRefs_subset_refs s := s.extraNegRefs_subset_refs false
 
-/-- "`dep` subsumes `dep-extra-neg`" (the remark after Definition 5). -/
-theorem Schema.dep_of_depExtraNeg {S : Schema} {z z' : Label} (h : S.depExtraNeg z z') :
-    S.dep z z' :=
-  ShapeExpr.extraNegRefs_subset_refs (S.shapeDef z) false h
+@[simp] theorem ShapeExpr.shapeSyntax_deps (s : ShapeExpr) : ShapeSyntax.deps s = s.depsAux false :=
+  rfl
 
-/-! ### Definition 6: well-defined schema, stratified negation -/
-
-/-- `H_S` is acyclic: no extendable label extends itself transitively.
-This is the first of the two conditions of Definition 6. -/
-def Schema.ExtAcyclic (S : Schema) : Prop :=
-  ∀ x ∈ S.X, ¬ Relation.TransGen S.extEdge x x
-
-/-- An edge of `D_S` ("`z` depends on `z'`"). The paper says directly after
-Definition 5 that "`dep` subsumes `dep-shape-neg`/`dep-extra-neg`". Thus,
-the `dep` and `dep-extends` relations together already cover each edge
-that `D_S` can have, for each of the four labels. -/
-def Schema.DEdge (S : Schema) (z z' : Label) : Prop := S.dep z z' ∨ S.depExtends z z'
-
-/-- An edge of `D_S` with one of the two *negative* labels. -/
-def Schema.DNegEdge (S : Schema) (z z' : Label) : Prop :=
-  S.depShapeNeg z z' ∨ S.depExtraNeg z z'
-
-/-- `D_S` has a cycle through a negative dependency edge. There is a
-negative edge `a → b`, and an ordinary `D_S` path from `b` back to `a`
-closes the cycle. (The path can be empty if `a = b`. This is a negative
-self-loop.) -/
-def Schema.NegCycle (S : Schema) : Prop :=
-  ∃ a b, S.DNegEdge a b ∧ Relation.ReflTransGen S.DEdge b a
-
-/-- Definition 6 (well-defined schema, stratified negation). -/
-def Schema.WellDefined (S : Schema) : Prop := S.ExtAcyclic ∧ ¬ S.NegCycle
+@[simp] theorem ShapeExpr.shapeSyntax_extendsTargets (s : ShapeExpr) :
+    ShapeSyntax.extendsTargets s = s.extendsTargets := rfl
 
 end ShexLean.InheritanceDisjunction

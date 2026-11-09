@@ -17,7 +17,8 @@ only shows them again.
 
 namespace Examples
 
-open ShexLean.Inheritance (S_fig1 ancReach ancSetReach)
+open ShexLean.Inheritance (S_fig1)
+open ShexLean.InheritanceCore (ancReach ancSetReach)
 open ShexLean (Label)
 
 /-- `{L1, L2, …}`, sorted, for a `Finset Label`. `ancReach` and

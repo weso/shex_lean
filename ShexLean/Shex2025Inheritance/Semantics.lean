@@ -1,4 +1,4 @@
-import ShexLean.Shex2025Inheritance.Syntax
+import ShexLean.Shex2025Inheritance.Stratification
 import ShexLean.Common.DisjointUnion
 import ShexLean.InheritanceCore.TripleMatch
 
@@ -46,7 +46,7 @@ defines the real relation `Satisfies` with this bound.
 
 namespace ShexLean.Inheritance
 
-open ShexLean.InheritanceCore
+open ShexLean.InheritanceCore hiding Schema
 
 /-- `M,τ ⊨ s` (Table 3), one layer. It is structural on `s`. The parameter
 `restr` evaluates the restriction `restr(x)` of each ancestor in rule 18,

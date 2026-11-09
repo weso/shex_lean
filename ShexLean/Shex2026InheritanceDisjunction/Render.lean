@@ -29,7 +29,7 @@ on its own line.
 
 namespace ShexLean.InheritanceDisjunction
 
-open ShexLean.InheritanceCore
+open ShexLean.InheritanceCore hiding Schema
 
 def ShapeExpr.render : ShapeExpr → String
   | .ofShape h => h.render

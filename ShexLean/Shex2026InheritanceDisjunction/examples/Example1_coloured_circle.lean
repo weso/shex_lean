@@ -55,7 +55,7 @@ with the `Decidable` instances of this folder.
 
 namespace ShexLean.InheritanceDisjunction
 
-open ShexLean.InheritanceCore
+open ShexLean.InheritanceCore hiding Schema
 
 /-- A fuel bound that is sufficient for all the proofs in this file. -/
 def bigFuelDisj : ℕ := 10

@@ -4,6 +4,7 @@ import ShexLean.Common.RDF
 import ShexLean.Common.Typing
 import ShexLean.Common.DisjointUnion
 import ShexLean.InheritanceCore.Decidable
+import ShexLean.InheritanceCore.SchemaDecidable
 import ShexLean.Shex2017Schemas.Syntax
 import ShexLean.Shex2017Schemas.Semantics
 import ShexLean.Shex2017Schemas.Stratification
@@ -26,7 +27,6 @@ import ShexLean.Shex2025Inheritance.Syntax
 import ShexLean.Shex2025Inheritance.Semantics
 import ShexLean.Shex2025Inheritance.Stratification
 import ShexLean.Shex2025Inheritance.Termination
-import ShexLean.Shex2025Inheritance.CorrectTyping
 import ShexLean.Shex2025Inheritance.Proposition1
 import ShexLean.Shex2025Inheritance.Lemma2
 import ShexLean.Shex2025Inheritance.Algorithm1
@@ -36,7 +36,6 @@ import ShexLean.Shex2026InheritanceDisjunction.Syntax
 import ShexLean.Shex2026InheritanceDisjunction.Semantics
 import ShexLean.Shex2026InheritanceDisjunction.Stratification
 import ShexLean.Shex2026InheritanceDisjunction.Termination
-import ShexLean.Shex2026InheritanceDisjunction.CorrectTyping
 import ShexLean.Shex2026InheritanceDisjunction.Proposition1
 import ShexLean.Shex2026InheritanceDisjunction.Lemma2
 import ShexLean.Shex2026InheritanceDisjunction.Algorithm1

@@ -13,7 +13,7 @@ are regression checks on the definitions of the dependency graph.
 
 namespace ShexLean.Inheritance
 
-open ShexLean.InheritanceCore
+open ShexLean.InheritanceCore hiding Schema
 
 /-- `S1 = (Y1,∅,def,∅)` (Example 6): `y1 → ⟨p@y2⟩ and ⟨q@y3⟩`,
 `y2 → ⟨q@y1⟩`, `y3 → extra{r} ⟨p@y1⟩`.

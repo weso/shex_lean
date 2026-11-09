@@ -41,10 +41,10 @@ def proofs : List ProofItem :=
       path := "ShexLean/Shex2025Inheritance/Termination.lean" },
     { name := "inheritance2025-proposition1"
       summary := "τ_max(S,σ,G) is a correct typing of G by S (§4.3)."
-      path := "ShexLean/Shex2025Inheritance/Proposition1.lean" },
+      path := "ShexLean/InheritanceCore/MaxTyping.lean" },
     { name := "inheritance2025-lemma2"
       summary := "τ_max(S,σ,G) does not depend on the stratification (§4.3)."
-      path := "ShexLean/Shex2025Inheritance/Lemma2.lean" },
+      path := "ShexLean/InheritanceCore/Lemma2.lean" },
     { name := "inheritance2026-lemma1"
       summary := "Termination is still true with disjunctive extends (§6 explored, §4.2)."
       path := "ShexLean/Shex2026InheritanceDisjunction/Termination.lean" },
@@ -53,7 +53,7 @@ def proofs : List ProofItem :=
       path := "ShexLean/Shex2026InheritanceDisjunction/Proposition1.lean" },
     { name := "inheritance2026-lemma2"
       summary := "τ_max still does not depend on the stratification, with disjunctive extends (§6, §4.3)."
-      path := "ShexLean/Shex2026InheritanceDisjunction/Lemma2.lean" } ]
+      path := "ShexLean/InheritanceCore/Lemma2.lean" } ]
 
 /-- Find a registered proof by its name. -/
 def findProof? (name : String) : Option ProofItem :=

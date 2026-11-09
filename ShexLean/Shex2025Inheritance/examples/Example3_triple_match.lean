@@ -26,7 +26,7 @@ specific to one example.
 
 namespace ShexLean.Inheritance
 
-open ShexLean.InheritanceCore
+open ShexLean.InheritanceCore hiding Schema
 
 /-! ### Node constraints for Examples 3, 4 and 5 (§4.1) -/
 

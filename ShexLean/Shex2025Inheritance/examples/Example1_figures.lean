@@ -35,7 +35,7 @@ same facts again.
 
 namespace ShexLean.Inheritance
 
-open ShexLean.InheritanceCore
+open ShexLean.InheritanceCore hiding Schema
 
 /-- A fuel bound that is sufficient for all the proofs in this file. -/
 def bigFuel1 : ℕ := 10

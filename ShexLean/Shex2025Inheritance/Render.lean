@@ -18,7 +18,7 @@ it. Thus, a general placeholder is sufficient.
 
 namespace ShexLean.Inheritance
 
-open ShexLean.InheritanceCore
+open ShexLean.InheritanceCore hiding Schema
 
 def ShapeExpr.render : ShapeExpr → String
   | .ofShape h => h.render
