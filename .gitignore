@@ -30,3 +30,4 @@ paper/_minted/
 # each of paper/ and slides/ expects its own local copy.
 llncs.cls
 splncs04.bst
+__pycache__/

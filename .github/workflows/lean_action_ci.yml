@@ -12,3 +12,6 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: leanprover/lean-action@v1
+        with:
+          # Build the project and run the test suite (`lake test`).
+          test: true

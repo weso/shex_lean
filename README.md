@@ -335,6 +335,20 @@ To step through the definitions and proofs interactively, open the
 project in an editor with Lean support (for example, VS Code with the
 Lean 4 extension).
 
+## Tests
+
+`tests/` contains a test suite that uses the validation tests of the ShEx
+test suite (<https://github.com/shexSpec/shexTest>). It checks the 2025
+formalism with the structural tests and with the inheritance tests
+(`extends` and `abstract`). Run it with:
+
+```
+lake test
+```
+
+The test suite is separate from the formalization. `lake build` does not
+build it. Refer to [`tests/README.md`](tests/README.md).
+
 ## Writing style
 
 The comments, docstrings and this README use a style based on

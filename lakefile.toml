@@ -1,6 +1,7 @@
 name = "shex_lean"
 version = "0.1.0"
 defaultTargets = ["shex_lean"]
+testDriver = "shex_tests"
 
 [[require]]
 name = "mathlib"
@@ -19,3 +20,14 @@ globs = [
 [[lean_exe]]
 name = "shex_lean"
 root = "Main"
+
+# The test suite (refer to `tests/README.md`). It is separate from the
+# formalization: `lake build` does not build it. `lake test` builds and runs it.
+[[lean_lib]]
+name = "ShexTests"
+srcDir = "tests"
+
+[[lean_exe]]
+name = "shex_tests"
+srcDir = "tests"
+root = "ShexTestsMain"
