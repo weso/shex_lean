@@ -101,17 +101,19 @@ def ShapeExpr.AllConstraintsDecidable : ShapeExpr → Prop
   | .and s1 s2 => s1.AllConstraintsDecidable ∧ s2.AllConstraintsDecidable
   | .not s => s.AllConstraintsDecidable
 
-/-- The existential of rule 18 (`∃ M' Mx, ...`), written as a bounded
-search:
+/-- The conditions of rule 18 on the parts `M'` and `Mx` of a partition,
+with the computable `ancReach` in place of `S.anc`. -/
+def extendsBody (S : Schema) (τ : Typing) (restr : Finset Triple → ShapeExpr → Prop) (h : Shape)
+    (Idx : Finset Label) (M' : Finset Triple) (Mx : Label → Finset Triple) : Prop :=
+  SatisfiesShape τ M' h ∧
+  (∀ x ∈ Idx, SatisfiesE τ (Mx x) (S.shapeDef x).extTe) ∧
+  (∀ x ∈ Idx, ∀ u, (S.shapeDef x).restrOf = some u → restr ((ancReach S x).biUnion Mx) u)
 
-* For `M'`, the search is over `M.powerset`.
-* For `Mx`, the search is over
-  `Finset.pi (ancSetReach S xs) (fun _ => M.powerset)`, restricted to the
-  points where `Mx` is used.
-
-`ancSetReach S xs` and `ancReach S x` replace `S.ancSet xs` and `S.anc x`.
-This is sound because `xs ⊆ S.X`, from the `MOk` requirement of
-`.extends xs h`. -/
+/-- The existential of rule 18 (`∃ M' Mx, ...`), as a bounded search
+over the assignments of the triples of `M` to the parts
+(`exists_disjointUnionOn_iff_assignments`). `ancSetReach S xs` and
+`ancReach S x` replace `S.ancSet xs` and `S.anc x`. This is sound because
+`xs ⊆ S.X`, from the `MOk` requirement of `.extends xs h`. -/
 theorem satisfiesExtends_iff_bounded {S : Schema} {τ : Typing}
     {restr : Finset Triple → ShapeExpr → Prop}
     (hXC : S.XClosed) {M : Finset Triple} {xs : Finset Label} {h : Shape}
@@ -121,45 +123,18 @@ theorem satisfiesExtends_iff_bounded {S : Schema} {τ : Typing}
         (∀ x ∈ S.ancSet xs, SatisfiesE τ (Mx x) (S.shapeDef x).extTe) ∧
         (∀ x ∈ S.ancSet xs, ∀ u, (S.shapeDef x).restrOf = some u →
           restr ((S.anc x).biUnion Mx) u)) ↔
-      ∃ M' ∈ M.powerset, ∃ g ∈ Finset.pi (ancSetReach S xs) (fun _ => M.powerset),
-        DisjointUnionOn M M' (ancSetReach S xs) (extendMx (ancSetReach S xs) g) ∧
-        SatisfiesShape τ M' h ∧
-        (∀ x ∈ ancSetReach S xs,
-          SatisfiesE τ (extendMx (ancSetReach S xs) g x) (S.shapeDef x).extTe) ∧
-        (∀ x ∈ ancSetReach S xs, ∀ u, (S.shapeDef x).restrOf = some u →
-          restr ((ancReach S x).biUnion (extendMx (ancSetReach S xs) g)) u) := by
-  have hSet : ancSetReach S xs = S.ancSet xs := ancSetReach_eq_ancSet hXC hxs
-  constructor
-  · rintro ⟨M', Mx, ⟨hdisj, hpw, hunion⟩, hshape, hext, hrestr⟩
-    have hM'sub : M' ⊆ M := hunion ▸ Finset.subset_union_left
-    have hMxsub : ∀ x ∈ ancSetReach S xs, Mx x ⊆ M := fun x hx =>
-      (Finset.subset_biUnion_of_mem Mx (hSet ▸ hx)).trans (hunion ▸ Finset.subset_union_right)
-    refine ⟨M', Finset.mem_powerset.mpr hM'sub, fun a _ => Mx a, ?_, ?_, ?_, ?_, ?_⟩
-    · rw [Finset.mem_pi]; intro a ha; exact Finset.mem_powerset.mpr (hMxsub a ha)
-    · have hEq : ∀ x ∈ ancSetReach S xs, extendMx (ancSetReach S xs) (fun a _ => Mx a) x = Mx x :=
-        fun x hx => extendMx_eq hx
-      exact (DisjointUnionOn_congr hEq).mpr (hSet ▸ ⟨hdisj, hpw, hunion⟩)
-    · exact hshape
-    · intro x hx
-      rw [extendMx_eq hx]; exact hext x (hSet ▸ hx)
-    · intro x hx u hu
-      have hxX : x ∈ S.X := ancSetReach_subset_X hXC hxs hx
-      have hEq : ∀ y ∈ ancReach S x, Mx y = extendMx (ancSetReach S xs) (fun a _ => Mx a) y :=
-        fun y hy =>
-          (extendMx_eq (g := fun a _ => Mx a) (ancReach_subset_ancSetReach hXC hxs hx hy)).symm
-      have hb : (S.anc x).biUnion Mx = (ancReach S x).biUnion
-          (extendMx (ancSetReach S xs) (fun a _ => Mx a)) := by
-        rw [← ancReach_eq_anc hXC hxX]; exact Finset.biUnion_congr rfl hEq
-      rw [← hb]
-      exact hrestr x (hSet ▸ hx) u hu
-  · rintro ⟨M', hM'mem, g, hgmem, hdisj, hshape, hext, hrestr⟩
-    refine ⟨M', extendMx (ancSetReach S xs) g, hSet ▸ hdisj, hshape, ?_, ?_⟩
-    · intro x hx
-      exact hext x (hSet ▸ hx)
-    · intro x hx u hu
-      have hxX : x ∈ S.X := ancSetReach_subset_X hXC hxs (hSet ▸ hx)
-      rw [← ancReach_eq_anc hXC hxX]
-      exact hrestr x (hSet ▸ hx) u hu
+      ∃ f ∈ assignments M (ancSetReach S xs), extendsBody S τ restr h (ancSetReach S xs)
+        (partOf M f none) (fun x => partOf M f (some x)) := by
+  rw [← exists_disjointUnionOn_iff_assignments]
+  · rw [ancSetReach_eq_ancSet hXC hxs]
+    refine exists₂_congr fun M' Mx => and_congr_right fun _ => and_congr_right fun _ =>
+      and_congr_right fun _ => forall₂_congr fun x hx => ?_
+    rw [ancReach_eq_anc hXC (Schema.ancSet_subset_X hx)]
+  · intro M' Mx Mx' hEq
+    refine and_congr_right fun _ => and_congr ?_ ?_
+    · exact forall₂_congr fun x hx => by rw [hEq x hx]
+    · refine forall₂_congr fun x hx => forall₂_congr fun u _ => ?_
+      rw [Finset.biUnion_congr rfl fun y hy => hEq y (ancReach_subset_ancSetReach hXC hxs hx hy)]
 
 /-- One layer of Table 3 is decidable on the `MOk` fragment (refer to the
 section docstring above `ShapeExpr.MOk`), if `restr` is decidable on it.
@@ -194,8 +169,7 @@ def satisfiesMAt_decidable (S : Schema) (τ : Typing) (restr : Finset Triple →
         (∀ x ∈ S.ancSet xs, SatisfiesE τ (Mx x) (S.shapeDef x).extTe) ∧
         (∀ x ∈ S.ancSet xs, ∀ u, (S.shapeDef x).restrOf = some u →
           restr ((S.anc x).biUnion Mx) u))
-      set Idx := ancSetReach S xs
-      haveI hRestrClause : ∀ N : Finset Triple, ∀ x ∈ Idx,
+      haveI hRestrClause : ∀ N : Finset Triple, ∀ x ∈ ancSetReach S xs,
           Decidable (∀ u, (S.shapeDef x).restrOf = some u → restr N u) :=
         fun N x hx => by
           rcases hu : (S.shapeDef x).restrOf with _ | u0
@@ -203,32 +177,19 @@ def satisfiesMAt_decidable (S : Schema) (τ : Typing) (restr : Finset Triple →
           · haveI := hr N u0 (hRestr x (ancSetReach_subset_X hXC hOk hx) u0 hu)
             exact decidable_of_iff (restr N u0)
               ⟨fun h u heq => by cases heq; exact h, fun h => h u0 rfl⟩
-      haveI hMain : ∀ M' : Finset Triple, ∀ g : ∀ a ∈ Idx, Finset Triple,
-          Decidable (DisjointUnionOn M M' Idx (extendMx Idx g) ∧
-            SatisfiesShape τ M' h ∧
-            (∀ x (hx : x ∈ Idx), SatisfiesE τ (extendMx Idx g x) (S.shapeDef x).extTe) ∧
-            (∀ x (hx : x ∈ Idx), ∀ u, (S.shapeDef x).restrOf = some u →
-              restr ((ancReach S x).biUnion (extendMx Idx g)) u)) :=
-        fun M' g => by
-          haveI hRestrDec : ∀ x (hx : x ∈ Idx),
-              Decidable (∀ u, (S.shapeDef x).restrOf = some u →
-                restr ((ancReach S x).biUnion (extendMx Idx g)) u) :=
-            fun x hx => hRestrClause ((ancReach S x).biUnion (extendMx Idx g)) x hx
-          haveI hd2 : Decidable (∀ x (hx : x ∈ Idx), ∀ u, (S.shapeDef x).restrOf = some u →
-              restr ((ancReach S x).biUnion (extendMx Idx g)) u) :=
-            @Multiset.decidableDforallMultiset _ Idx.val
-              (fun a _ => ∀ u, (S.shapeDef a).restrOf = some u →
-                restr ((ancReach S a).biUnion (extendMx Idx g)) u) hRestrDec
-          infer_instance
-      haveI hBounded : Decidable (∃ M' ∈ M.powerset, ∃ g ∈ Finset.pi Idx (fun _ => M.powerset),
-          DisjointUnionOn M M' Idx (extendMx Idx g) ∧
-            SatisfiesShape τ M' h ∧
-            (∀ x (hx : x ∈ Idx), SatisfiesE τ (extendMx Idx g x) (S.shapeDef x).extTe) ∧
-            (∀ x (hx : x ∈ Idx), ∀ u, (S.shapeDef x).restrOf = some u →
-              restr ((ancReach S x).biUnion (extendMx Idx g)) u)) :=
-        @Finset.decidableExistsAndFinset (Finset Triple) M.powerset _
-          (fun M' => @Finset.decidableExistsAndFinset (∀ a ∈ Idx, Finset Triple)
-            (Finset.pi Idx (fun _ => M.powerset)) _ (fun g => hMain M' g))
+      haveI : ∀ M' Mx, Decidable (extendsBody S τ restr h (ancSetReach S xs) M' Mx) :=
+        fun M' Mx => by
+          unfold extendsBody
+          haveI hd1 : Decidable (∀ x ∈ ancSetReach S xs, SatisfiesE τ (Mx x) (S.shapeDef x).extTe) :=
+            @Multiset.decidableDforallMultiset _ (ancSetReach S xs).val
+              (fun a _ => SatisfiesE τ (Mx a) (S.shapeDef a).extTe)
+              (fun a _ => satisfiesE_decidable τ _ _)
+          haveI hd2 : Decidable (∀ x ∈ ancSetReach S xs, ∀ u, (S.shapeDef x).restrOf = some u →
+              restr ((ancReach S x).biUnion Mx) u) :=
+            @Multiset.decidableDforallMultiset _ (ancSetReach S xs).val
+              (fun a _ => ∀ u, (S.shapeDef a).restrOf = some u → restr ((ancReach S a).biUnion Mx) u)
+              (fun a ha => hRestrClause _ a ha)
+          exact @instDecidableAnd _ _ (decidableSatisfiesShape τ M' h) (@instDecidableAnd _ _ hd1 hd2)
       exact decidable_of_iff _ (satisfiesExtends_iff_bounded hXC hOk).symm
 
 /-- `SatisfiesMFuel` is decidable on the `MOk` fragment. The proof is by

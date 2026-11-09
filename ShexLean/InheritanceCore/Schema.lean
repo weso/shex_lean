@@ -242,6 +242,12 @@ theorem Schema.extRank_succ {S : Schema E} {x : Label} (hx : x ∈ S.X) :
 /-- The fuel that is always sufficient for `S` (refer to `rankOk_any`). -/
 noncomputable def Schema.fuelBound (S : Schema E) : ℕ := S.X.sup S.extRank + 1
 
+/-- `S.X.card + 1` is always at least `S.fuelBound`. Each ancestor set is a
+subset of `X`. Thus, this bound is sufficient, and a program can compute
+it (`fuelBound` uses `Classical.decPred` through `anc`). -/
+theorem Schema.fuelBound_le_card (S : Schema E) : S.fuelBound ≤ S.X.card + 1 :=
+  Nat.succ_le_succ (Finset.sup_le fun _ _ => Finset.card_le_card Schema.anc_subset_X)
+
 /-! ### Definition 7: stratification -/
 
 /-- `Z` is closed under `D_S`: each label that a member of `Z` depends on

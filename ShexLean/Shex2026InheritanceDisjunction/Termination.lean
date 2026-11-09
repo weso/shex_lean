@@ -292,4 +292,13 @@ theorem lemma1 {S : Schema} (hAcyclic : S.ExtAcyclic)
     SatisfiesFuel fuel S G τ n (S.shapeDef z) ↔ Satisfies S G τ n (S.shapeDef z) :=
   (stableFuel hAcyclic le_rfl hfuel G τ n (S.shapeDef z)).symm
 
+/-- `Satisfies` at the computable fuel `S.X.card + 1`
+(`Schema.fuelBound_le_card`). The decision procedures of `Decidable.lean`
+decide `SatisfiesFuel` at an explicit fuel. With this lemma, they decide
+`Satisfies`. -/
+theorem satisfies_iff_satisfiesFuel_card {S : Schema} (hAcyclic : S.ExtAcyclic)
+    (G : Graph) (τ : Typing) (n : RDFNode) (s : ShapeExpr) :
+    Satisfies S G τ n s ↔ SatisfiesFuel (S.X.card + 1) S G τ n s :=
+  stableFuel hAcyclic le_rfl S.fuelBound_le_card G τ n s
+
 end ShexLean.InheritanceDisjunction

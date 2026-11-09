@@ -1,10 +1,11 @@
 import ShexLean.InheritanceCore.TripleMatch
 import ShexLean.Shex2017Schemas.RepBound
 import Mathlib.Data.Finset.Powerset
+import Mathlib.Data.Finset.Pi
 
 /-!
 Decidability of Table 1 (`SatisfiesE`) and rule 17 (`SatisfiesShape`), and
-the helpers for the bounded searches of rule 18 (`extendMx`,
+the helpers for the bounded searches of rule 18 (`assignments`,
 `DisjointUnionOn`). The `Decidable.lean` files of
 `ShexLean/Shex2025Inheritance/` and `ShexLean/Shex2026InheritanceDisjunction/`
 use them for Table 3 and Table 2.
@@ -251,42 +252,7 @@ instance decidableSatisfiesShape (τ : Typing) (M : Finset Triple) (h : Shape) :
   rw [← MeReach_eq_Me, ← MnotinReach_eq_Mnotin]
   infer_instance
 
-/-- Extends a dependent witness `g : ∀ a ∈ Idx, Finset Triple` (as in
-`Finset.pi`) to an ordinary `Label → Finset Triple`. Outside `Idx`, the
-result is a junk value (`∅`). Rule 18 needs this for its
-`Mx : Label → Finset Triple`, written as a bounded search over
-`Idx = ancSetReach S xs`. -/
-def extendMx (Idx : Finset Label) (g : ∀ a ∈ Idx, Finset Triple) :
-    Label → Finset Triple :=
-  fun x => if h : x ∈ Idx then g x h else ∅
-
-theorem extendMx_eq {Idx : Finset Label} {g : ∀ a ∈ Idx, Finset Triple}
-    {x : Label} (hx : x ∈ Idx) : extendMx Idx g x = g x hx := by
-  unfold extendMx; simp [hx]
-
-/-- `DisjointUnionOn` uses `Mx` only at points of `Idx`. Thus, two
-functions that agree there give the same proposition. Because of this, the
-decidability proof of rule 18 can replace `Mx` with `extendMx Idx g` (which
-is `Mx` on `Idx`, and a junk value at other points). -/
-theorem DisjointUnionOn_congr {M M' : Finset Triple} {Idx : Finset Label}
-    {Mx Mx' : Label → Finset Triple} (hEq : ∀ x ∈ Idx, Mx x = Mx' x) :
-    DisjointUnionOn M M' Idx Mx ↔ DisjointUnionOn M M' Idx Mx' := by
-  unfold DisjointUnionOn
-  have hbU : Idx.biUnion Mx = Idx.biUnion Mx' := Finset.biUnion_congr rfl hEq
-  rw [hbU]
-  refine and_congr_right fun _ => and_congr ?_ Iff.rfl
-  constructor
-  · intro h a ha b hb hab
-    simp only [Finset.mem_coe] at ha hb
-    have hd : Disjoint (Mx a) (Mx b) := h ha hb hab
-    rwa [hEq a ha, hEq b hb] at hd
-  · intro h a ha b hb hab
-    simp only [Finset.mem_coe] at ha hb
-    have hd : Disjoint (Mx' a) (Mx' b) := h ha hb hab
-    rwa [← hEq a ha, ← hEq b hb] at hd
-
-/-! The decidability of `DisjointUnionOn`. It is necessary when `Mx` is a
-concrete computable function (for example, `extendMx Idx g`). It writes
+/-! The decidability of `DisjointUnionOn`, for a computable `Mx`. It writes
 `Set.PairwiseDisjoint` as a double `∀` bounded by a `Finset`. -/
 
 theorem pairwiseDisjoint_iff_bounded (Idx : Finset Label) (f : Label → Finset Triple) :
@@ -306,5 +272,107 @@ instance decidablePairwiseDisjoint (Idx : Finset Label) (f : Label → Finset Tr
 instance decidableDisjointUnionOn (M M' : Finset Triple) (Idx : Finset Label)
     (Mx : Label → Finset Triple) : Decidable (DisjointUnionOn M M' Idx Mx) := by
   unfold DisjointUnionOn; infer_instance
+
+/-! ### A faster search for the partition of rule 18
+
+Rule 18 asks for a partition of `M` into `M'` and one part `Mx x` for each
+`x ∈ Idx`. A search over a subset of `M` for each part tries
+`(2^|M|)^(|Idx|+1)` cases. Because the parts are disjoint and cover `M`, it
+is sufficient to assign each triple of `M` to one part: `none` for `M'`, or
+`some x` for `Mx x`. This search tries only `(|Idx|+1)^|M|` cases. -/
+
+/-- The triples that the assignment `f` gives to the part `o`. -/
+def partOf (M : Finset Triple) (f : ∀ t ∈ M, Option Label) (o : Option Label) :
+    Finset Triple :=
+  (M.attach.filter fun t => f t.1 t.2 = o).map (Function.Embedding.subtype _)
+
+theorem mem_partOf {M : Finset Triple} {f : ∀ t ∈ M, Option Label} {o : Option Label}
+    {t : Triple} : t ∈ partOf M f o ↔ ∃ h : t ∈ M, f t h = o := by
+  simp [partOf]
+
+/-- The assignments of the triples of `M` to `M'` or to one part of `Idx`. -/
+def assignments (M : Finset Triple) (Idx : Finset Label) : Finset (∀ t ∈ M, Option Label) :=
+  M.pi fun _ => insert none (Idx.image some)
+
+/-- The existential of rule 18, over the partitions of `M`, is the same as
+an existential over the assignments of the triples of `M`. The condition
+`P` must use `Mx` only at the points of `Idx`. -/
+theorem exists_disjointUnionOn_iff_assignments (M : Finset Triple) (Idx : Finset Label)
+    (P : Finset Triple → (Label → Finset Triple) → Prop)
+    (hP : ∀ M' Mx Mx', (∀ x ∈ Idx, Mx x = Mx' x) → (P M' Mx ↔ P M' Mx')) :
+    (∃ M' Mx, DisjointUnionOn M M' Idx Mx ∧ P M' Mx) ↔
+      ∃ f ∈ assignments M Idx, P (partOf M f none) (fun x => partOf M f (some x)) := by
+  classical
+  constructor
+  · rintro ⟨M', Mx, ⟨hdisj, hpw, hunion⟩, hP'⟩
+    have hpart : ∀ t ∈ M, t ∉ M' → ∃ x ∈ Idx, t ∈ Mx x := fun t ht ht' => by
+      rw [hunion, Finset.mem_union] at ht
+      exact Finset.mem_biUnion.mp (ht.resolve_left ht')
+    let f : ∀ t ∈ M, Option Label := fun t ht =>
+      if h : t ∈ M' then none else some (hpart t ht h).choose
+    have hfx : ∀ t (ht : t ∈ M) x, x ∈ Idx → t ∈ Mx x → f t ht = some x := by
+      intro t ht x hx htx
+      have htM' : t ∉ M' := fun h =>
+        Finset.disjoint_left.mp hdisj h (Finset.mem_biUnion.mpr ⟨x, hx, htx⟩)
+      simp only [f, htM', dite_false, Option.some.injEq]
+      obtain ⟨hy, hty⟩ := (hpart t ht htM').choose_spec
+      by_contra hne
+      exact Finset.disjoint_left.mp (hpw hy hx hne) hty htx
+    refine ⟨f, ?_, ?_⟩
+    · rw [assignments, Finset.mem_pi]
+      intro t ht
+      by_cases h : t ∈ M'
+      · simp [f, h]
+      · simp only [f, h, dite_false, Finset.mem_insert, Finset.mem_image, reduceCtorEq,
+          Option.some.injEq, false_or]
+        exact ⟨_, (hpart t ht h).choose_spec.1, rfl⟩
+    · have hM' : partOf M f none = M' := by
+        ext t
+        rw [mem_partOf]
+        constructor
+        · rintro ⟨ht, hft⟩
+          by_contra h
+          simp [f, h] at hft
+        · intro h
+          exact ⟨hunion ▸ Finset.mem_union_left _ h, by simp [f, h]⟩
+      rw [hM']
+      refine (hP M' Mx _ fun x hx => ?_).mp hP'
+      ext t
+      rw [mem_partOf]
+      constructor
+      · intro htx
+        have ht : t ∈ M := hunion ▸ Finset.mem_union_right _ (Finset.mem_biUnion.mpr ⟨x, hx, htx⟩)
+        exact ⟨ht, hfx t ht x hx htx⟩
+      · rintro ⟨ht, hft⟩
+        have htM' : t ∉ M' := fun h => by simp [f, h] at hft
+        obtain ⟨hy, hty⟩ := (hpart t ht htM').choose_spec
+        rw [hfx t ht _ hy hty, Option.some.injEq] at hft
+        exact hft ▸ hty
+  · rintro ⟨f, hf, hP'⟩
+    rw [assignments, Finset.mem_pi] at hf
+    refine ⟨_, _, ⟨?_, ?_, ?_⟩, hP'⟩
+    · rw [Finset.disjoint_left]
+      intro t h1 h2
+      obtain ⟨_, h1⟩ := mem_partOf.mp h1
+      obtain ⟨x, -, h2⟩ := Finset.mem_biUnion.mp h2
+      obtain ⟨_, h2⟩ := mem_partOf.mp h2
+      rw [h1] at h2
+      exact absurd h2 (by simp)
+    · intro x _ y _ hxy
+      rw [Function.onFun, Finset.disjoint_left]
+      intro t h1 h2
+      obtain ⟨_, h1⟩ := mem_partOf.mp h1
+      obtain ⟨_, h2⟩ := mem_partOf.mp h2
+      exact hxy (Option.some.inj (h1.symm.trans h2))
+    · ext t
+      simp only [Finset.mem_union, Finset.mem_biUnion, mem_partOf]
+      constructor
+      · intro ht
+        have := hf t ht
+        rcases Finset.mem_insert.mp this with h | h
+        · exact Or.inl ⟨ht, h⟩
+        · obtain ⟨x, hx, hfx⟩ := Finset.mem_image.mp h
+          exact Or.inr ⟨x, hx, ht, hfx.symm⟩
+      · rintro (⟨ht, -⟩ | ⟨-, -, ht, -⟩) <;> exact ht
 
 end ShexLean.InheritanceCore
