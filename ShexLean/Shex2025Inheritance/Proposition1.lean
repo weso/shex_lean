@@ -60,36 +60,7 @@ in the same three steps as `stableM` and `stableFuel` there:
 
 namespace ShexLean.Inheritance
 
-/-- `τ_{|Z}`: the restriction of `τ` to the node-type associations that
-have their label in `Z`. This is a local copy of `Typing.restrictTo` of
-2017 (`ShexLean/Shex2017Schemas/Proposition1.lean`). Thus, the
-`Inheritance` subtree does not have to import the full 2017 proof chain.
-It is a plain function, not `Typing.restrictTo` with dot notation, because
-`Typing` first resolves to the shared `ShexLean.Typing`. -/
-def restrictTyping (τ : Typing) (Z : Finset Label) : Typing := τ.filter (fun p => p.2 ∈ Z)
-
-theorem mem_restrictTyping {τ : Typing} {Z : Finset Label} {n : RDFNode} {z : Label} :
-    (n, z) ∈ restrictTyping τ Z ↔ (n, z) ∈ τ ∧ z ∈ Z := by simp [restrictTyping]
-
-/-- `τ` and `τ'` agree on `Z`: they give the same labels of `Z` to each
-node. The agreement and monotonicity lemmas below use this hypothesis.
-It is a plain function, not a definition with dot notation, for the same
-reason as `restrictTyping`. -/
-def AgreeOn (τ τ' : Typing) (Z : Finset Label) : Prop :=
-  ∀ n z, z ∈ Z → ((n, z) ∈ τ ↔ (n, z) ∈ τ')
-
-/-- If two typings have the same restriction to `Z`, they agree (as an
-`Iff`) on each label in `Z`. -/
-theorem restrictTyping_agree {τ τ' : Typing} {Z : Finset Label}
-    (h : restrictTyping τ Z = restrictTyping τ' Z) : AgreeOn τ τ' Z := by
-  intro n z hz
-  constructor
-  · intro hmem
-    have hin : (n, z) ∈ restrictTyping τ Z := mem_restrictTyping.mpr ⟨hmem, hz⟩
-    rw [h] at hin; exact (mem_restrictTyping.mp hin).1
-  · intro hmem
-    have hin : (n, z) ∈ restrictTyping τ' Z := mem_restrictTyping.mpr ⟨hmem, hz⟩
-    rw [← h] at hin; exact (mem_restrictTyping.mp hin).1
+open ShexLean.InheritanceCore
 
 /-! ### Definition 7: stratification -/
 
@@ -257,13 +228,6 @@ theorem ShapeExpr.depsIn_not {a : ShapeExpr} {Z : Finset Label} :
   simp only [ShapeExpr.depsIn, ShapeExpr.depsAux, ShapeExpr.extendsTargets,
     a.depsAux_refs_indep true false]
 
-/-- The labels that the triple constraints of a triple expression refer
-to. -/
-def TripleExpr.refs (e : TripleExpr) : Finset Label := e.tcs.image Prod.snd
-
-theorem Shape.refs_eq (h : Shape) (neg : Bool) : (h.depInfo neg).refs = h.triples.refs := by
-  simp [Shape.depInfo, TripleExpr.refs]
-
 /-- If `x ∈ Z` and `Z` is `D_S`-closed, then the definition of `x` reaches
 only labels in `Z`. The closure of `Z` is what is necessary to do the
 recursion one more `extends` step deep and stay in `Z`. -/
@@ -324,64 +288,6 @@ theorem restrOf_depsIn {S : Schema} {Z : Finset Label} (hZ : S.DClosedOn Z) {x :
     (hx : x ∈ Z) {u : ShapeExpr} (hu : (S.shapeDef x).restrOf = some u) : u.depsIn Z :=
   ⟨(restrOf_refs_subset hu).trans (S.shapeDef_depsIn hZ hx).1,
     (restrOf_extendsTargets_subset hu).trans (S.shapeDef_depsIn hZ hx).2⟩
-
-/-- `SatisfiesE` (Table 1) depends on `τ` only through its restriction to
-`Z`, if the references of `e` are `⊆ Z`. Table 1 never does a schema
-lookup. -/
-theorem SatisfiesE_agree {τ τ' : Typing} {Z : Finset Label} (hagree : AgreeOn τ τ' Z) :
-    ∀ (e : TripleExpr), e.refs ⊆ Z → ∀ M, SatisfiesE τ M e ↔ SatisfiesE τ' M e := by
-  intro e
-  induction e with
-  | empty => intros; rfl
-  | tc p z =>
-      intro href M
-      have hzZ : z ∈ Z := href (by simp [TripleExpr.refs, TripleExpr.tcs])
-      simp only [SatisfiesE]
-      exact exists₂_congr fun n o => and_congr_right fun _ => hagree o z hzZ
-  | choice e1 e2 ih1 ih2 =>
-      intro href M
-      simp only [TripleExpr.refs, TripleExpr.tcs, Finset.image_union, Finset.union_subset_iff]
-        at href
-      exact or_congr (ih1 href.1 M) (ih2 href.2 M)
-  | seq e1 e2 ih1 ih2 =>
-      intro href M
-      simp only [TripleExpr.refs, TripleExpr.tcs, Finset.image_union, Finset.union_subset_iff]
-        at href
-      simp only [SatisfiesE]
-      exact exists₂_congr fun M1 M2 => and_congr_right fun _ =>
-        and_congr (ih1 href.1 M1) (ih2 href.2 M2)
-  | star e ih =>
-      intro href M
-      simp only [SatisfiesE]
-      exact exists_congr fun Ns => and_congr_right fun _ =>
-        forall₂_congr fun Ni _ => ih href Ni
-
-/-- `M^e` (the `Me` of Table 3) is exactly equal for `τ` and `τ'`, if they
-agree on the references of `e`. The membership test of each triple uses
-`τ` only on a label in `e.refs ⊆ Z`. -/
-theorem Me_eq {τ τ' : Typing} {Z : Finset Label} (hagree : AgreeOn τ τ' Z) {e : TripleExpr}
-    (href : e.refs ⊆ Z) (M : Finset Triple) : Me τ M e = Me τ' M e := by
-  ext t
-  rw [mem_Me, mem_Me]
-  refine and_congr_right fun _ => exists_congr fun z => and_congr_right fun hz => ?_
-  exact hagree t.obj z (href (Finset.mem_image.mpr ⟨(t.pred, z), hz, rfl⟩))
-
-/-- `M^{e'}` (the `Mnotin` of Table 3) is also exactly equal. It is made
-from `Me` (equal by `Me_eq`) and from a filter on `props`, which does not
-use `τ`. -/
-theorem Mnotin_eq {τ τ' : Typing} {Z : Finset Label} (hagree : AgreeOn τ τ' Z) {e : TripleExpr}
-    (href : e.refs ⊆ Z) (M : Finset Triple) : Mnotin τ M e = Mnotin τ' M e := by
-  unfold Mnotin
-  rw [Me_eq hagree href M]
-
-/-- Rule 17 depends on `τ` only through its restriction to the references
-of the shape. -/
-theorem SatisfiesShape_agree {τ τ' : Typing} {Z : Finset Label} (hagree : AgreeOn τ τ' Z)
-    {h : Shape} (href : h.triples.refs ⊆ Z) (M : Finset Triple) :
-    SatisfiesShape τ M h ↔ SatisfiesShape τ' M h := by
-  unfold SatisfiesShape
-  rw [Me_eq hagree href M, Mnotin_eq hagree href M,
-    SatisfiesE_agree hagree h.triples href (Me τ' M h.triples)]
 
 /-- On a `NoExtends` shape, Table 3 depends on `τ` only through its
 restriction to the references of the shape. It does not depend on the
@@ -545,10 +451,6 @@ maximum, it cannot become larger when `τ` becomes larger. This gives
 monotonicity again for the positive uses of `Me` in Table 3 (the uses that
 do not misuse `extra`). -/
 
-/-- The implicit invariant "(*)" of Definition 5: the triple constraints of
-a shape never use a property that is also in its `extra` set. -/
-def Shape.WellFormedExtra (h : Shape) : Prop := h.triples.props ∩ h.extra.getD ∅ = ∅
-
 /-- "(*)" for each shape at any location in a `ShapeExpr`. (This means
 each `.ofShape`, and the `h` of each `.extends`, also when they are nested
 in `or`, `and`, `not` or a restriction.) -/
@@ -580,86 +482,6 @@ theorem restrOf_notIsExtendsFree {S : Schema} (hNEF : S.NotIsExtendsFree) {x : L
   have hNx := hNEF x
   rw [heq] at hNx
   exact hNx.2
-
-/-- `SatisfiesE` (Table 1) is monotone in `τ` with no condition. When `τ`
-becomes larger (for a fixed `M`), a match never fails. Table 1 has no
-filtering of the `extra` type and no negation. -/
-theorem monoE {τ τ' : Typing} (hsub : τ ⊆ τ') :
-    ∀ (e : TripleExpr) (M : Finset Triple), SatisfiesE τ M e → SatisfiesE τ' M e := by
-  intro e
-  induction e with
-  | empty => intro M h; exact h
-  | tc p z =>
-      intro M h
-      obtain ⟨n, o, hM, htyp⟩ := h
-      exact ⟨n, o, hM, hsub htyp⟩
-  | choice e1 e2 ih1 ih2 => intro M h; exact h.imp (ih1 M) (ih2 M)
-  | seq e1 e2 ih1 ih2 =>
-      intro M h
-      obtain ⟨M1, M2, hdu, h1, h2⟩ := h
-      exact ⟨M1, M2, hdu, ih1 M1 h1, ih2 M2 h2⟩
-  | star e ih =>
-      intro M h
-      obtain ⟨Ns, hdu, hall⟩ := h
-      exact ⟨Ns, hdu, fun Ni hNi => ih Ni (hall Ni hNi)⟩
-
-/-- Let `props(Mnotin τ M e) ⊆ P'` (the leftover-properties condition of
-rule 17), and let `e` and `P'` satisfy "(*)" (`e.props ∩ P' = ∅`). Then
-`Me τ M e` must be the full part of `M` that matches `props(e)`. This set
-does not use `τ`. -/
-theorem Me_eq_filter_of_success {τ : Typing} {e : TripleExpr} {P' : Finset IRI}
-    (hWF : e.props ∩ P' = ∅) {M : Finset Triple}
-    (hMnotin : props (Mnotin τ M e) ⊆ P') :
-    Me τ M e = M.filter (fun t => t.pred ∈ e.props) := by
-  have hsub1 : Me τ M e ⊆ M.filter (fun t => t.pred ∈ e.props) := by
-    intro t ht
-    rw [mem_Me] at ht
-    simp only [Finset.mem_filter]
-    refine ⟨ht.1, ?_⟩
-    obtain ⟨z, hz, _⟩ := ht.2
-    exact Finset.mem_image.mpr ⟨(t.pred, z), hz, rfl⟩
-  refine Finset.Subset.antisymm hsub1 ?_
-  intro t ht
-  by_contra hnotin
-  have htMnotin : t ∈ Mnotin τ M e := mem_Mnotin.mpr ⟨(Finset.mem_filter.mp ht), hnotin⟩
-  have hpprops : t.pred ∈ e.props := (Finset.mem_filter.mp ht).2
-  have hpP' : t.pred ∈ P' := hMnotin (Finset.mem_image_of_mem Triple.pred htMnotin)
-  have : t.pred ∈ e.props ∩ P' := Finset.mem_inter.mpr ⟨hpprops, hpP'⟩
-  rw [hWF] at this
-  exact absurd this (by simp)
-
-/-- When `Me` is at its maximum (`Me_eq_filter_of_success`, if there is
-success at `τ`), it cannot become larger along `τ ⊆ τ'`. It is between
-`Me τ M e` (below) and the same maximum, which does not depend on `τ`
-(above). -/
-theorem Me_stable {τ τ' : Typing} (hsub : τ ⊆ τ') {h : Shape} (hWF : h.WellFormedExtra)
-    {M : Finset Triple} (hMnotin : props (Mnotin τ M h.triples) ⊆ h.extra.getD ∅) :
-    Me τ M h.triples = Me τ' M h.triples := by
-  have hceil := Me_eq_filter_of_success hWF hMnotin
-  have hmono : Me τ M h.triples ⊆ Me τ' M h.triples := by
-    intro t ht
-    rw [mem_Me] at ht ⊢
-    exact ⟨ht.1, ht.2.imp fun z hz => ⟨hz.1, hsub hz.2⟩⟩
-  have hbound : Me τ' M h.triples ⊆ M.filter (fun t => t.pred ∈ h.triples.props) := by
-    intro t ht
-    rw [mem_Me] at ht
-    simp only [Finset.mem_filter]
-    refine ⟨ht.1, ?_⟩
-    obtain ⟨z, hz, _⟩ := ht.2
-    exact Finset.mem_image.mpr ⟨(t.pred, z), hz, rfl⟩
-  exact Finset.Subset.antisymm hmono (hceil ▸ hbound)
-
-/-- Rule 17 is monotone in `τ`, if `h.WellFormedExtra` ("(*)") is true.
-`Me` and `Mnotin` do not change (`Me_stable`). Thus, the inner `SatisfiesE`
-check goes from `τ` to `τ'` with `monoE`. -/
-theorem SatisfiesShape_mono {τ τ' : Typing} (hsub : τ ⊆ τ') {h : Shape}
-    (hWF : h.WellFormedExtra) (M : Finset Triple) :
-    SatisfiesShape τ M h → SatisfiesShape τ' M h := by
-  rintro ⟨hE, hMnotin, hclosed⟩
-  have hMeeq := Me_stable hsub hWF hMnotin
-  have hMnotineq : Mnotin τ' M h.triples = Mnotin τ M h.triples := by
-    unfold Mnotin; rw [hMeeq]
-  exact ⟨hMeeq ▸ monoE hsub h.triples (Me τ M h.triples) hE, hMnotineq ▸ hMnotin, hclosed⟩
 
 /-! ### `stratMono`: a larger `τ` for positive positions, exact agreement
 below `not` -/

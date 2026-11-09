@@ -1,5 +1,5 @@
 import ShexLean.Shex2025Inheritance.Decidable
-import ShexLean.Shex2017Schemas.Render
+import ShexLean.InheritanceCore.Render
 import Mathlib.Data.Finset.Sort
 
 /-!
@@ -18,17 +18,7 @@ it. Thus, a general placeholder is sufficient.
 
 namespace ShexLean.Inheritance
 
-def TripleExpr.render : TripleExpr → String
-  | .empty => "ε"
-  | .tc p z => s!"{p} @<{z}>"
-  | .choice e1 e2 => s!"({e1.render} | {e2.render})"
-  | .seq e1 e2 => s!"({e1.render} ; {e2.render})"
-  | .star e => s!"{e.render}*"
-
-def Shape.render (h : Shape) : String :=
-  (if h.closed then "closed " else "") ++
-    (match h.extra with | none => "" | some P => s!"extra {ShexLean.renderSorted (·) P} ") ++
-    s!"⟨{h.triples.render}⟩"
+open ShexLean.InheritanceCore
 
 def ShapeExpr.render : ShapeExpr → String
   | .ofShape h => h.render

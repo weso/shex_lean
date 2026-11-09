@@ -33,6 +33,8 @@ related to a stratification). Its schema-invariance fact is
 
 namespace ShexLean.Inheritance
 
+open ShexLean.InheritanceCore
+
 /-! ### `Schema.restrictLabels`: restriction to any label set
 
 Here, `Ls` is any label set. It is not necessarily a stratum

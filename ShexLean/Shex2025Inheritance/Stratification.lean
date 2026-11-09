@@ -59,45 +59,9 @@ The walk does not make `dep-extends_S`. The edges of `H_S`
 
 namespace ShexLean.Inheritance
 
+open ShexLean.InheritanceCore
+
 /-! ### Definition 5: the dependency graph `D_S` -/
-
-/-- The three label sets that one `depsAux` walk over a shape expression
-collects together:
-
-* `refs` (for `dep_S`): the labels with a reference at any location.
-* `negRefs` (for `dep-shape-neg_S`): the labels with a reference below a
-  `not`. (Refer to the docstring of `ShapeExpr.depsAux` for how this is
-  different from "an odd number of `not`".)
-* `extraNegRefs` (for `dep-extra-neg_S`): the labels with a reference in a
-  triple constraint whose property is also in the `extra` set of the same
-  shape. -/
-structure DepInfo where
-  refs : Finset Label
-  negRefs : Finset Label
-  extraNegRefs : Finset Label
-
-instance : Union DepInfo :=
-  ⟨fun a b => ⟨a.refs ∪ b.refs, a.negRefs ∪ b.negRefs, a.extraNegRefs ∪ b.extraNegRefs⟩⟩
-
-instance : EmptyCollection DepInfo := ⟨⟨∅, ∅, ∅⟩⟩
-
-@[simp] theorem DepInfo.union_refs (a b : DepInfo) : (a ∪ b).refs = a.refs ∪ b.refs := rfl
-@[simp] theorem DepInfo.union_negRefs (a b : DepInfo) :
-    (a ∪ b).negRefs = a.negRefs ∪ b.negRefs := rfl
-@[simp] theorem DepInfo.union_extraNegRefs (a b : DepInfo) :
-    (a ∪ b).extraNegRefs = a.extraNegRefs ∪ b.extraNegRefs := rfl
-@[simp] theorem DepInfo.empty_refs : (∅ : DepInfo).refs = ∅ := rfl
-@[simp] theorem DepInfo.empty_negRefs : (∅ : DepInfo).negRefs = ∅ := rfl
-@[simp] theorem DepInfo.empty_extraNegRefs : (∅ : DepInfo).extraNegRefs = ∅ := rfl
-
-/-- The dependency information of one shape `[closed][extra P]⟨e⟩` (the
-`h` of Definition 1). `neg` tells if the shape occurs below a `not`. (Refer
-to the docstring of `ShapeExpr.depsAux` to know why this means "below
-*any* `not`", and not "below an odd number of `not`" as in Definition 5.) -/
-def Shape.depInfo (h : Shape) (neg : Bool) : DepInfo :=
-  { refs := h.triples.tcs.image Prod.snd
-    negRefs := if neg then h.triples.tcs.image Prod.snd else ∅
-    extraNegRefs := (h.triples.tcs.filter (fun pz => pz.1 ∈ h.extra.getD ∅)).image Prod.snd }
 
 /-- The walk `sub-expr(def(z))` / `neg-sub-expr(def(z))` of Definition 5.
 The extends targets of `.extends` add nothing here. They are for

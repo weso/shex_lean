@@ -16,6 +16,8 @@ Inheritance": correct typing.
 
 namespace ShexLean.Inheritance
 
+open ShexLean.InheritanceCore
+
 /-- Definition 4 (correct typing). -/
 def Schema.CorrectTyping (S : Schema) (G : Graph) (τ : Typing) : Prop :=
   ∀ n z, τ.has n z →

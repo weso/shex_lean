@@ -3,6 +3,7 @@
 import ShexLean.Common.RDF
 import ShexLean.Common.Typing
 import ShexLean.Common.DisjointUnion
+import ShexLean.InheritanceCore.Decidable
 import ShexLean.Shex2017Schemas.Syntax
 import ShexLean.Shex2017Schemas.Semantics
 import ShexLean.Shex2017Schemas.Stratification
@@ -18,6 +19,9 @@ import ShexLean.InductiveRDF.RoundTrip
 import ShexLean.Shex2017Schemas.RepBound
 import ShexLean.Shex2017Schemas.Decidable
 import ShexLean.Shex2017Schemas.Render
+import ShexLean.InheritanceCore.Syntax
+import ShexLean.InheritanceCore.TripleMatch
+import ShexLean.InheritanceCore.Render
 import ShexLean.Shex2025Inheritance.Syntax
 import ShexLean.Shex2025Inheritance.Semantics
 import ShexLean.Shex2025Inheritance.Stratification

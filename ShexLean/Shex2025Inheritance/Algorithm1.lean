@@ -46,6 +46,8 @@ schema-invariance lemmas in `ShexLean/Shex2025Inheritance/Lemma2.lean`
 
 namespace ShexLean.Inheritance
 
+open ShexLean.InheritanceCore
+
 /-- The initial guess for the stratum `S'`, relative to the result
 `(Lo, T)` of the previous stratum. On `Lo`, it keeps the pairs of `T`
 exactly. For the other labels of `S'`, it adds all the possible node-type

@@ -38,6 +38,8 @@ nodes. An `extends` node can also be inside a restriction `u`
 
 namespace ShexLean.Inheritance
 
+open ShexLean.InheritanceCore
+
 /-! ### Extension-hierarchy acyclicity -/
 
 /-- `S.anc` becomes strictly smaller along each edge of `H_S`, if

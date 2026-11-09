@@ -18,6 +18,8 @@ this is the first file that tests that bookkeeping.
 
 namespace ShexLean.Inheritance
 
+open ShexLean.InheritanceCore
+
 /-- The triple expression of Example 4, `e = p @T_even ; p @T_lt5`. -/
 def e_ex4 : TripleExpr := .seq (.tc "p" "T_even") (.tc "p" "T_lt5")
 
@@ -202,7 +204,8 @@ end ShexLean.Inheritance
 
 namespace Examples
 
-open ShexLean.Inheritance (Shape e_ex4 M24 M246 M2a M24a S_ex5 τ_ex3 bigFuel n_ex3 tp
+open ShexLean.InheritanceCore (Shape)
+open ShexLean.Inheritance (e_ex4 M24 M246 M2a M24a S_ex5 τ_ex3 bigFuel n_ex3 tp
   S_ex5_XClosed S_ex5_RestrOk satisfiesMFuel_decidable)
 open ShexLean (Triple Graph.render renderDecide)
 

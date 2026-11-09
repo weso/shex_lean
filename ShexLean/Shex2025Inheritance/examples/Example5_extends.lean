@@ -21,6 +21,8 @@ for an `X` label. The `S_ex5.X` of `Example3_triple_match.lean` includes
 
 namespace ShexLean.Inheritance
 
+open ShexLean.InheritanceCore
+
 /-- `M24, τ ⊨ def(x1)` (Example 5). `def(x1) = extends x0 ⟨p @T_even⟩`.
 Thus, `anc({x0}) = {x0}`, and `M24` splits into two parts:
 

@@ -8,6 +8,8 @@ import Example
 -- not conflict with the worked examples of `Example3_triple_match.lean`.
 namespace ShexLean.Inheritance.Drafts
 
+open ShexLean.InheritanceCore
+
 def bigFuel1 : ℕ := 4
 
 /-!

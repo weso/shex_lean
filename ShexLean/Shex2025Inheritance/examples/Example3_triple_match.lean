@@ -26,6 +26,8 @@ specific to one example.
 
 namespace ShexLean.Inheritance
 
+open ShexLean.InheritanceCore
+
 /-! ### Node constraints for Examples 3, 4 and 5 (§4.1) -/
 
 /-- `T_even`: the node is an even integer literal. -/
@@ -204,7 +206,8 @@ end ShexLean.Inheritance
 
 namespace Examples
 
-open ShexLean.Inheritance (e_ex3 M24 M246 M2a M24a S_ex5 τ_ex3 bigFuel satisfiesE_decidable)
+open ShexLean.Inheritance (e_ex3 M24 M246 M2a M24a S_ex5 τ_ex3 bigFuel)
+open ShexLean.InheritanceCore (satisfiesE_decidable)
 open ShexLean (Graph.render Typing.render renderDecide)
 
 /-- The triple expression of Example 3, matched against `M24`, `M246`,
