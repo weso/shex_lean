@@ -26,9 +26,9 @@ constraints has exactly two elements. The semantics of `.tc` forces each
 side of the split to be a singleton. The negative claims of Example 4 use
 this lemma: the matching part of `M2a` is too small, and `M246` is too
 large. -/
-theorem seq_tc_tc_card_two {S : Schema} {G : Graph} {τ : Typing} {fuel : ℕ} {M : Finset Triple}
+theorem seq_tc_tc_card_two {τ : Typing} {M : Finset Triple}
     {p1 : IRI} {z1 : Label} {p2 : IRI} {z2 : Label}
-    (hSat : SatisfiesEFuel (fuel + 2) S G τ M (.seq (.tc p1 z1) (.tc p2 z2))) : M.card = 2 := by
+    (hSat : SatisfiesE τ M (.seq (.tc p1 z1) (.tc p2 z2))) : M.card = 2 := by
   obtain ⟨M1, M2, ⟨hdisj, hunion⟩, ⟨n1, o1, hM1, _⟩, ⟨n2, o2, hM2, _⟩⟩ := hSat
   subst hM1; subst hM2
   rw [hunion, Finset.card_union_of_disjoint hdisj, Finset.card_singleton, Finset.card_singleton]
@@ -37,7 +37,7 @@ theorem seq_tc_tc_card_two {S : Schema} {G : Graph} {τ : Typing} {fuel : ℕ} {
 (`2` matches `p @T_even`, and `4` matches `p @T_lt5`). Thus, `Me = M24`,
 and `Mnotin` is automatically empty. -/
 theorem M24_satisfies_ofShape_e4 :
-    SatisfiesMFuel bigFuel S_ex5 default τ_ex3 M24 (.ofShape ⟨false, none, e_ex4⟩) := by
+    SatisfiesMFuel bigFuel S_ex5 τ_ex3 M24 (.ofShape ⟨false, none, e_ex4⟩) := by
   apply ofShape_of_Me_eq_self (e := e_ex4)
   · apply Finset.Subset.antisymm
     · intro t ht; rw [mem_Me] at ht; exact ht.1
@@ -55,7 +55,7 @@ theorem M24_satisfies_ofShape_e4 :
 constraint of `e_ex4`. Thus, `Me τ M2a e_ex4` has one element, but `e_ex4`
 needs exactly two (`seq_tc_tc_card_two`). -/
 theorem M2a_not_satisfies_ofShape_e4 :
-    ¬ SatisfiesMFuel bigFuel S_ex5 default τ_ex3 M2a (.ofShape ⟨false, none, e_ex4⟩) := by
+    ¬ SatisfiesMFuel bigFuel S_ex5 τ_ex3 M2a (.ofShape ⟨false, none, e_ex4⟩) := by
   rintro ⟨hE, -, -⟩
   have hcard : (Me τ_ex3 M2a e_ex4).card = 2 := seq_tc_tc_card_two hE
   have hMe_sub : Me τ_ex3 M2a e_ex4 ⊆ {tp "p" (.lit (.int 2))} := by
@@ -76,7 +76,7 @@ theorem M2a_not_satisfies_ofShape_e4 :
 is too many for `e_ex4`, which needs exactly two, for all possible
 matches. -/
 theorem M246_not_satisfies_ofShape_e4 :
-    ¬ SatisfiesMFuel bigFuel S_ex5 default τ_ex3 M246 (.ofShape ⟨false, none, e_ex4⟩) := by
+    ¬ SatisfiesMFuel bigFuel S_ex5 τ_ex3 M246 (.ofShape ⟨false, none, e_ex4⟩) := by
   rintro ⟨hE, hMnotin, -⟩
   have hcard := seq_tc_tc_card_two hE
   have hMnotin_empty : Mnotin τ_ex3 M246 e_ex4 = ∅ := by
@@ -104,7 +104,7 @@ theorem M246_not_satisfies_ofShape_e4 :
 /-- `M24a, τ ⊨ extra {p} ⟨e⟩` (Example 4). The leftover triple with `"a"`
 is permitted, because its property `p` is in `extra`. -/
 theorem M24a_satisfies_extra :
-    SatisfiesMFuel bigFuel S_ex5 default τ_ex3 M24a (.ofShape ⟨false, some {"p"}, e_ex4⟩) := by
+    SatisfiesMFuel bigFuel S_ex5 τ_ex3 M24a (.ofShape ⟨false, some {"p"}, e_ex4⟩) := by
   have hMe_eq : Me τ_ex3 M24a e_ex4 = M24 := by
     apply Finset.Subset.antisymm
     · intro t ht
@@ -147,7 +147,7 @@ predicates outside `props(e)`. Compare with
 `M24a_q_not_satisfies_closed_extra` below: there, with `closed`, the same
 set fails. -/
 theorem M24a_q_satisfies_extra :
-    SatisfiesMFuel bigFuel S_ex5 default τ_ex3 (M24a ∪ {tp "q" (.lit (.int 2))})
+    SatisfiesMFuel bigFuel S_ex5 τ_ex3 (M24a ∪ {tp "q" (.lit (.int 2))})
       (.ofShape ⟨false, some {"p"}, e_ex4⟩) := by
   have hMe_eq : Me τ_ex3 (M24a ∪ {tp "q" (.lit (.int 2))}) e_ex4 = M24 := by
     apply Finset.Subset.antisymm
@@ -187,7 +187,7 @@ theorem M24a_q_satisfies_extra :
 forbids the extra triple with the predicate `q`, because
 `q ∉ props(e_ex4) ∪ {p} = {p}`. -/
 theorem M24a_q_not_satisfies_closed_extra :
-    ¬ SatisfiesMFuel bigFuel S_ex5 default τ_ex3 (M24a ∪ {tp "q" (.lit (.int 2))})
+    ¬ SatisfiesMFuel bigFuel S_ex5 τ_ex3 (M24a ∪ {tp "q" (.lit (.int 2))})
       (.ofShape ⟨true, some {"p"}, e_ex4⟩) := by
   rintro ⟨-, -, hclosed⟩
   have hpq : "q" ∈ props (M24a ∪ {tp "q" (.lit (.int 2))}) :=
@@ -212,7 +212,7 @@ trivially satisfies `MOk` (`.ofShape _ => True`). Thus, only the
 schema-level witnesses `S_ex5_XClosed` and `S_ex5_RestrOk` are
 necessary. -/
 def satEx4 (M : Finset Triple) (h : Shape) : String :=
-  renderDecide (satisfiesMFuel_decidable S_ex5 default τ_ex3 S_ex5_XClosed S_ex5_RestrOk
+  renderDecide (satisfiesMFuel_decidable S_ex5 τ_ex3 S_ex5_XClosed S_ex5_RestrOk
     bigFuel M (.ofShape h) trivial)
 
 /-- `M24a ∪ {(n,q,2)}`: the set with the extra `q` triple. Both

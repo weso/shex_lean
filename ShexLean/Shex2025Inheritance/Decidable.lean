@@ -198,13 +198,7 @@ theorem MnotinReach_eq_Mnotin {τ : Typing} {M : Finset Triple} {e : TripleExpr}
 
 /-! ### The unbounded repetition of `.star`, made decidable
 
-The method of the 2017 `.rep` (a chain of the repeated sub-expression)
-does not work here. Each piece of a `.star` witness is checked at the same
-`Fuel`, not at a smaller one. Thus, if we encode "repeated `k` times" as a
-chain of `k` `.seq`, the chain needs `k` fuel only to unfold. This is not
-correct.
-
-In its place, we decide the existence of a partition directly, by
+We decide the existence of a partition directly, by
 well-founded recursion on `M.card` (`existsPartitionFuel`). Each step
 removes, from the remaining triples, one nonempty piece that satisfies `Q`.
 The bound uses the same `Finset` argument as the proof for the 2017 `.rep`
@@ -278,9 +272,8 @@ theorem existsPartitionNE_iff (Q : Finset Triple → Prop) (M : Finset Triple) :
         · exact hQpiece
         · exact hQ Ni hNi
 
-/-- `existsPartition` is decidable, with an explicit `Fuel` parameter.
-This is the same method as `SatisfiesEFuel`: structural recursion from
-`fuel+1` to `fuel`. We do not use a well-founded recursion measured by
+/-- `existsPartition` is decidable, with an explicit `Fuel` parameter: a
+structural recursion from `fuel+1` to `fuel`. We do not use a well-founded recursion measured by
 `Finset.card`. That recursion compiles to `WellFounded.fix`, which does
 not reduce, so it cannot decide anything.
 
@@ -331,7 +324,7 @@ def existsPartitionDecidable (Q : Finset Triple → Prop) (hQ : ∀ N', Decidabl
     (M : Finset Triple) : Decidable (existsPartition Q M) :=
   existsPartitionFuel Q hQ M.card M (le_refl _)
 
-/-! ### `SatisfiesEFuel` (Table 1) is decidable -/
+/-! ### `SatisfiesE` (Table 1) is decidable -/
 
 /-- Rule 2 of Table 1 (`.tc`), written as a search bounded to `M`. This is
 the same as `matches_tPattern_iff` of 2017, but simpler, because the
@@ -348,13 +341,10 @@ theorem satisfiesTc_iff_bounded (τ : Typing) (p : IRI) (z : Label) (M : Finset 
 
 /-- `e1;e2` of Table 1 (rule 4), written as a search bounded to
 `M.powerset`. This is the same as `matches_eachOf_iff` of 2017. -/
-theorem satisfiesSeq_iff_bounded (S : Schema) (G : Graph) (τ : Typing) (M : Finset Triple)
-    (e1 e2 : TripleExpr) (fuel : ℕ) :
-    (∃ M1 M2, DisjointUnion M M1 M2 ∧ SatisfiesEFuel fuel S G τ M1 e1 ∧
-        SatisfiesEFuel fuel S G τ M2 e2) ↔
+theorem satisfiesSeq_iff_bounded (τ : Typing) (M : Finset Triple) (e1 e2 : TripleExpr) :
+    (∃ M1 M2, DisjointUnion M M1 M2 ∧ SatisfiesE τ M1 e1 ∧ SatisfiesE τ M2 e2) ↔
       ∃ M1 ∈ M.powerset, ∃ M2 ∈ M.powerset,
-        DisjointUnion M M1 M2 ∧ SatisfiesEFuel fuel S G τ M1 e1 ∧
-          SatisfiesEFuel fuel S G τ M2 e2 := by
+        DisjointUnion M M1 M2 ∧ SatisfiesE τ M1 e1 ∧ SatisfiesE τ M2 e2 := by
   constructor
   · rintro ⟨M1, M2, hdisj, hm1, hm2⟩
     have hM1 : M1 ⊆ M := hdisj.2 ▸ Finset.subset_union_left
@@ -363,44 +353,41 @@ theorem satisfiesSeq_iff_bounded (S : Schema) (G : Graph) (τ : Typing) (M : Fin
   · rintro ⟨M1, -, M2, -, hdisj, hm1, hm2⟩
     exact ⟨M1, M2, hdisj, hm1, hm2⟩
 
-/-- `SatisfiesEFuel` is decidable with no condition. Table 1 never uses
+instance decidableDisjointUnion (M M1 M2 : Finset Triple) : Decidable (DisjointUnion M M1 M2) := by
+  unfold DisjointUnion; infer_instance
+
+/-- `SatisfiesE` is decidable with no condition. Table 1 never uses
 `NodeConstraint` or `extends`. Thus, it needs no extra hypotheses, as
-`SatisfiesMFuel` and `SatisfiesFuel` below do. The proof is by structural
-recursion on `(fuel, e)`, and follows the equations of `SatisfiesEFuel`. -/
-def satisfiesEFuel_decidable :
-    ∀ (fuel : ℕ) (S : Schema) (G : Graph) (τ : Typing) (M : Finset Triple) (e : TripleExpr),
-      Decidable (SatisfiesEFuel fuel S G τ M e)
-  | 0, _, _, _, _, _ => by show Decidable False; infer_instance
-  | _ + 1, _, _, _, M, .empty => by show Decidable (M = ∅); infer_instance
-  | _ + 1, _, _, τ, M, .tc p z => by
+Table 3 and Table 2 below do. The proof is by structural recursion on `e`,
+and follows the equations of `SatisfiesE`. -/
+def satisfiesE_decidable (τ : Typing) : ∀ (M : Finset Triple) (e : TripleExpr),
+    Decidable (SatisfiesE τ M e)
+  | M, .empty => by show Decidable (M = ∅); infer_instance
+  | M, .tc p z => by
       show Decidable (∃ n o, M = {(⟨n, p, o⟩ : Triple)} ∧ τ.has o z)
       exact decidable_of_iff _ (satisfiesTc_iff_bounded τ p z M).symm
-  | fuel + 1, S, G, τ, M, .choice e1 e2 => by
-      show Decidable (SatisfiesEFuel fuel S G τ M e1 ∨ SatisfiesEFuel fuel S G τ M e2)
-      haveI := satisfiesEFuel_decidable fuel S G τ M e1
-      haveI := satisfiesEFuel_decidable fuel S G τ M e2
-      infer_instance
-  | fuel + 1, S, G, τ, M, .seq e1 e2 => by
-      show Decidable (∃ M1 M2, DisjointUnion M M1 M2 ∧
-        SatisfiesEFuel fuel S G τ M1 e1 ∧ SatisfiesEFuel fuel S G τ M2 e2)
-      haveI hd2 : ∀ M1 M2 : Finset Triple, Decidable
-          (DisjointUnion M M1 M2 ∧ SatisfiesEFuel fuel S G τ M1 e1 ∧
-            SatisfiesEFuel fuel S G τ M2 e2) :=
-        fun M1 M2 => by
-          haveI : Decidable (DisjointUnion M M1 M2) := by
-            show Decidable (Disjoint M1 M2 ∧ M = M1 ∪ M2); infer_instance
-          haveI := satisfiesEFuel_decidable fuel S G τ M1 e1
-          haveI := satisfiesEFuel_decidable fuel S G τ M2 e2
-          infer_instance
-      have hd1 : ∀ M1 : Finset Triple, Decidable (∃ M2 ∈ M.powerset,
-          DisjointUnion M M1 M2 ∧ SatisfiesEFuel fuel S G τ M1 e1 ∧
-            SatisfiesEFuel fuel S G τ M2 e2) :=
-        fun M1 => @Finset.decidableExistsAndFinset (Finset Triple) M.powerset _ (hd2 M1)
-      exact @decidable_of_iff _ _ (satisfiesSeq_iff_bounded S G τ M e1 e2 fuel).symm
-        (@Finset.decidableExistsAndFinset (Finset Triple) M.powerset _ hd1)
-  | fuel + 1, S, G, τ, M, .star e => by
-      show Decidable (existsPartition (SatisfiesEFuel fuel S G τ · e) M)
-      exact existsPartitionDecidable _ (fun N' => satisfiesEFuel_decidable fuel S G τ N' e) M
+  | M, .choice e1 e2 => by
+      haveI := satisfiesE_decidable τ M e1
+      haveI := satisfiesE_decidable τ M e2
+      exact instDecidableOr
+  | M, .seq e1 e2 => by
+      haveI : ∀ M1, Decidable (SatisfiesE τ M1 e1) := fun M1 => satisfiesE_decidable τ M1 e1
+      haveI : ∀ M2, Decidable (SatisfiesE τ M2 e2) := fun M2 => satisfiesE_decidable τ M2 e2
+      exact decidable_of_iff _ (satisfiesSeq_iff_bounded τ M e1 e2).symm
+  | M, .star e => by
+      show Decidable (existsPartition (SatisfiesE τ · e) M)
+      exact existsPartitionDecidable _ (fun N' => satisfiesE_decidable τ N' e) M
+
+instance (τ : Typing) (M : Finset Triple) (e : TripleExpr) : Decidable (SatisfiesE τ M e) :=
+  satisfiesE_decidable τ M e
+
+/-- Rule 17 is decidable. `Me` and `Mnotin` are replaced by their
+computable versions. -/
+instance decidableSatisfiesShape (τ : Typing) (M : Finset Triple) (h : Shape) :
+    Decidable (SatisfiesShape τ M h) := by
+  unfold SatisfiesShape
+  rw [← MeReach_eq_Me, ← MnotinReach_eq_Mnotin]
+  infer_instance
 
 /-! ### `SatisfiesMFuel` and `SatisfiesFuel` (Tables 3 and 2) are decidable, on a
 restricted fragment
@@ -544,22 +531,22 @@ search:
 `ancSetReach S xs` and `ancReach S x` replace `S.ancSet xs` and `S.anc x`.
 This is sound because `xs ⊆ S.X`, from the `MOk` requirement of
 `.extends xs h`. -/
-theorem satisfiesExtends_iff_bounded {S : Schema} {G : Graph} {τ : Typing}
-    (hXC : S.XClosed) {fuel : ℕ} {M : Finset Triple} {xs : Finset Label} {h : Shape}
+theorem satisfiesExtends_iff_bounded {S : Schema} {τ : Typing}
+    {restr : Finset Triple → ShapeExpr → Prop}
+    (hXC : S.XClosed) {M : Finset Triple} {xs : Finset Label} {h : Shape}
     (hxs : xs ⊆ S.X) :
     (∃ M' Mx, DisjointUnionOn M M' (S.ancSet xs) Mx ∧
-        SatisfiesMFuel fuel S G τ M' (.ofShape h) ∧
-        (∀ x ∈ S.ancSet xs, SatisfiesEFuel fuel S G τ (Mx x) (S.shapeDef x).extTe) ∧
+        SatisfiesShape τ M' h ∧
+        (∀ x ∈ S.ancSet xs, SatisfiesE τ (Mx x) (S.shapeDef x).extTe) ∧
         (∀ x ∈ S.ancSet xs, ∀ u, (S.shapeDef x).restrOf = some u →
-          SatisfiesMFuel fuel S G τ ((S.anc x).biUnion Mx) u)) ↔
+          restr ((S.anc x).biUnion Mx) u)) ↔
       ∃ M' ∈ M.powerset, ∃ g ∈ Finset.pi (ancSetReach S xs) (fun _ => M.powerset),
         DisjointUnionOn M M' (ancSetReach S xs) (extendMx (ancSetReach S xs) g) ∧
-        SatisfiesMFuel fuel S G τ M' (.ofShape h) ∧
+        SatisfiesShape τ M' h ∧
         (∀ x ∈ ancSetReach S xs,
-          SatisfiesEFuel fuel S G τ (extendMx (ancSetReach S xs) g x) (S.shapeDef x).extTe) ∧
+          SatisfiesE τ (extendMx (ancSetReach S xs) g x) (S.shapeDef x).extTe) ∧
         (∀ x ∈ ancSetReach S xs, ∀ u, (S.shapeDef x).restrOf = some u →
-          SatisfiesMFuel fuel S G τ
-            ((ancReach S x).biUnion (extendMx (ancSetReach S xs) g)) u) := by
+          restr ((ancReach S x).biUnion (extendMx (ancSetReach S xs) g)) u) := by
   have hSet : ancSetReach S xs = S.ancSet xs := ancSetReach_eq_ancSet hXC hxs
   constructor
   · rintro ⟨M', Mx, ⟨hdisj, hpw, hunion⟩, hshape, hext, hrestr⟩
@@ -615,98 +602,83 @@ instance decidableDisjointUnionOn (M M' : Finset Triple) (Idx : Finset Label)
     (Mx : Label → Finset Triple) : Decidable (DisjointUnionOn M M' Idx Mx) := by
   unfold DisjointUnionOn; infer_instance
 
-/-- `SatisfiesMFuel` is decidable on the `MOk` fragment (refer to the
-section docstring above `ShapeExpr.MOk`). It needs these items:
+/-- One layer of Table 3 is decidable on the `MOk` fragment (refer to the
+section docstring above `ShapeExpr.MOk`), if `restr` is decidable on it.
+It needs these items:
 
 * `S.XClosed`, so that `anc` and `ancSet` compute.
 * `S.RestrOk`, so that each `restr(x)` that the evaluation reaches stays
   in the `MOk` fragment.
 * A proof of `s.MOk S`.
 
-The proof is by structural recursion on `(fuel, s)`. -/
-def satisfiesMFuel_decidable (S : Schema) (G : Graph) (τ : Typing)
-    (hXC : S.XClosed) (hRestr : S.RestrOk) :
-    ∀ (fuel : ℕ) (M : Finset Triple) (s : ShapeExpr), s.MOk S →
-      Decidable (SatisfiesMFuel fuel S G τ M s)
-  | 0, _, _, _ => by show Decidable False; infer_instance
-  | _ + 1, _, .constraint _, hOk => by exfalso; exact hOk
-  | fuel + 1, M, .ofShape h, _ => by
-      show Decidable (SatisfiesEFuel fuel S G τ (Me τ M h.triples) h.triples ∧
-        props (Mnotin τ M h.triples) ⊆ h.extra.getD ∅ ∧
-        (h.closed → props M ⊆ h.triples.props ∪ h.extra.getD ∅))
-      haveI h1 : Decidable (SatisfiesEFuel fuel S G τ (Me τ M h.triples) h.triples) := by
-        rw [← MeReach_eq_Me]
-        exact satisfiesEFuel_decidable fuel S G τ (MeReach τ M h.triples) h.triples
-      haveI h2 : Decidable (props (Mnotin τ M h.triples) ⊆ h.extra.getD ∅) := by
-        rw [← MnotinReach_eq_Mnotin]; infer_instance
-      infer_instance
-  | fuel + 1, M, .or s1 s2, hOk => by
-      show Decidable (SatisfiesMFuel fuel S G τ M s1 ∨ SatisfiesMFuel fuel S G τ M s2)
-      haveI := satisfiesMFuel_decidable S G τ hXC hRestr fuel M s1 hOk.1
-      haveI := satisfiesMFuel_decidable S G τ hXC hRestr fuel M s2 hOk.2
-      infer_instance
-  | fuel + 1, M, .and s1 s2, hOk => by
-      show Decidable (SatisfiesMFuel fuel S G τ M s1 ∧ SatisfiesMFuel fuel S G τ M s2)
-      haveI := satisfiesMFuel_decidable S G τ hXC hRestr fuel M s1 hOk.1
-      haveI := satisfiesMFuel_decidable S G τ hXC hRestr fuel M s2 hOk.2
-      infer_instance
-  | fuel + 1, M, .not s, hOk => by
-      show Decidable (¬ SatisfiesMFuel fuel S G τ M s)
-      haveI := satisfiesMFuel_decidable S G τ hXC hRestr fuel M s hOk
-      infer_instance
-  | fuel + 1, M, .extends xs h, hOk => by
+The proof is by structural recursion on `s`. -/
+def satisfiesMAt_decidable (S : Schema) (τ : Typing) (restr : Finset Triple → ShapeExpr → Prop)
+    (hXC : S.XClosed) (hRestr : S.RestrOk)
+    (hr : ∀ N u, u.MOk S → Decidable (restr N u)) :
+    ∀ (M : Finset Triple) (s : ShapeExpr), s.MOk S → Decidable (SatisfiesMAt S τ restr M s)
+  | _, .constraint _, hOk => by exfalso; exact hOk
+  | M, .ofShape h, _ => decidableSatisfiesShape τ M h
+  | M, .or s1 s2, hOk => by
+      haveI := satisfiesMAt_decidable S τ restr hXC hRestr hr M s1 hOk.1
+      haveI := satisfiesMAt_decidable S τ restr hXC hRestr hr M s2 hOk.2
+      exact instDecidableOr
+  | M, .and s1 s2, hOk => by
+      haveI := satisfiesMAt_decidable S τ restr hXC hRestr hr M s1 hOk.1
+      haveI := satisfiesMAt_decidable S τ restr hXC hRestr hr M s2 hOk.2
+      exact instDecidableAnd
+  | M, .not s, hOk => by
+      haveI := satisfiesMAt_decidable S τ restr hXC hRestr hr M s hOk
+      exact instDecidableNot
+  | M, .extends xs h, hOk => by
       show Decidable (∃ M' Mx, DisjointUnionOn M M' (S.ancSet xs) Mx ∧
-        SatisfiesMFuel fuel S G τ M' (.ofShape h) ∧
-        (∀ x ∈ S.ancSet xs, SatisfiesEFuel fuel S G τ (Mx x) (S.shapeDef x).extTe) ∧
+        SatisfiesShape τ M' h ∧
+        (∀ x ∈ S.ancSet xs, SatisfiesE τ (Mx x) (S.shapeDef x).extTe) ∧
         (∀ x ∈ S.ancSet xs, ∀ u, (S.shapeDef x).restrOf = some u →
-          SatisfiesMFuel fuel S G τ ((S.anc x).biUnion Mx) u))
+          restr ((S.anc x).biUnion Mx) u))
       set Idx := ancSetReach S xs
       haveI hRestrClause : ∀ N : Finset Triple, ∀ x ∈ Idx,
-          Decidable (∀ u, (S.shapeDef x).restrOf = some u → SatisfiesMFuel fuel S G τ N u) :=
+          Decidable (∀ u, (S.shapeDef x).restrOf = some u → restr N u) :=
         fun N x hx => by
           rcases hu : (S.shapeDef x).restrOf with _ | u0
           · exact isTrue (fun u h => absurd h (by simp))
-          · have hMOk : u0.MOk S := hRestr x (ancSetReach_subset_X hXC hOk hx) u0 hu
-            haveI := satisfiesMFuel_decidable S G τ hXC hRestr fuel N u0 hMOk
-            exact decidable_of_iff (SatisfiesMFuel fuel S G τ N u0)
+          · haveI := hr N u0 (hRestr x (ancSetReach_subset_X hXC hOk hx) u0 hu)
+            exact decidable_of_iff (restr N u0)
               ⟨fun h u heq => by cases heq; exact h, fun h => h u0 rfl⟩
       haveI hMain : ∀ M' : Finset Triple, ∀ g : ∀ a ∈ Idx, Finset Triple,
           Decidable (DisjointUnionOn M M' Idx (extendMx Idx g) ∧
-            SatisfiesMFuel fuel S G τ M' (.ofShape h) ∧
-            (∀ x (hx : x ∈ Idx), SatisfiesEFuel fuel S G τ (extendMx Idx g x)
-              (S.shapeDef x).extTe) ∧
+            SatisfiesShape τ M' h ∧
+            (∀ x (hx : x ∈ Idx), SatisfiesE τ (extendMx Idx g x) (S.shapeDef x).extTe) ∧
             (∀ x (hx : x ∈ Idx), ∀ u, (S.shapeDef x).restrOf = some u →
-              SatisfiesMFuel fuel S G τ ((ancReach S x).biUnion (extendMx Idx g)) u)) :=
+              restr ((ancReach S x).biUnion (extendMx Idx g)) u)) :=
         fun M' g => by
-          haveI := satisfiesMFuel_decidable S G τ hXC hRestr fuel M' (.ofShape h) trivial
-          haveI hExtDec : ∀ x (_ : x ∈ Idx),
-              Decidable (SatisfiesEFuel fuel S G τ (extendMx Idx g x) (S.shapeDef x).extTe) :=
-            fun x _ => satisfiesEFuel_decidable fuel S G τ (extendMx Idx g x) (S.shapeDef x).extTe
           haveI hRestrDec : ∀ x (hx : x ∈ Idx),
               Decidable (∀ u, (S.shapeDef x).restrOf = some u →
-                SatisfiesMFuel fuel S G τ ((ancReach S x).biUnion (extendMx Idx g)) u) :=
+                restr ((ancReach S x).biUnion (extendMx Idx g)) u) :=
             fun x hx => hRestrClause ((ancReach S x).biUnion (extendMx Idx g)) x hx
-          haveI hd1 : Decidable (∀ x (hx : x ∈ Idx), SatisfiesEFuel fuel S G τ
-              (extendMx Idx g x) (S.shapeDef x).extTe) :=
-            @Multiset.decidableDforallMultiset _ Idx.val
-              (fun a _ => SatisfiesEFuel fuel S G τ (extendMx Idx g a) (S.shapeDef a).extTe) hExtDec
           haveI hd2 : Decidable (∀ x (hx : x ∈ Idx), ∀ u, (S.shapeDef x).restrOf = some u →
-              SatisfiesMFuel fuel S G τ ((ancReach S x).biUnion (extendMx Idx g)) u) :=
+              restr ((ancReach S x).biUnion (extendMx Idx g)) u) :=
             @Multiset.decidableDforallMultiset _ Idx.val
               (fun a _ => ∀ u, (S.shapeDef a).restrOf = some u →
-                SatisfiesMFuel fuel S G τ ((ancReach S a).biUnion (extendMx Idx g)) u) hRestrDec
+                restr ((ancReach S a).biUnion (extendMx Idx g)) u) hRestrDec
           infer_instance
       haveI hBounded : Decidable (∃ M' ∈ M.powerset, ∃ g ∈ Finset.pi Idx (fun _ => M.powerset),
           DisjointUnionOn M M' Idx (extendMx Idx g) ∧
-            SatisfiesMFuel fuel S G τ M' (.ofShape h) ∧
-            (∀ x (hx : x ∈ Idx), SatisfiesEFuel fuel S G τ (extendMx Idx g x)
-              (S.shapeDef x).extTe) ∧
+            SatisfiesShape τ M' h ∧
+            (∀ x (hx : x ∈ Idx), SatisfiesE τ (extendMx Idx g x) (S.shapeDef x).extTe) ∧
             (∀ x (hx : x ∈ Idx), ∀ u, (S.shapeDef x).restrOf = some u →
-              SatisfiesMFuel fuel S G τ ((ancReach S x).biUnion (extendMx Idx g)) u)) :=
+              restr ((ancReach S x).biUnion (extendMx Idx g)) u)) :=
         @Finset.decidableExistsAndFinset (Finset Triple) M.powerset _
           (fun M' => @Finset.decidableExistsAndFinset (∀ a ∈ Idx, Finset Triple)
             (Finset.pi Idx (fun _ => M.powerset)) _ (fun g => hMain M' g))
       exact decidable_of_iff _ (satisfiesExtends_iff_bounded hXC hOk).symm
+
+/-- `SatisfiesMFuel` is decidable on the `MOk` fragment. The proof is by
+recursion on the fuel. Each layer is `satisfiesMAt_decidable`. -/
+def satisfiesMFuel_decidable (S : Schema) (τ : Typing) (hXC : S.XClosed) (hRestr : S.RestrOk) :
+    ∀ (fuel : ℕ) (M : Finset Triple) (s : ShapeExpr), s.MOk S →
+      Decidable (SatisfiesMFuel fuel S τ M s)
+  | 0 => satisfiesMAt_decidable S τ _ hXC hRestr (fun _ _ _ => instDecidableFalse)
+  | fuel + 1 => satisfiesMAt_decidable S τ _ hXC hRestr (satisfiesMFuel_decidable S τ hXC hRestr fuel)
 
 /-- The fragment of `ShapeExpr` where the decidability of `SatisfiesFuel`
 applies. It is similar to `MOk`:
@@ -737,32 +709,19 @@ def ShapeExpr.FOk (S : Schema) : ShapeExpr → Type
 * Rule 6 (`.constraint`), with the `DecidablePred c` of `FOk`.
 * `or`, `and` and `not` (rules 7–9). -/
 def satisfiesFuel_decidable (S : Schema) (G : Graph) (τ : Typing)
-    (hXC : S.XClosed) (hRestr : S.RestrOk) :
-    ∀ (fuel : ℕ) (n : RDFNode) (s : ShapeExpr), s.FOk S →
-      Decidable (SatisfiesFuel fuel S G τ n s)
-  | 0, _, _, _ => by show Decidable False; infer_instance
-  | _ + 1, n, .constraint c, hOk => by
-      show Decidable (c n)
-      exact hOk n
-  | fuel + 1, n, .ofShape h, _ => by
-      show Decidable (SatisfiesMFuel fuel S G τ (neigh G n) (.ofShape h))
-      exact satisfiesMFuel_decidable S G τ hXC hRestr fuel (neigh G n) (.ofShape h) trivial
-  | fuel + 1, n, .extends xs h, hOk => by
-      show Decidable (SatisfiesMFuel fuel S G τ (neigh G n) (.extends xs h))
-      exact satisfiesMFuel_decidable S G τ hXC hRestr fuel (neigh G n) (.extends xs h) hOk.down
-  | fuel + 1, n, .or s1 s2, hOk => by
-      show Decidable (SatisfiesFuel fuel S G τ n s1 ∨ SatisfiesFuel fuel S G τ n s2)
-      haveI := satisfiesFuel_decidable S G τ hXC hRestr fuel n s1 hOk.1
-      haveI := satisfiesFuel_decidable S G τ hXC hRestr fuel n s2 hOk.2
-      infer_instance
-  | fuel + 1, n, .and s1 s2, hOk => by
-      show Decidable (SatisfiesFuel fuel S G τ n s1 ∧ SatisfiesFuel fuel S G τ n s2)
-      haveI := satisfiesFuel_decidable S G τ hXC hRestr fuel n s1 hOk.1
-      haveI := satisfiesFuel_decidable S G τ hXC hRestr fuel n s2 hOk.2
-      infer_instance
-  | fuel + 1, n, .not s, hOk => by
-      show Decidable (¬ SatisfiesFuel fuel S G τ n s)
-      haveI := satisfiesFuel_decidable S G τ hXC hRestr fuel n s hOk
-      infer_instance
+    (hXC : S.XClosed) (hRestr : S.RestrOk) (fuel : ℕ) :
+    ∀ (n : RDFNode) (s : ShapeExpr), s.FOk S → Decidable (SatisfiesFuel fuel S G τ n s)
+  | n, .constraint _, hOk => hOk n
+  | n, .ofShape h, _ =>
+      satisfiesMFuel_decidable S τ hXC hRestr fuel (neigh G n) (.ofShape h) trivial
+  | n, .extends xs h, hOk =>
+      satisfiesMFuel_decidable S τ hXC hRestr fuel (neigh G n) (.extends xs h) hOk.down
+  | n, .or s1 s2, hOk =>
+      @instDecidableOr _ _ (satisfiesFuel_decidable S G τ hXC hRestr fuel n s1 hOk.1)
+        (satisfiesFuel_decidable S G τ hXC hRestr fuel n s2 hOk.2)
+  | n, .and s1 s2, hOk =>
+      @instDecidableAnd _ _ (satisfiesFuel_decidable S G τ hXC hRestr fuel n s1 hOk.1)
+        (satisfiesFuel_decidable S G τ hXC hRestr fuel n s2 hOk.2)
+  | n, .not s, hOk => @instDecidableNot _ (satisfiesFuel_decidable S G τ hXC hRestr fuel n s hOk)
 
 end ShexLean.Inheritance

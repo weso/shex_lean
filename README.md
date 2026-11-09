@@ -120,11 +120,12 @@ This part is in the namespace `ShexLean.Inheritance`. It uses
 - `Shex2025Inheritance/Syntax.lean`: the grammar, `Schema = (Y, X, def, A)`,
   and the extension hierarchy `H_S` (Definitions 1-3).
 - `Shex2025Inheritance/Semantics.lean`: the three satisfaction relations
-  (Tables 1-3). They have a fuel parameter, because the recursion of
-  `extends` is not structural.
+  (Tables 1-3). Table 1 and Table 2 are structural. Table 3 has a fuel
+  parameter only for the evaluation of `restr(x)` in rule 18, because that
+  call is not on a subterm.
 - `Shex2025Inheritance/Termination.lean`: Lemma 1. A sufficiently large
   fuel makes the relations independent of fuel. The proof is complete. It
-  needs only `WellFormedX` and `ExtAcyclic`.
+  needs only `ExtAcyclic`.
 - `Shex2025Inheritance/Stratification.lean`: the dependency graph and
   well-definedness (Definitions 5-6).
 - `Shex2025Inheritance/CorrectTyping.lean`: correct typing, with the case

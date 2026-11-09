@@ -50,10 +50,12 @@ dereferences the definitions of other labels (the `ext-te(x)` and
 the syntax tree of one shape expression.
 
 Also, it must use the `Fuel`-indexed definitions on which `Satisfies` is
-built (`ShexLean/Shex2025Inheritance/Termination.lean`). The proofs follow
-the same induction structure (`stableE`, `stableM`, `stableFuel`), but they
-record the agreement of typings on the dependency closure, not the
-sufficiency of fuel.
+built (`ShexLean/Shex2025Inheritance/Termination.lean`). Each fact is proved
+in the same three steps as `stableM` and `stableFuel` there:
+
+1. One structural induction for one layer of Table 3 (`SatisfiesMAt`).
+2. An induction on the fuel (`SatisfiesMFuel`).
+3. The structural lift to Table 2 (`SatisfiesAt`).
 -/
 
 namespace ShexLean.Inheritance
@@ -104,7 +106,7 @@ theorem Schema.reach_mem {S : Schema} {Z : Finset Label} (hZ : S.DClosedOn Z)
   | refl => exact hz
   | tail _ hstep ih => exact hZ _ ih _ hstep
 
-/-- Well-formedness in addition to `WellFormedX` and `ExtAcyclic`: each
+/-- Well-formedness in addition to `ExtAcyclic`: each
 label that is `D_S`-reachable from a declared label (`z ∈ Y ∪ X`) is also
 declared.
 
@@ -174,18 +176,20 @@ theorem Stratification.lt_of_negPath {S : Schema} (hDClosed : S.DClosed)
 `⊢` and `⊨` depend on `τ` only through its restriction to a set of labels
 `Z` with two properties:
 
-* `Z` is closed under `D_S` (`Schema.DClosedOn` below).
+* `Z` is closed under `D_S` (`Schema.DClosedOn`).
 * `Z` contains all that the shape expression can reach syntactically
   (`ShapeExpr.depsIn`).
 
 This is the 2025 version of `Satisfies.agree` of 2017
 (`ShexLean/Shex2017Schemas/Proposition1.lean`). Now it must use the
 dependency structure of the schema, because `.extends` dereferences the
-definitions of other labels. It uses the `Fuel`-indexed definitions on
-which `Satisfies` is built. It follows the same chain
-(`agreeE → agreeM_noExtends`/`agreeM → agreeFuel`) as
-`stableE → stableM_noExtends/stableM → stableFuel` in
-`ShexLean/Shex2025Inheritance/Termination.lean`. -/
+definitions of other labels.
+
+One lemma covers three changes at the same time: the typing (`τ1` and
+`τ2` agree on `Z`), the schema (`S1` and `S2` have the same definitions,
+and agree on `anc` in `Z`), and the evaluator of `restr(x)`. Thus,
+`SatisfiesMAt_transfer` gives both `Satisfies.agree` (a change of typing)
+and `Satisfies_stratRestrict_agree` below (a change of schema). -/
 
 /-- The labels that a shape expression can reach:
 
@@ -197,8 +201,7 @@ def ShapeExpr.depsIn (s : ShapeExpr) (Z : Finset Label) : Prop :=
   (s.depsAux false).refs ⊆ Z ∧ s.extendsTargets ⊆ Z
 
 /-- A well-formedness condition that `stratMono` needs, in addition to
-`WellFormedX`, `ExtAcyclic` and `WellFormedExtra`: a `not` never contains
-an `extends`.
+`ExtAcyclic` and `WellFormedExtra`: a `not` never contains an `extends`.
 
 Without it, the `not` case of `stratMono` needs exact agreement between
 `τ` and `τ'` on each ancestor that an `extends` inside the negated content
@@ -210,7 +213,7 @@ The "Design choices" discussion of the paper has a similar restriction. It
 allows `extends` only on conjunctions, to prevent the same problem with
 `or`. No example of the paper uses the `not` case. With this condition, the
 content of a `not` is always `NoExtends`. Thus, the `not` case of
-`stratMono` uses `stratMonoM_noExtends` directly. -/
+`stratMono` uses `SatisfiesMAt_agree_noExtends` directly. -/
 def ShapeExpr.NotIsExtendsFree : ShapeExpr → Prop
   | .constraint _ => True
   | .ofShape _ => True
@@ -223,23 +226,6 @@ def ShapeExpr.NotIsExtendsFree : ShapeExpr → Prop
 label. -/
 def Schema.NotIsExtendsFree (S : Schema) : Prop := ∀ ℓ, (S.shapeDef ℓ).NotIsExtendsFree
 
-/-- A `NoExtends` shape has no `extends` targets at any location, by
-construction. (`extendsTargets` gives a nonempty result only at an
-`.extends` node, and `NoExtends` excludes all such nodes.) -/
-theorem ShapeExpr.NoExtends.extendsTargets_empty {s : ShapeExpr} (hs : s.NoExtends) :
-    s.extendsTargets = ∅ := by
-  induction s with
-  | constraint _ => rfl
-  | ofShape _ => rfl
-  | «extends» _ _ => simp only [ShapeExpr.NoExtends] at hs
-  | or s1 s2 ih1 ih2 =>
-      simp only [ShapeExpr.NoExtends] at hs
-      simp only [ShapeExpr.extendsTargets, ih1 hs.1, ih2 hs.2, Finset.empty_union]
-  | and s1 s2 ih1 ih2 =>
-      simp only [ShapeExpr.NoExtends] at hs
-      simp only [ShapeExpr.extendsTargets, ih1 hs.1, ih2 hs.2, Finset.empty_union]
-  | not s ih => simp only [ShapeExpr.extendsTargets]; exact ih hs
-
 /-- `.refs` never depends on `neg` (only `.negRefs` does). Thus, a fact
 `refs ⊆ Z` stays true across the change of `neg` that `.not` does. -/
 theorem ShapeExpr.depsAux_refs_indep (s : ShapeExpr) (neg1 neg2 : Bool) :
@@ -248,15 +234,35 @@ theorem ShapeExpr.depsAux_refs_indep (s : ShapeExpr) (neg1 neg2 : Bool) :
   | constraint c => simp [ShapeExpr.depsAux]
   | ofShape h => simp [ShapeExpr.depsAux, Shape.depInfo]
   | «extends» xs h => simp [ShapeExpr.depsAux, Shape.depInfo]
-  | or s1 s2 ih1 ih2 =>
-      simp only [ShapeExpr.depsAux, DepInfo.union_refs]; rw [ih1 neg1 neg2, ih2 neg1 neg2]
-  | and s1 s2 ih1 ih2 =>
+  | or s1 s2 ih1 ih2 | and s1 s2 ih1 ih2 =>
       simp only [ShapeExpr.depsAux, DepInfo.union_refs]; rw [ih1 neg1 neg2, ih2 neg1 neg2]
   | not s _ => simp only [ShapeExpr.depsAux]
+
+/-! `depsIn` goes down through `or`, `and` and `not`. -/
+
+theorem ShapeExpr.depsIn_or {a b : ShapeExpr} {Z : Finset Label} :
+    (ShapeExpr.or a b).depsIn Z ↔ a.depsIn Z ∧ b.depsIn Z := by
+  simp only [ShapeExpr.depsIn, ShapeExpr.depsAux, DepInfo.union_refs, ShapeExpr.extendsTargets,
+    Finset.union_subset_iff]
+  tauto
+
+theorem ShapeExpr.depsIn_and {a b : ShapeExpr} {Z : Finset Label} :
+    (ShapeExpr.and a b).depsIn Z ↔ a.depsIn Z ∧ b.depsIn Z := by
+  simp only [ShapeExpr.depsIn, ShapeExpr.depsAux, DepInfo.union_refs, ShapeExpr.extendsTargets,
+    Finset.union_subset_iff]
+  tauto
+
+theorem ShapeExpr.depsIn_not {a : ShapeExpr} {Z : Finset Label} :
+    (ShapeExpr.not a).depsIn Z ↔ a.depsIn Z := by
+  simp only [ShapeExpr.depsIn, ShapeExpr.depsAux, ShapeExpr.extendsTargets,
+    a.depsAux_refs_indep true false]
 
 /-- The labels that the triple constraints of a triple expression refer
 to. -/
 def TripleExpr.refs (e : TripleExpr) : Finset Label := e.tcs.image Prod.snd
+
+theorem Shape.refs_eq (h : Shape) (neg : Bool) : (h.depInfo neg).refs = h.triples.refs := by
+  simp [Shape.depInfo, TripleExpr.refs]
 
 /-- If `x ∈ Z` and `Z` is `D_S`-closed, then the definition of `x` reaches
 only labels in `Z`. The closure of `Z` is what is necessary to do the
@@ -276,170 +282,15 @@ theorem Schema.ancSet_subset {S : Schema} {Z : Finset Label} (hZ : S.DClosedOn Z
     Relation.ReflTransGen.mono (fun _ _ hab => Or.inr (Or.inl hab)) y x hyx.2
   exact S.reach_mem hZ (hxs hy) hstep
 
-/-- `SatisfiesEFuel` (Table 1) depends on `τ` only through its restriction
-to `Z`, if the references of `e` are `⊆ Z`. No schema-closure hypothesis
-is necessary, because Table 1 never does a schema lookup (as in
-`stableE`). -/
-theorem agreeE {S : Schema} {G : Graph} {τ τ' : Typing} {Z : Finset Label}
-    (hagree : AgreeOn τ τ' Z) :
-    ∀ (e : TripleExpr), e.refs ⊆ Z →
-      ∀ fuel (M : Finset Triple), SatisfiesEFuel fuel S G τ M e ↔ SatisfiesEFuel fuel S G τ' M e := by
-  intro e
-  induction e with
-  | empty => intro _ fuel M; rcases fuel with _ | f <;> rfl
-  | tc p z =>
-      intro href fuel M
-      rcases fuel with _ | f
-      · rfl
-      have hzZ : z ∈ Z := href (by simp [TripleExpr.refs, TripleExpr.tcs])
-      show (∃ n o, M = {(⟨n, p, o⟩ : Triple)} ∧ τ.has o z) ↔
-        (∃ n o, M = {(⟨n, p, o⟩ : Triple)} ∧ τ'.has o z)
-      constructor
-      · rintro ⟨n, o, hM, ht⟩; exact ⟨n, o, hM, (hagree o z hzZ).mp ht⟩
-      · rintro ⟨n, o, hM, ht⟩; exact ⟨n, o, hM, (hagree o z hzZ).mpr ht⟩
-  | choice e1 e2 ih1 ih2 =>
-      intro href fuel M
-      rcases fuel with _ | f
-      · rfl
-      simp only [TripleExpr.refs, TripleExpr.tcs, Finset.image_union, Finset.union_subset_iff]
-        at href
-      show SatisfiesEFuel f S G τ M e1 ∨ SatisfiesEFuel f S G τ M e2 ↔
-        SatisfiesEFuel f S G τ' M e1 ∨ SatisfiesEFuel f S G τ' M e2
-      rw [ih1 href.1 f M, ih2 href.2 f M]
-  | seq e1 e2 ih1 ih2 =>
-      intro href fuel M
-      rcases fuel with _ | f
-      · rfl
-      simp only [TripleExpr.refs, TripleExpr.tcs, Finset.image_union, Finset.union_subset_iff]
-        at href
-      show (∃ M1 M2, DisjointUnion M M1 M2 ∧
-            SatisfiesEFuel f S G τ M1 e1 ∧ SatisfiesEFuel f S G τ M2 e2) ↔
-          (∃ M1 M2, DisjointUnion M M1 M2 ∧
-            SatisfiesEFuel f S G τ' M1 e1 ∧ SatisfiesEFuel f S G τ' M2 e2)
-      constructor
-      · rintro ⟨M1, M2, hdu, h1, h2⟩
-        exact ⟨M1, M2, hdu, (ih1 href.1 f M1).mp h1, (ih2 href.2 f M2).mp h2⟩
-      · rintro ⟨M1, M2, hdu, h1, h2⟩
-        exact ⟨M1, M2, hdu, (ih1 href.1 f M1).mpr h1, (ih2 href.2 f M2).mpr h2⟩
-  | star e ih =>
-      intro href fuel M
-      rcases fuel with _ | f
-      · rfl
-      show (∃ Ns : List (Finset Triple), DisjointUnionList M Ns ∧
-            ∀ Ni ∈ Ns, SatisfiesEFuel f S G τ Ni e) ↔
-          (∃ Ns : List (Finset Triple), DisjointUnionList M Ns ∧
-            ∀ Ni ∈ Ns, SatisfiesEFuel f S G τ' Ni e)
-      constructor
-      · rintro ⟨Ns, hdu, hall⟩
-        exact ⟨Ns, hdu, fun Ni hNi => (ih href f Ni).mp (hall Ni hNi)⟩
-      · rintro ⟨Ns, hdu, hall⟩
-        exact ⟨Ns, hdu, fun Ni hNi => (ih href f Ni).mpr (hall Ni hNi)⟩
-
-/-- `M^e` (the `Me` of Table 3) is exactly equal for `τ` and `τ'`, if they
-agree on the references of `e`. The membership test of each triple uses
-`τ` only on a label in `e.refs ⊆ Z`. For this reason, the agreement case of
-rule 17 (in `agreeM` below) can use `agreeE` directly at a shared `M^e`,
-with no more congruence argument. -/
-theorem Me_eq {τ τ' : Typing} {Z : Finset Label}
-    (hagree : AgreeOn τ τ' Z) {e : TripleExpr} (href : e.refs ⊆ Z)
-    (M : Finset Triple) : Me τ M e = Me τ' M e := by
-  unfold Me
-  have := Classical.decPred (fun t : Triple => ∃ z, (t.pred, z) ∈ e.tcs ∧ τ.has t.obj z)
-  have := Classical.decPred (fun t : Triple => ∃ z, (t.pred, z) ∈ e.tcs ∧ τ'.has t.obj z)
-  apply Finset.ext
-  intro t
-  simp only [Finset.mem_filter]
-  have hzZ : ∀ z, (t.pred, z) ∈ e.tcs → z ∈ Z := fun z hz => href (by
-    simp only [TripleExpr.refs]; exact Finset.mem_image.mpr ⟨(t.pred, z), hz, rfl⟩)
-  constructor
-  · rintro ⟨htM, z, hz, htyp⟩; exact ⟨htM, z, hz, (hagree t.obj z (hzZ z hz)).mp htyp⟩
-  · rintro ⟨htM, z, hz, htyp⟩; exact ⟨htM, z, hz, (hagree t.obj z (hzZ z hz)).mpr htyp⟩
-
-/-- `M^{e'}` (the `Mnotin` of Table 3) is also exactly equal. It is made
-from `Me` (equal by `Me_eq`) and from a filter on `props`, which does not
-use `τ`. -/
-theorem Mnotin_eq {τ τ' : Typing} {Z : Finset Label}
-    (hagree : AgreeOn τ τ' Z) {e : TripleExpr} (href : e.refs ⊆ Z)
-    (M : Finset Triple) : Mnotin τ M e = Mnotin τ' M e := by
-  unfold Mnotin
-  rw [Me_eq hagree href M]
-
-/-- `SatisfiesMFuel` (Table 3) depends on `τ` only through its restriction
-to `Z`, on each `NoExtends` shape. The condition "the references of `u`
-are `⊆ Z`" is sufficient. No schema-closure hypothesis is necessary,
-because `u` never uses rule 18.
-
-We prove it before the general case, for the same reason as
-`stableM_noExtends`. The evaluation of `restr(x)` (in the `.extends` case
-of `agreeM`) is not on a subterm of the shape of the induction. Thus, the
-induction hypothesis cannot reach it, and the proof uses this lemma in
-its place. -/
-theorem agreeM_noExtends {S : Schema} {G : Graph} {τ τ' : Typing} {Z : Finset Label}
-    (hagree : AgreeOn τ τ' Z) :
-    ∀ (u : ShapeExpr), u.NoExtends → (u.depsAux false).refs ⊆ Z →
-      ∀ fuel (M : Finset Triple), SatisfiesMFuel fuel S G τ M u ↔ SatisfiesMFuel fuel S G τ' M u := by
-  intro u
-  induction u with
-  | constraint c => intro _ _ fuel M; rcases fuel with _ | f <;> rfl
-  | ofShape h =>
-      intro _ href fuel M
-      rcases fuel with _ | f
-      · rfl
-      simp only [ShapeExpr.depsAux, Shape.depInfo] at href
-      have hTrefs : h.triples.refs ⊆ Z := by simpa [TripleExpr.refs] using href
-      show (SatisfiesEFuel f S G τ (Me τ M h.triples) h.triples ∧
-            props (Mnotin τ M h.triples) ⊆ h.extra.getD ∅ ∧
-            (h.closed → props M ⊆ h.triples.props ∪ h.extra.getD ∅)) ↔
-          (SatisfiesEFuel f S G τ' (Me τ' M h.triples) h.triples ∧
-            props (Mnotin τ' M h.triples) ⊆ h.extra.getD ∅ ∧
-            (h.closed → props M ⊆ h.triples.props ∪ h.extra.getD ∅))
-      rw [Me_eq hagree hTrefs M, Mnotin_eq hagree hTrefs M,
-        agreeE hagree h.triples hTrefs f (Me τ' M h.triples)]
-  | «extends» xs h => intro hu; simp only [ShapeExpr.NoExtends] at hu
-  | or s1 s2 ih1 ih2 =>
-      intro hu href fuel M
-      rcases fuel with _ | f
-      · rfl
-      simp only [ShapeExpr.NoExtends] at hu
-      simp only [ShapeExpr.depsAux, DepInfo.union_refs, Finset.union_subset_iff] at href
-      show SatisfiesMFuel f S G τ M s1 ∨ SatisfiesMFuel f S G τ M s2 ↔
-        SatisfiesMFuel f S G τ' M s1 ∨ SatisfiesMFuel f S G τ' M s2
-      rw [ih1 hu.1 href.1 f M, ih2 hu.2 href.2 f M]
-  | and s1 s2 ih1 ih2 =>
-      intro hu href fuel M
-      rcases fuel with _ | f
-      · rfl
-      simp only [ShapeExpr.NoExtends] at hu
-      simp only [ShapeExpr.depsAux, DepInfo.union_refs, Finset.union_subset_iff] at href
-      show SatisfiesMFuel f S G τ M s1 ∧ SatisfiesMFuel f S G τ M s2 ↔
-        SatisfiesMFuel f S G τ' M s1 ∧ SatisfiesMFuel f S G τ' M s2
-      rw [ih1 hu.1 href.1 f M, ih2 hu.2 href.2 f M]
-  | not s ih =>
-      intro hu href fuel M
-      rcases fuel with _ | f
-      · rfl
-      simp only [ShapeExpr.NoExtends] at hu
-      simp only [ShapeExpr.depsAux] at href
-      rw [s.depsAux_refs_indep true false] at href
-      show ¬ SatisfiesMFuel f S G τ M s ↔ ¬ SatisfiesMFuel f S G τ' M s
-      rw [ih hu href f M]
-
 /-- The references of `ext-te(x)` are in the references of `def(x)` (it is
-a part of `def(x)`). This is the `refs`-containment version of
-`extTe_size_le` in `Termination.lean`. -/
-theorem extTe_refs_subset {S : Schema} (hWFX : S.WellFormedX) {x : Label} (hx : x ∈ S.X) :
-    (S.shapeDef x).extTe.refs ⊆ ((S.shapeDef x).depsAux false).refs := by
-  obtain ⟨xs', h', hcase⟩ := hWFX x hx
-  rcases hcase with heq | ⟨u, heq⟩ <;> rw [heq]
-  · simp only [ShapeExpr.extTe, ShapeExpr.depsAux, Shape.depInfo, TripleExpr.refs]
-    exact Finset.Subset.refl _
-  · simp only [ShapeExpr.extTe, ShapeExpr.depsAux, Shape.depInfo, DepInfo.union_refs,
-      TripleExpr.refs]
-    exact Finset.subset_union_left
+a part of `def(x)`). For a definition that does not have the form
+`extends X h [and u]`, `ext-te(x)` is `.empty`, which has no references. -/
+theorem extTe_refs_subset (s : ShapeExpr) : s.extTe.refs ⊆ (s.depsAux false).refs := by
+  rcases s with _ | _ | _ | _ | ⟨_ | _ | _ | _ | _ | _, _⟩ | _ <;>
+    simp [ShapeExpr.extTe, ShapeExpr.depsAux, Shape.refs_eq, TripleExpr.refs, TripleExpr.tcs,
+      DepInfo.union_refs]
 
-/-- The references of `restr(x)` are in the references of `def(x)`. This is
-the `refs`-containment version of `restrOf_noExtends_and_size_le` in
-`Termination.lean`. -/
+/-- The references of `restr(x)` are in the references of `def(x)`. -/
 theorem restrOf_refs_subset {S : Schema} {x : Label} {u : ShapeExpr}
     (hu : (S.shapeDef x).restrOf = some u) :
     (u.depsAux false).refs ⊆ ((S.shapeDef x).depsAux false).refs := by
@@ -458,10 +309,8 @@ theorem restrOf_negRefs_subset {S : Schema} {x : Label} {u : ShapeExpr}
   simp only [ShapeExpr.depsAux, DepInfo.union_negRefs]
   exact Finset.subset_union_right
 
-/-- The `extendsTargets`-containment version of `restrOf_refs_subset` and
-`restrOf_negRefs_subset`. The extends targets of `restr(x)` are in the
-extends targets of `def(x)`. (This follows directly, because
-`extendsTargets` does recursion through `and`.) -/
+/-- The extends targets of `restr(x)` are in the extends targets of
+`def(x)`. -/
 theorem restrOf_extendsTargets_subset {S : Schema} {x : Label} {u : ShapeExpr}
     (hu : (S.shapeDef x).restrOf = some u) :
     u.extendsTargets ⊆ (S.shapeDef x).extendsTargets := by
@@ -469,244 +318,190 @@ theorem restrOf_extendsTargets_subset {S : Schema} {x : Label} {u : ShapeExpr}
   rw [heq]
   exact Finset.subset_union_right
 
-/-- `SatisfiesMFuel` (Table 3) depends on `τ` only through its restriction
-to `Z`, if these conditions are true:
+/-- If `x ∈ Z` and `Z` is `D_S`-closed, then `restr(x)` reaches only labels
+in `Z`. -/
+theorem restrOf_depsIn {S : Schema} {Z : Finset Label} (hZ : S.DClosedOn Z) {x : Label}
+    (hx : x ∈ Z) {u : ShapeExpr} (hu : (S.shapeDef x).restrOf = some u) : u.depsIn Z :=
+  ⟨(restrOf_refs_subset hu).trans (S.shapeDef_depsIn hZ hx).1,
+    (restrOf_extendsTargets_subset hu).trans (S.shapeDef_depsIn hZ hx).2⟩
 
-* `s.depsIn Z`.
-* `Z` is `D_S`-closed.
-* A rank witness (`Schema.RankOk`, `Termination.lean`) covers the
-  cascading `.extends` chains of `s`.
+/-- `SatisfiesE` (Table 1) depends on `τ` only through its restriction to
+`Z`, if the references of `e` are `⊆ Z`. Table 1 never does a schema
+lookup. -/
+theorem SatisfiesE_agree {τ τ' : Typing} {Z : Finset Label} (hagree : AgreeOn τ τ' Z) :
+    ∀ (e : TripleExpr), e.refs ⊆ Z → ∀ M, SatisfiesE τ M e ↔ SatisfiesE τ' M e := by
+  intro e
+  induction e with
+  | empty => intros; rfl
+  | tc p z =>
+      intro href M
+      have hzZ : z ∈ Z := href (by simp [TripleExpr.refs, TripleExpr.tcs])
+      simp only [SatisfiesE]
+      exact exists₂_congr fun n o => and_congr_right fun _ => hagree o z hzZ
+  | choice e1 e2 ih1 ih2 =>
+      intro href M
+      simp only [TripleExpr.refs, TripleExpr.tcs, Finset.image_union, Finset.union_subset_iff]
+        at href
+      exact or_congr (ih1 href.1 M) (ih2 href.2 M)
+  | seq e1 e2 ih1 ih2 =>
+      intro href M
+      simp only [TripleExpr.refs, TripleExpr.tcs, Finset.image_union, Finset.union_subset_iff]
+        at href
+      simp only [SatisfiesE]
+      exact exists₂_congr fun M1 M2 => and_congr_right fun _ =>
+        and_congr (ih1 href.1 M1) (ih2 href.2 M2)
+  | star e ih =>
+      intro href M
+      simp only [SatisfiesE]
+      exact exists_congr fun Ns => and_congr_right fun _ =>
+        forall₂_congr fun Ni _ => ih href Ni
 
-Only `WellFormedX` is necessary. There is no other restriction on the
-locations of `extends` nodes.
+/-- `M^e` (the `Me` of Table 3) is exactly equal for `τ` and `τ'`, if they
+agree on the references of `e`. The membership test of each triple uses
+`τ` only on a label in `e.refs ⊆ Z`. -/
+theorem Me_eq {τ τ' : Typing} {Z : Finset Label} (hagree : AgreeOn τ τ' Z) {e : TripleExpr}
+    (href : e.refs ⊆ Z) (M : Finset Triple) : Me τ M e = Me τ' M e := by
+  ext t
+  rw [mem_Me, mem_Me]
+  refine and_congr_right fun _ => exists_congr fun z => and_congr_right fun hz => ?_
+  exact hagree t.obj z (href (Finset.mem_image.mpr ⟨(t.pred, z), hz, rfl⟩))
 
-Each case except `.extends` follows `agreeM_noExtends`, with the two
-components of `depsIn` in place of only `.refs`. The `.extends` case
-combines `agreeE` (for `h.triples` and `ext-te(x)`) with the rank-`r'`
-induction hypothesis `ihr` (for `restr(x)`). This has the same structure
-as the `.extends` case of `stableMGen` in `Termination.lean`. -/
-theorem agreeM {S : Schema} (hWFX : S.WellFormedX)
-    {G : Graph} {τ τ' : Typing} {Z : Finset Label} (hZ : S.DClosedOn Z)
-    (hagree : AgreeOn τ τ' Z) :
-    ∀ r s, Schema.RankOk S r s → s.depsIn Z →
-      ∀ fuel (M : Finset Triple), SatisfiesMFuel fuel S G τ M s ↔ SatisfiesMFuel fuel S G τ' M s := by
-  intro r
-  induction r with
-  | zero =>
-      intro s hs hdeps fuel M
-      exact agreeM_noExtends hagree s hs hdeps.1 fuel M
-  | succ r' ihr =>
-      intro s
-      induction s with
-      | constraint c => intro _ _ fuel M; rcases fuel with _ | f <;> rfl
-      | ofShape h =>
-          intro _ hdeps fuel M
-          rcases fuel with _ | f
-          · rfl
-          have hTrefs : h.triples.refs ⊆ Z := by
-            simpa [ShapeExpr.depsIn, ShapeExpr.depsAux, Shape.depInfo, TripleExpr.refs] using hdeps.1
-          show (SatisfiesEFuel f S G τ (Me τ M h.triples) h.triples ∧
-                props (Mnotin τ M h.triples) ⊆ h.extra.getD ∅ ∧
-                (h.closed → props M ⊆ h.triples.props ∪ h.extra.getD ∅)) ↔
-              (SatisfiesEFuel f S G τ' (Me τ' M h.triples) h.triples ∧
-                props (Mnotin τ' M h.triples) ⊆ h.extra.getD ∅ ∧
-                (h.closed → props M ⊆ h.triples.props ∪ h.extra.getD ∅))
-          rw [Me_eq hagree hTrefs M, Mnotin_eq hagree hTrefs M,
-            agreeE hagree h.triples hTrefs f (Me τ' M h.triples)]
-      | «extends» xs h =>
-          intro hRank hdeps fuel M
-          rcases fuel with _ | f
-          · rfl
-          obtain ⟨hrefsZ, hxsZ⟩ := hdeps
-          simp only [ShapeExpr.extendsTargets] at hxsZ
-          have hancZ : S.ancSet xs ⊆ Z := S.ancSet_subset hZ hxsZ
-          have hRankAt : ∀ x ∈ S.ancSet xs, ∀ u, (S.shapeDef x).restrOf = some u →
-              Schema.RankOk S r' u := hRank
-          show (∃ M' Mx, DisjointUnionOn M M' (S.ancSet xs) Mx ∧
-                SatisfiesMFuel f S G τ M' (.ofShape h) ∧
-                (∀ x ∈ S.ancSet xs, SatisfiesEFuel f S G τ (Mx x) (S.shapeDef x).extTe) ∧
-                (∀ x ∈ S.ancSet xs, ∀ u, (S.shapeDef x).restrOf = some u →
-                  SatisfiesMFuel f S G τ ((S.anc x).biUnion Mx) u)) ↔
-              (∃ M' Mx, DisjointUnionOn M M' (S.ancSet xs) Mx ∧
-                SatisfiesMFuel f S G τ' M' (.ofShape h) ∧
-                (∀ x ∈ S.ancSet xs, SatisfiesEFuel f S G τ' (Mx x) (S.shapeDef x).extTe) ∧
-                (∀ x ∈ S.ancSet xs, ∀ u, (S.shapeDef x).restrOf = some u →
-                  SatisfiesMFuel f S G τ' ((S.anc x).biUnion Mx) u))
-          refine exists_congr fun M' => exists_congr fun Mx => and_congr_right fun _ => ?_
-          have he : SatisfiesMFuel f S G τ M' (.ofShape h) ↔ SatisfiesMFuel f S G τ' M' (.ofShape h) :=
-            agreeM_noExtends hagree (.ofShape h) trivial hrefsZ f M'
-          have hext : (∀ x ∈ S.ancSet xs, SatisfiesEFuel f S G τ (Mx x) (S.shapeDef x).extTe) ↔
-              (∀ x ∈ S.ancSet xs, SatisfiesEFuel f S G τ' (Mx x) (S.shapeDef x).extTe) := by
-            refine forall_congr' fun x => forall_congr' fun hx => ?_
-            have hxX : x ∈ S.X := Schema.ancSet_subset_X hx
-            have hxZ : x ∈ Z := hancZ hx
-            exact agreeE hagree (S.shapeDef x).extTe
-              (Finset.Subset.trans (extTe_refs_subset hWFX hxX) (S.shapeDef_depsIn hZ hxZ).1) f (Mx x)
-          have hrestr : (∀ x ∈ S.ancSet xs, ∀ u, (S.shapeDef x).restrOf = some u →
-                SatisfiesMFuel f S G τ ((S.anc x).biUnion Mx) u) ↔
-              (∀ x ∈ S.ancSet xs, ∀ u, (S.shapeDef x).restrOf = some u →
-                SatisfiesMFuel f S G τ' ((S.anc x).biUnion Mx) u) := by
-            refine forall_congr' fun x => forall_congr' fun hx => forall_congr' fun u => ?_
-            refine imp_congr_right fun hru => ?_
-            have hxZ : x ∈ Z := hancZ hx
-            have hurefs : (u.depsAux false).refs ⊆ Z :=
-              Finset.Subset.trans (restrOf_refs_subset hru) (S.shapeDef_depsIn hZ hxZ).1
-            have huext : u.extendsTargets ⊆ Z :=
-              Finset.Subset.trans (restrOf_extendsTargets_subset hru) (S.shapeDef_depsIn hZ hxZ).2
-            exact ihr u (hRankAt x hx u hru) ⟨hurefs, huext⟩ f _
-          rw [he, hext, hrestr]
-      | or s1 s2 ih1 ih2 =>
-          intro hRank hdeps fuel M
-          rcases fuel with _ | f
-          · rfl
-          simp only [ShapeExpr.depsIn, ShapeExpr.depsAux, DepInfo.union_refs,
-            ShapeExpr.extendsTargets, Finset.union_subset_iff] at hdeps
-          show SatisfiesMFuel f S G τ M s1 ∨ SatisfiesMFuel f S G τ M s2 ↔
-            SatisfiesMFuel f S G τ' M s1 ∨ SatisfiesMFuel f S G τ' M s2
-          rw [ih1 hRank.1 ⟨hdeps.1.1, hdeps.2.1⟩ f M, ih2 hRank.2 ⟨hdeps.1.2, hdeps.2.2⟩ f M]
-      | and s1 s2 ih1 ih2 =>
-          intro hRank hdeps fuel M
-          rcases fuel with _ | f
-          · rfl
-          simp only [ShapeExpr.depsIn, ShapeExpr.depsAux, DepInfo.union_refs,
-            ShapeExpr.extendsTargets, Finset.union_subset_iff] at hdeps
-          show SatisfiesMFuel f S G τ M s1 ∧ SatisfiesMFuel f S G τ M s2 ↔
-            SatisfiesMFuel f S G τ' M s1 ∧ SatisfiesMFuel f S G τ' M s2
-          rw [ih1 hRank.1 ⟨hdeps.1.1, hdeps.2.1⟩ f M, ih2 hRank.2 ⟨hdeps.1.2, hdeps.2.2⟩ f M]
-      | not s ih =>
-          intro hRank hdeps fuel M
-          rcases fuel with _ | f
-          · rfl
-          simp only [ShapeExpr.depsIn, ShapeExpr.depsAux, ShapeExpr.extendsTargets] at hdeps
-          rw [s.depsAux_refs_indep true false] at hdeps
-          show ¬ SatisfiesMFuel f S G τ M s ↔ ¬ SatisfiesMFuel f S G τ' M s
-          rw [ih hRank hdeps f M]
+/-- `M^{e'}` (the `Mnotin` of Table 3) is also exactly equal. It is made
+from `Me` (equal by `Me_eq`) and from a filter on `props`, which does not
+use `τ`. -/
+theorem Mnotin_eq {τ τ' : Typing} {Z : Finset Label} (hagree : AgreeOn τ τ' Z) {e : TripleExpr}
+    (href : e.refs ⊆ Z) (M : Finset Triple) : Mnotin τ M e = Mnotin τ' M e := by
+  unfold Mnotin
+  rw [Me_eq hagree href M]
 
-/-- `SatisfiesFuel` (Table 2) on a `NoExtends` shape. No schema-closure
-hypothesis is necessary. This is the same as `agreeM_noExtends`, which
-does the inner Table 3 check of `.ofShape`. (`.extends` is not possible
-with `NoExtends`.)
+/-- Rule 17 depends on `τ` only through its restriction to the references
+of the shape. -/
+theorem SatisfiesShape_agree {τ τ' : Typing} {Z : Finset Label} (hagree : AgreeOn τ τ' Z)
+    {h : Shape} (href : h.triples.refs ⊆ Z) (M : Finset Triple) :
+    SatisfiesShape τ M h ↔ SatisfiesShape τ' M h := by
+  unfold SatisfiesShape
+  rw [Me_eq hagree href M, Mnotin_eq hagree href M,
+    SatisfiesE_agree hagree h.triples href (Me τ' M h.triples)]
 
-The `.not` case of `stratMonoFuel` needs this lemma. (By
+/-- On a `NoExtends` shape, Table 3 depends on `τ` only through its
+restriction to the references of the shape. It does not depend on the
+schema or on `restr` at all, because rule 18 is not used. No closure
+hypothesis on `Z` is necessary.
+
+The `not` case of `stratMono` needs this lemma. (By
 `ShapeExpr.NotIsExtendsFree`, the content of a `not` node is always
-`NoExtends`.) Without this lemma, that case must use the heavier
-`agreeFuel` below, with its `DClosedOn` and schema-wide agreement
-requirements. A `NoExtends` shape never needs these requirements. -/
-theorem agreeFuel_noExtends {S : Schema} {G : Graph} {τ τ' : Typing} {Z : Finset Label}
-    (hagree : AgreeOn τ τ' Z) :
-    ∀ (s : ShapeExpr), s.NoExtends → (s.depsAux false).refs ⊆ Z →
-      ∀ fuel (n : RDFNode), SatisfiesFuel fuel S G τ n s ↔ SatisfiesFuel fuel S G τ' n s := by
+`NoExtends`.) -/
+theorem SatisfiesMAt_agree_noExtends {S1 S2 : Schema} {τ1 τ2 : Typing}
+    {restr1 restr2 : Finset Triple → ShapeExpr → Prop} {Z : Finset Label}
+    (hagree : AgreeOn τ1 τ2 Z) :
+    ∀ s, s.NoExtends → (s.depsAux false).refs ⊆ Z →
+      ∀ M, SatisfiesMAt S1 τ1 restr1 M s ↔ SatisfiesMAt S2 τ2 restr2 M s := by
   intro s
   induction s with
-  | constraint c =>
-      intro _ _ fuel n
-      rcases fuel with _ | f
-      · rfl
-      · rfl
+  | constraint _ => intros; rfl
   | ofShape h =>
-      intro _ href fuel n
-      rcases fuel with _ | f
-      · rfl
-      exact agreeM_noExtends hagree (.ofShape h) trivial href f (neigh G n)
-  | «extends» xs h => intro hu; simp only [ShapeExpr.NoExtends] at hu
+      intro _ href M
+      exact SatisfiesShape_agree hagree (by rwa [ShapeExpr.depsAux, Shape.refs_eq] at href) M
+  | «extends» _ _ => intro hs; exact hs.elim
   | or s1 s2 ih1 ih2 =>
-      intro hu href fuel n
-      rcases fuel with _ | f
-      · rfl
-      simp only [ShapeExpr.NoExtends] at hu
+      intro hs href M
       simp only [ShapeExpr.depsAux, DepInfo.union_refs, Finset.union_subset_iff] at href
-      show SatisfiesFuel f S G τ n s1 ∨ SatisfiesFuel f S G τ n s2 ↔
-        SatisfiesFuel f S G τ' n s1 ∨ SatisfiesFuel f S G τ' n s2
-      rw [ih1 hu.1 href.1 f n, ih2 hu.2 href.2 f n]
+      exact or_congr (ih1 hs.1 href.1 M) (ih2 hs.2 href.2 M)
   | and s1 s2 ih1 ih2 =>
-      intro hu href fuel n
-      rcases fuel with _ | f
-      · rfl
-      simp only [ShapeExpr.NoExtends] at hu
+      intro hs href M
       simp only [ShapeExpr.depsAux, DepInfo.union_refs, Finset.union_subset_iff] at href
-      show SatisfiesFuel f S G τ n s1 ∧ SatisfiesFuel f S G τ n s2 ↔
-        SatisfiesFuel f S G τ' n s1 ∧ SatisfiesFuel f S G τ' n s2
-      rw [ih1 hu.1 href.1 f n, ih2 hu.2 href.2 f n]
+      exact and_congr (ih1 hs.1 href.1 M) (ih2 hs.2 href.2 M)
   | not s ih =>
-      intro hu href fuel n
-      rcases fuel with _ | f
-      · rfl
-      simp only [ShapeExpr.NoExtends] at hu
+      intro hs href M
       simp only [ShapeExpr.depsAux] at href
       rw [s.depsAux_refs_indep true false] at href
-      show ¬ SatisfiesFuel f S G τ n s ↔ ¬ SatisfiesFuel f S G τ' n s
-      rw [ih hu href f n]
+      exact not_congr (ih hs href M)
 
-/-- `SatisfiesFuel` (Table 2) depends on `τ` only through its restriction
-to `Z`, if `s.depsIn Z` and `Z` is `D_S`-closed. Only `WellFormedX` and
-`ExtAcyclic` are necessary. (`ExtAcyclic` gives the rank witness of
-`agreeM` through `Schema.rankOk_any`.) The `.ofShape` and `.extends` cases
-follow directly from `agreeM`. Each other case is self-recursion, with the
-same structure as `stableFuel`. -/
-theorem agreeFuel {S : Schema} (hWFX : S.WellFormedX) (hAcyclic : S.ExtAcyclic)
-    {G : Graph} {τ τ' : Typing} {Z : Finset Label} (hZ : S.DClosedOn Z)
-    (hagree : AgreeOn τ τ' Z) :
-    ∀ (s : ShapeExpr), s.depsIn Z →
-      ∀ fuel (n : RDFNode), SatisfiesFuel fuel S G τ n s ↔ SatisfiesFuel fuel S G τ' n s := by
+/-- The general transfer lemma for one layer of Table 3. The result does
+not change if these conditions are true:
+
+* `τ1` and `τ2` agree on a `D_S`-closed `Z`.
+* `S1` and `S2` have the same definitions, and agree on `anc` in `Z`.
+* `restr1` and `restr2` agree on each restriction `u` that the rank
+  witness `P` covers, if `u` reaches only labels in `Z`.
+* The shape reaches only labels in `Z` (`depsIn`).
+
+The only case that uses the schema is `.extends`. Each other case is a
+plain structural step. -/
+theorem SatisfiesMAt_transfer {S1 S2 : Schema} {τ1 τ2 : Typing}
+    {restr1 restr2 : Finset Triple → ShapeExpr → Prop} {P : ShapeExpr → Prop}
+    {Z : Finset Label} (hZ : S1.DClosedOn Z) (hagree : AgreeOn τ1 τ2 Z)
+    (hdef : S1.shapeDef = S2.shapeDef) (hanc : ∀ x ∈ Z, S1.anc x = S2.anc x)
+    (hr : ∀ u, P u → u.depsIn Z → ∀ M, restr1 M u ↔ restr2 M u) :
+    ∀ s, S1.RankOkAt P s → s.depsIn Z →
+      ∀ M, SatisfiesMAt S1 τ1 restr1 M s ↔ SatisfiesMAt S2 τ2 restr2 M s := by
   intro s
   induction s with
-  | constraint c => intro _ fuel n; rcases fuel with _ | f <;> rfl
+  | constraint _ => intros; rfl
   | ofShape h =>
-      intro hdeps fuel n
-      rcases fuel with _ | f
-      · rfl
-      show SatisfiesMFuel f S G τ (neigh G n) (.ofShape h) ↔
-        SatisfiesMFuel f S G τ' (neigh G n) (.ofShape h)
-      exact agreeM hWFX hZ hagree (S.X.sup S.extRank + 1) (.ofShape h)
-        (Schema.rankOk_any hAcyclic hWFX _) hdeps f (neigh G n)
+      intro _ hdeps M
+      exact SatisfiesShape_agree hagree (by rw [← Shape.refs_eq h false]; exact hdeps.1) M
   | «extends» xs h =>
-      intro hdeps fuel n
-      rcases fuel with _ | f
-      · rfl
-      show SatisfiesMFuel f S G τ (neigh G n) (.extends xs h) ↔
-        SatisfiesMFuel f S G τ' (neigh G n) (.extends xs h)
-      exact agreeM hWFX hZ hagree (S.X.sup S.extRank + 1) (.extends xs h)
-        (Schema.rankOk_any hAcyclic hWFX _) hdeps f (neigh G n)
+      intro hRank hdeps M
+      have hxsZ : xs ⊆ Z := hdeps.2
+      have hancZ : S1.ancSet xs ⊆ Z := S1.ancSet_subset hZ hxsZ
+      have hancSet : S1.ancSet xs = S2.ancSet xs :=
+        Finset.biUnion_congr rfl fun x hx => hanc x (hxsZ hx)
+      simp only [SatisfiesMAt]
+      rw [← hancSet, ← hdef]
+      refine exists₂_congr fun M' Mx => and_congr_right fun _ => ?_
+      refine and_congr (SatisfiesShape_agree hagree ?_ M') (and_congr ?_ ?_)
+      · rw [← Shape.refs_eq h false]; exact hdeps.1
+      · refine forall₂_congr fun x hx => SatisfiesE_agree hagree _ ?_ _
+        exact (extTe_refs_subset _).trans (S1.shapeDef_depsIn hZ (hancZ hx)).1
+      · refine forall₂_congr fun x hx => forall₂_congr fun u hu => ?_
+        rw [hanc x (hancZ hx)]
+        exact hr u (hRank x hx u hu) (restrOf_depsIn hZ (hancZ hx) hu) _
   | or s1 s2 ih1 ih2 =>
-      intro hdeps fuel n
-      rcases fuel with _ | f
-      · rfl
-      simp only [ShapeExpr.depsIn, ShapeExpr.depsAux, DepInfo.union_refs,
-        ShapeExpr.extendsTargets, Finset.union_subset_iff] at hdeps
-      show SatisfiesFuel f S G τ n s1 ∨ SatisfiesFuel f S G τ n s2 ↔
-        SatisfiesFuel f S G τ' n s1 ∨ SatisfiesFuel f S G τ' n s2
-      rw [ih1 ⟨hdeps.1.1, hdeps.2.1⟩ f n, ih2 ⟨hdeps.1.2, hdeps.2.2⟩ f n]
+      intro hRank hdeps M
+      rw [ShapeExpr.depsIn_or] at hdeps
+      exact or_congr (ih1 hRank.1 hdeps.1 M) (ih2 hRank.2 hdeps.2 M)
   | and s1 s2 ih1 ih2 =>
-      intro hdeps fuel n
-      rcases fuel with _ | f
-      · rfl
-      simp only [ShapeExpr.depsIn, ShapeExpr.depsAux, DepInfo.union_refs,
-        ShapeExpr.extendsTargets, Finset.union_subset_iff] at hdeps
-      show SatisfiesFuel f S G τ n s1 ∧ SatisfiesFuel f S G τ n s2 ↔
-        SatisfiesFuel f S G τ' n s1 ∧ SatisfiesFuel f S G τ' n s2
-      rw [ih1 ⟨hdeps.1.1, hdeps.2.1⟩ f n, ih2 ⟨hdeps.1.2, hdeps.2.2⟩ f n]
+      intro hRank hdeps M
+      rw [ShapeExpr.depsIn_and] at hdeps
+      exact and_congr (ih1 hRank.1 hdeps.1 M) (ih2 hRank.2 hdeps.2 M)
   | not s ih =>
-      intro hdeps fuel n
-      rcases fuel with _ | f
-      · rfl
-      have hdeps' : s.depsIn Z := by
-        refine ⟨?_, ?_⟩
-        · rw [s.depsAux_refs_indep false true]
-          simpa [ShapeExpr.depsAux] using hdeps.1
-        · simpa [ShapeExpr.extendsTargets] using hdeps.2
-      show ¬ SatisfiesFuel f S G τ n s ↔ ¬ SatisfiesFuel f S G τ' n s
-      rw [ih hdeps' f n]
+      intro hRank hdeps M
+      exact not_congr (ih hRank (ShapeExpr.depsIn_not.mp hdeps) M)
 
-/-- `Satisfies` (the relation with no fuel) depends on `τ` only through its
-restriction to `Z`, with the same conditions as `agreeFuel`.
-`reqFuelGen S s` does not depend on `τ`. Thus, `Satisfies S G τ n s` and
-`Satisfies S G τ' n s` use the same concrete fuel value, and this is
-`agreeFuel` at that shared value. -/
-theorem Satisfies.agree {S : Schema} (hWFX : S.WellFormedX) (hAcyclic : S.ExtAcyclic)
+/-- `SatisfiesMFuel` (Table 3) at the same fuel, across a change of typing
+and schema. The proof is an induction on the fuel. Each step is
+`SatisfiesMAt_transfer`. -/
+theorem SatisfiesMFuel_transfer {S1 S2 : Schema} {τ1 τ2 : Typing} {Z : Finset Label}
+    (hZ : S1.DClosedOn Z) (hagree : AgreeOn τ1 τ2 Z)
+    (hdef : S1.shapeDef = S2.shapeDef) (hanc : ∀ x ∈ Z, S1.anc x = S2.anc x) :
+    ∀ r s, S1.RankOk r s → s.depsIn Z →
+      ∀ M, SatisfiesMFuel r S1 τ1 M s ↔ SatisfiesMFuel r S2 τ2 M s := by
+  intro r
+  induction r with
+  | zero => exact SatisfiesMAt_transfer hZ hagree hdef hanc (fun _ h => h.elim)
+  | succ r ih => exact SatisfiesMAt_transfer hZ hagree hdef hanc ih
+
+/-- `SatisfiesFuel` (Table 2) at the same fuel, across a change of typing
+and schema. The fuel must be sufficient for `S1` (`Schema.fuelBound`). -/
+theorem SatisfiesFuel_transfer {S1 S2 : Schema} (hAcyclic : S1.ExtAcyclic) {r : ℕ}
+    (hr : S1.fuelBound ≤ r) {G : Graph} {τ1 τ2 : Typing} {Z : Finset Label}
+    (hZ : S1.DClosedOn Z) (hagree : AgreeOn τ1 τ2 Z)
+    (hdef : S1.shapeDef = S2.shapeDef) (hanc : ∀ x ∈ Z, S1.anc x = S2.anc x)
+    {s : ShapeExpr} (hdeps : s.depsIn Z) (n : RDFNode) :
+    SatisfiesFuel r S1 G τ1 n s ↔ SatisfiesFuel r S2 G τ2 n s :=
+  SatisfiesAt_congr (·.depsIn Z) ShapeExpr.depsIn_or.mp ShapeExpr.depsIn_and.mp
+    ShapeExpr.depsIn_not.mp
+    (fun t ht M => SatisfiesMFuel_transfer hZ hagree hdef hanc r t
+      (Schema.rankOk_fuelBound hAcyclic hr t) ht M) s hdeps
+
+/-- `Satisfies` depends on `τ` only through its restriction to `Z`, if
+`s.depsIn Z` and `Z` is `D_S`-closed. -/
+theorem Satisfies.agree {S : Schema} (hAcyclic : S.ExtAcyclic)
     {G : Graph} {τ τ' : Typing} {Z : Finset Label} (hZ : S.DClosedOn Z)
     (hagree : AgreeOn τ τ' Z) {s : ShapeExpr} (hdeps : s.depsIn Z)
     (n : RDFNode) : Satisfies S G τ n s ↔ Satisfies S G τ' n s :=
-  agreeFuel hWFX hAcyclic hZ hagree s hdeps (Schema.reqFuelGen S s + 1) n
+  SatisfiesFuel_transfer hAcyclic le_rfl hZ hagree rfl (fun _ _ => rfl) hdeps n
 
 /-! ### A problem that `stratMono` has here, and that it did not have in 2017
 
@@ -786,46 +581,27 @@ theorem restrOf_notIsExtendsFree {S : Schema} (hNEF : S.NotIsExtendsFree) {x : L
   rw [heq] at hNx
   exact hNx.2
 
-/-- `SatisfiesEFuel` (Table 1) is monotone in `τ` with no condition. When
-`τ` becomes larger (for a fixed `M`), a match never fails. Table 1 has no
-filtering of the `extra` type and no negation. Thus, this lemma needs no
-bookkeeping for `Z`, `Lo` or `WellFormedExtra`, as all the lemmas after
-this point do. -/
-theorem monoE {S : Schema} {G : Graph} {τ τ' : Typing} (hsub : τ ⊆ τ') :
-    ∀ (e : TripleExpr) fuel (M : Finset Triple),
-      SatisfiesEFuel fuel S G τ M e → SatisfiesEFuel fuel S G τ' M e := by
+/-- `SatisfiesE` (Table 1) is monotone in `τ` with no condition. When `τ`
+becomes larger (for a fixed `M`), a match never fails. Table 1 has no
+filtering of the `extra` type and no negation. -/
+theorem monoE {τ τ' : Typing} (hsub : τ ⊆ τ') :
+    ∀ (e : TripleExpr) (M : Finset Triple), SatisfiesE τ M e → SatisfiesE τ' M e := by
   intro e
   induction e with
-  | empty =>
-      intro fuel M h
-      rcases fuel with _ | f
-      · exact h
-      · exact h
+  | empty => intro M h; exact h
   | tc p z =>
-      intro fuel M h
-      rcases fuel with _ | f
-      · exact h
+      intro M h
       obtain ⟨n, o, hM, htyp⟩ := h
       exact ⟨n, o, hM, hsub htyp⟩
-  | choice e1 e2 ih1 ih2 =>
-      intro fuel M h
-      rcases fuel with _ | f
-      · exact h
-      rcases h with h | h
-      · exact Or.inl (ih1 f M h)
-      · exact Or.inr (ih2 f M h)
+  | choice e1 e2 ih1 ih2 => intro M h; exact h.imp (ih1 M) (ih2 M)
   | seq e1 e2 ih1 ih2 =>
-      intro fuel M h
-      rcases fuel with _ | f
-      · exact h
+      intro M h
       obtain ⟨M1, M2, hdu, h1, h2⟩ := h
-      exact ⟨M1, M2, hdu, ih1 f M1 h1, ih2 f M2 h2⟩
+      exact ⟨M1, M2, hdu, ih1 M1 h1, ih2 M2 h2⟩
   | star e ih =>
-      intro fuel M h
-      rcases fuel with _ | f
-      · exact h
+      intro M h
       obtain ⟨Ns, hdu, hall⟩ := h
-      exact ⟨Ns, hdu, fun Ni hNi => ih f Ni (hall Ni hNi)⟩
+      exact ⟨Ns, hdu, fun Ni hNi => ih Ni (hall Ni hNi)⟩
 
 /-- Let `props(Mnotin τ M e) ⊆ P'` (the leftover-properties condition of
 rule 17), and let `e` and `P'` satisfy "(*)" (`e.props ∩ P' = ∅`). Then
@@ -873,256 +649,145 @@ theorem Me_stable {τ τ' : Typing} (hsub : τ ⊆ τ') {h : Shape} (hWF : h.Wel
     exact Finset.mem_image.mpr ⟨(t.pred, z), hz, rfl⟩
   exact Finset.Subset.antisymm hmono (hceil ▸ hbound)
 
-/-- Rule 17 (`.ofShape h`) is monotone in `τ`, if `h.WellFormedExtra`
-("(*)") is true. `Me` and `Mnotin` do not change (`Me_stable`). Thus, the
-inner `SatisfiesEFuel` check goes from `τ` to `τ'` with `monoE`, and
-`Mnotin` becomes empty (thus trivially `⊆` any set). -/
-theorem monoM_ofShape {S : Schema} {G : Graph} {τ τ' : Typing} (hsub : τ ⊆ τ') {h : Shape}
-    (hWF : h.WellFormedExtra) (fuel : ℕ) (M : Finset Triple) :
-    SatisfiesMFuel (fuel + 1) S G τ M (.ofShape h) →
-      SatisfiesMFuel (fuel + 1) S G τ' M (.ofShape h) := by
+/-- Rule 17 is monotone in `τ`, if `h.WellFormedExtra` ("(*)") is true.
+`Me` and `Mnotin` do not change (`Me_stable`). Thus, the inner `SatisfiesE`
+check goes from `τ` to `τ'` with `monoE`. -/
+theorem SatisfiesShape_mono {τ τ' : Typing} (hsub : τ ⊆ τ') {h : Shape}
+    (hWF : h.WellFormedExtra) (M : Finset Triple) :
+    SatisfiesShape τ M h → SatisfiesShape τ' M h := by
   rintro ⟨hE, hMnotin, hclosed⟩
   have hMeeq := Me_stable hsub hWF hMnotin
   have hMnotineq : Mnotin τ' M h.triples = Mnotin τ M h.triples := by
     unfold Mnotin; rw [hMeeq]
-  exact ⟨hMeeq ▸ monoE hsub h.triples fuel (Me τ M h.triples) hE, hMnotineq ▸ hMnotin, hclosed⟩
+  exact ⟨hMeeq ▸ monoE hsub h.triples (Me τ M h.triples) hE, hMnotineq ▸ hMnotin, hclosed⟩
 
 /-! ### `stratMono`: a larger `τ` for positive positions, exact agreement
 below `not` -/
 
-/-- On a `NoExtends` shape, a larger `τ` (`hsub`) keeps satisfaction, if
-these conditions are true:
-
-* `h.WellFormedExtra` is true at each `.ofShape` that the proof reaches.
-* The negative references of the shape (the `negRefs` of Definition 5,
-  with latching) are in `Lo`.
-* `τ` and `τ'` agree exactly on `Lo`.
-
-`.not` changes to `agreeM_noExtends` (exact agreement). It uses
-`negRefs_true_eq_refs` to see that the `negRefs` of the outer call bound
-the full content below a `not`, not only its references that are not
-negated again. This is the reason why `depsAux` must latch and not toggle
+/-- The negative references of the content of a `not` bound all its
+references. This is the reason why `depsAux` must latch and not toggle
 (refer to the docstring of that definition). -/
-theorem stratMonoM_noExtends {S : Schema} {G : Graph} {τ τ' : Typing} {Lo : Finset Label}
-    (hsub : τ ⊆ τ') (hagree : AgreeOn τ τ' Lo) :
-    ∀ (u : ShapeExpr), u.NoExtends → u.WellFormedExtra → ((u.depsAux false).negRefs ⊆ Lo) →
-      ∀ fuel (M : Finset Triple), SatisfiesMFuel fuel S G τ M u → SatisfiesMFuel fuel S G τ' M u := by
-  intro u
-  induction u with
-  | constraint c =>
-      intro _ _ _ fuel M h
-      rcases fuel with _ | f
-      · exact h
-      · exact h
-  | ofShape h =>
-      intro _ hWFh _ fuel M hSat
-      rcases fuel with _ | f
-      · exact hSat
-      exact monoM_ofShape hsub hWFh f M hSat
-  | «extends» xs h => intro hu; simp only [ShapeExpr.NoExtends] at hu
+theorem ShapeExpr.refs_subset_of_not_negRefs {s : ShapeExpr} {Lo : Finset Label}
+    (hneg : ((ShapeExpr.not s).depsAux false).negRefs ⊆ Lo) : (s.depsAux false).refs ⊆ Lo := by
+  simp only [ShapeExpr.depsAux] at hneg
+  rwa [s.negRefs_true_eq_refs, s.depsAux_refs_indep true false] at hneg
+
+/-- `stratMono` for one layer of Table 3. A larger `τ` (`hsub`) keeps
+satisfaction, if these conditions are true:
+
+* `τ` and `τ'` agree exactly on `Lo`.
+* The shape reaches only labels of a `D_S`-closed `Z`, and the negative
+  references of each definition in `Z` are in `Lo`.
+* `WellFormedExtra` and `NotIsExtendsFree` are true for the shape.
+* `restr1` implies `restr2` on each restriction that the rank witness `P`
+  covers.
+
+The positive positions use `SatisfiesShape_mono` and `monoE`. The content
+of a `not` is `NoExtends`, and uses `SatisfiesMAt_agree_noExtends` (exact
+agreement on `Lo`). -/
+theorem SatisfiesMAt_stratMono {S : Schema} (hWFExtra : S.WellFormedExtra)
+    (hNEF : S.NotIsExtendsFree) {τ τ' : Typing} {Z Lo : Finset Label}
+    {restr1 restr2 : Finset Triple → ShapeExpr → Prop} {P : ShapeExpr → Prop}
+    (hZ : S.DClosedOn Z) (hsub : τ ⊆ τ') (hagree : AgreeOn τ τ' Lo)
+    (hLo : ∀ z ∈ Z, ((S.shapeDef z).depsAux false).negRefs ⊆ Lo)
+    (hr : ∀ u, P u → u.depsIn Z → u.WellFormedExtra → u.NotIsExtendsFree →
+      (u.depsAux false).negRefs ⊆ Lo → ∀ M, restr1 M u → restr2 M u) :
+    ∀ s, S.RankOkAt P s → s.depsIn Z → s.WellFormedExtra → s.NotIsExtendsFree →
+      (s.depsAux false).negRefs ⊆ Lo →
+      ∀ M, SatisfiesMAt S τ restr1 M s → SatisfiesMAt S τ' restr2 M s := by
+  intro s
+  induction s with
+  | constraint _ => intro _ _ _ _ _ M h; exact h
+  | ofShape h => intro _ _ hWF _ _ M hSat; exact SatisfiesShape_mono hsub hWF M hSat
+  | «extends» xs h =>
+      intro hRank hdeps hWF _ _ M hSat
+      have hancZ : S.ancSet xs ⊆ Z := S.ancSet_subset hZ hdeps.2
+      obtain ⟨M', Mx, hdu, hE, hExt, hRestr⟩ := hSat
+      refine ⟨M', Mx, hdu, SatisfiesShape_mono hsub hWF M' hE,
+        fun x hx => monoE hsub _ (Mx x) (hExt x hx), fun x hx u hu => ?_⟩
+      have hxZ : x ∈ Z := hancZ hx
+      exact hr u (hRank x hx u hu) (restrOf_depsIn hZ hxZ hu) (restrOf_wellFormedExtra hWFExtra hu)
+        (restrOf_notIsExtendsFree hNEF hu) ((restrOf_negRefs_subset hu).trans (hLo x hxZ)) _
+        (hRestr x hx u hu)
   | or s1 s2 ih1 ih2 =>
-      intro hu hWF hneg fuel M hSat
-      rcases fuel with _ | f
-      · exact hSat
-      simp only [ShapeExpr.NoExtends] at hu
-      simp only [ShapeExpr.WellFormedExtra] at hWF
+      intro hRank hdeps hWF hNEF' hneg M hSat
+      rw [ShapeExpr.depsIn_or] at hdeps
       simp only [ShapeExpr.depsAux, DepInfo.union_negRefs, Finset.union_subset_iff] at hneg
-      rcases hSat with h1 | h1
-      · exact Or.inl (ih1 hu.1 hWF.1 hneg.1 f M h1)
-      · exact Or.inr (ih2 hu.2 hWF.2 hneg.2 f M h1)
+      exact hSat.imp (ih1 hRank.1 hdeps.1 hWF.1 hNEF'.1 hneg.1 M)
+        (ih2 hRank.2 hdeps.2 hWF.2 hNEF'.2 hneg.2 M)
   | and s1 s2 ih1 ih2 =>
-      intro hu hWF hneg fuel M hSat
-      rcases fuel with _ | f
-      · exact hSat
-      simp only [ShapeExpr.NoExtends] at hu
-      simp only [ShapeExpr.WellFormedExtra] at hWF
+      intro hRank hdeps hWF hNEF' hneg M hSat
+      rw [ShapeExpr.depsIn_and] at hdeps
       simp only [ShapeExpr.depsAux, DepInfo.union_negRefs, Finset.union_subset_iff] at hneg
-      exact ⟨ih1 hu.1 hWF.1 hneg.1 f M hSat.1, ih2 hu.2 hWF.2 hneg.2 f M hSat.2⟩
+      exact ⟨ih1 hRank.1 hdeps.1 hWF.1 hNEF'.1 hneg.1 M hSat.1,
+        ih2 hRank.2 hdeps.2 hWF.2 hNEF'.2 hneg.2 M hSat.2⟩
   | not s _ =>
-      intro hu _ hneg fuel M hSat
-      rcases fuel with _ | f
-      · exact hSat
-      simp only [ShapeExpr.NoExtends] at hu
-      simp only [ShapeExpr.depsAux] at hneg
-      rw [s.negRefs_true_eq_refs, s.depsAux_refs_indep true false] at hneg
-      show ¬ SatisfiesMFuel f S G τ' M s
-      exact fun hc => hSat ((agreeM_noExtends hagree s hu hneg f M).mpr hc)
+      intro _ _ _ hNEF' hneg M hSat hc
+      exact hSat ((SatisfiesMAt_agree_noExtends hagree s hNEF'
+        (ShapeExpr.refs_subset_of_not_negRefs hneg) M).mpr hc)
 
-/-- The general `stratMono`. It combines a larger `τ` (positive positions,
-with `monoM_ofShape` and `monoE`) with exact agreement (negated positions,
-with `stratMonoM_noExtends`; `ShapeExpr.NotIsExtendsFree` makes sure that
-this is sufficient).
-
-The `.extends` case uses the same rank-indexed induction and reuse of
-witnesses as `agreeM`. Only `WellFormedX` is necessary, with no other
-restriction on the locations of `extends` nodes. The differences from
-`agreeM` are:
-
-* For `M'` and `ext-te(x)`, it uses `monoE` in place of `agreeE`. (Table 1
-  is monotone with no condition, so it needs no `WellFormedExtra` and no
-  agreement there.)
-* For `restr(x)`, it uses `stratMonoM_noExtends` through the rank-`r'`
-  induction hypothesis `ihr`, in place of `agreeM_noExtends`. This needs
-  only the bound on its own negative dependencies, through
-  `restrOf_negRefs_subset` and the schema-wide `hLo`.
-
-`WellFormedExtra` and `NotIsExtendsFree` are both necessary. They are
-independent of each other and of the rank argument. -/
-theorem stratMonoM {S : Schema} (hWFExtra : S.WellFormedExtra) (hNEF : S.NotIsExtendsFree)
-    {G : Graph} {τ τ' : Typing} {Z Lo : Finset Label}
+/-- `stratMono` for `SatisfiesMFuel` (Table 3). The proof is an induction
+on the fuel. Each step is `SatisfiesMAt_stratMono`. -/
+theorem SatisfiesMFuel_stratMono {S : Schema} (hWFExtra : S.WellFormedExtra)
+    (hNEF : S.NotIsExtendsFree) {τ τ' : Typing} {Z Lo : Finset Label}
     (hZ : S.DClosedOn Z) (hsub : τ ⊆ τ') (hagree : AgreeOn τ τ' Lo)
     (hLo : ∀ z ∈ Z, ((S.shapeDef z).depsAux false).negRefs ⊆ Lo) :
-    ∀ r (s : ShapeExpr), Schema.RankOk S r s → s.depsIn Z → s.WellFormedExtra → s.NotIsExtendsFree →
-      ((s.depsAux false).negRefs ⊆ Lo) →
-      ∀ fuel (M : Finset Triple), SatisfiesMFuel fuel S G τ M s → SatisfiesMFuel fuel S G τ' M s := by
+    ∀ r s, S.RankOk r s → s.depsIn Z → s.WellFormedExtra → s.NotIsExtendsFree →
+      (s.depsAux false).negRefs ⊆ Lo →
+      ∀ M, SatisfiesMFuel r S τ M s → SatisfiesMFuel r S τ' M s := by
   intro r
   induction r with
   | zero =>
-      intro s hNoExt _ hWF _ hneg fuel M hSat
-      exact stratMonoM_noExtends hsub hagree s hNoExt hWF hneg fuel M hSat
-  | succ r' ihr =>
-      intro s
-      induction s with
-      | constraint c =>
-          intro _ _ _ _ _ fuel M h
-          rcases fuel with _ | f
-          · exact h
-          · exact h
-      | ofShape h =>
-          intro _ _ hWFh _ _ fuel M hSat
-          rcases fuel with _ | f
-          · exact hSat
-          exact monoM_ofShape hsub hWFh f M hSat
-      | «extends» xs h =>
-          intro hRank hdeps hWF _ _ fuel M hSat
-          rcases fuel with _ | f
-          · exact hSat
-          obtain ⟨_, hxsZ⟩ := hdeps
-          simp only [ShapeExpr.extendsTargets] at hxsZ
-          have hancZ : S.ancSet xs ⊆ Z := S.ancSet_subset hZ hxsZ
-          have hRankAt : ∀ x ∈ S.ancSet xs, ∀ u, (S.shapeDef x).restrOf = some u →
-              Schema.RankOk S r' u := hRank
-          obtain ⟨M', Mx, hdu, hE, hExt, hRestr⟩ := hSat
-          have hE' : SatisfiesMFuel f S G τ' M' (.ofShape h) := by
-            rcases f with _ | f'
-            · exact hE
-            · exact monoM_ofShape hsub hWF f' M' hE
-          refine ⟨M', Mx, hdu, hE',
-            fun x hx => monoE hsub _ f (Mx x) (hExt x hx), ?_⟩
-          intro x hx u hru
-          have hxX : x ∈ S.X := Schema.ancSet_subset_X hx
-          have hxZ : x ∈ Z := hancZ hx
-          have hWFu : u.WellFormedExtra := restrOf_wellFormedExtra hWFExtra hru
-          have hNEFu : u.NotIsExtendsFree := restrOf_notIsExtendsFree hNEF hru
-          have hnegU : (u.depsAux false).negRefs ⊆ Lo :=
-            Finset.Subset.trans (restrOf_negRefs_subset hru) (hLo x hxZ)
-          have hurefsZ : u.depsIn Z := by
-            have hurefs : (u.depsAux false).refs ⊆ Z :=
-              Finset.Subset.trans (restrOf_refs_subset hru) (S.shapeDef_depsIn hZ hxZ).1
-            have huext : u.extendsTargets ⊆ Z :=
-              Finset.Subset.trans (restrOf_extendsTargets_subset hru) (S.shapeDef_depsIn hZ hxZ).2
-            exact ⟨hurefs, huext⟩
-          exact ihr u (hRankAt x hx u hru) hurefsZ hWFu hNEFu hnegU f _ (hRestr x hx u hru)
-      | or s1 s2 ih1 ih2 =>
-          intro hRank hdeps hWF hNEF' hneg fuel M hSat
-          rcases fuel with _ | f
-          · exact hSat
-          simp only [ShapeExpr.depsIn, ShapeExpr.depsAux, DepInfo.union_refs,
-            ShapeExpr.extendsTargets, Finset.union_subset_iff] at hdeps
-          simp only [ShapeExpr.WellFormedExtra] at hWF
-          simp only [ShapeExpr.NotIsExtendsFree] at hNEF'
-          simp only [ShapeExpr.depsAux, DepInfo.union_negRefs, Finset.union_subset_iff] at hneg
-          rcases hSat with h1 | h1
-          · exact Or.inl (ih1 hRank.1 ⟨hdeps.1.1, hdeps.2.1⟩ hWF.1 hNEF'.1 hneg.1 f M h1)
-          · exact Or.inr (ih2 hRank.2 ⟨hdeps.1.2, hdeps.2.2⟩ hWF.2 hNEF'.2 hneg.2 f M h1)
-      | and s1 s2 ih1 ih2 =>
-          intro hRank hdeps hWF hNEF' hneg fuel M hSat
-          rcases fuel with _ | f
-          · exact hSat
-          simp only [ShapeExpr.depsIn, ShapeExpr.depsAux, DepInfo.union_refs,
-            ShapeExpr.extendsTargets, Finset.union_subset_iff] at hdeps
-          simp only [ShapeExpr.WellFormedExtra] at hWF
-          simp only [ShapeExpr.NotIsExtendsFree] at hNEF'
-          simp only [ShapeExpr.depsAux, DepInfo.union_negRefs, Finset.union_subset_iff] at hneg
-          exact ⟨ih1 hRank.1 ⟨hdeps.1.1, hdeps.2.1⟩ hWF.1 hNEF'.1 hneg.1 f M hSat.1,
-            ih2 hRank.2 ⟨hdeps.1.2, hdeps.2.2⟩ hWF.2 hNEF'.2 hneg.2 f M hSat.2⟩
-      | not s _ =>
-          intro _ _ hWF hNEF' hneg fuel M hSat
-          rcases fuel with _ | f
-          · exact hSat
-          simp only [ShapeExpr.WellFormedExtra] at hWF
-          simp only [ShapeExpr.NotIsExtendsFree] at hNEF'
-          simp only [ShapeExpr.depsAux] at hneg
-          rw [s.negRefs_true_eq_refs, s.depsAux_refs_indep true false] at hneg
-          show ¬ SatisfiesMFuel f S G τ' M s
-          exact fun hc => hSat ((agreeM_noExtends hagree s hNEF' hneg f M).mpr hc)
+      exact SatisfiesMAt_stratMono hWFExtra hNEF hZ hsub hagree hLo (fun _ h => h.elim)
+  | succ r ih => exact SatisfiesMAt_stratMono hWFExtra hNEF hZ hsub hagree hLo ih
 
-/-- `stratMono` for `SatisfiesFuel` (Table 2). Only `WellFormedX` and
-`ExtAcyclic` are necessary. (`ExtAcyclic` gives the rank witness of
-`stratMonoM` through `Schema.rankOk_any`, as `agreeFuel` does for
-`agreeM`.) The `.ofShape` and `.extends` cases follow directly from
-`stratMonoM`. Each other case is self-recursion, with the same structure
-as `stableFuel` and `agreeFuel`. -/
-theorem stratMonoFuel {S : Schema} (hWFX : S.WellFormedX) (hAcyclic : S.ExtAcyclic)
-    (hWFExtra : S.WellFormedExtra) (hNEF : S.NotIsExtendsFree)
+/-- `stratMono` for `SatisfiesFuel` (Table 2), at a fuel that is sufficient
+for `S`. The `.ofShape` and `.extends` leaves use
+`SatisfiesMFuel_stratMono`. The content of a `not` is `NoExtends`, and uses
+`SatisfiesMAt_agree_noExtends` at each leaf. -/
+theorem SatisfiesFuel_stratMono {S : Schema} (hAcyclic : S.ExtAcyclic)
+    (hWFExtra : S.WellFormedExtra) (hNEF : S.NotIsExtendsFree) {r : ℕ} (hr : S.fuelBound ≤ r)
     {G : Graph} {τ τ' : Typing} {Z Lo : Finset Label}
     (hZ : S.DClosedOn Z) (hsub : τ ⊆ τ') (hagree : AgreeOn τ τ' Lo)
-    (hLo : ∀ z ∈ Z, ((S.shapeDef z).depsAux false).negRefs ⊆ Lo) :
-    ∀ (s : ShapeExpr), s.depsIn Z → s.WellFormedExtra → s.NotIsExtendsFree →
-      ((s.depsAux false).negRefs ⊆ Lo) →
-      ∀ fuel (n : RDFNode), SatisfiesFuel fuel S G τ n s → SatisfiesFuel fuel S G τ' n s := by
+    (hLo : ∀ z ∈ Z, ((S.shapeDef z).depsAux false).negRefs ⊆ Lo) (n : RDFNode) :
+    ∀ s, s.depsIn Z → s.WellFormedExtra → s.NotIsExtendsFree →
+      (s.depsAux false).negRefs ⊆ Lo → SatisfiesFuel r S G τ n s → SatisfiesFuel r S G τ' n s := by
   intro s
   induction s with
-  | constraint c =>
-      intro _ _ _ _ fuel n h
-      rcases fuel with _ | f
-      · exact h
-      · exact h
-  | ofShape h =>
-      intro hdeps hWFh hNEF' hneg fuel n hSat
-      rcases fuel with _ | f
-      · exact hSat
-      exact stratMonoM hWFExtra hNEF hZ hsub hagree hLo (S.X.sup S.extRank + 1) (.ofShape h)
-        (Schema.rankOk_any hAcyclic hWFX _) hdeps hWFh hNEF' hneg f (neigh G n) hSat
-  | «extends» xs h =>
-      intro hdeps hWFh hNEF' hneg fuel n hSat
-      rcases fuel with _ | f
-      · exact hSat
-      exact stratMonoM hWFExtra hNEF hZ hsub hagree hLo (S.X.sup S.extRank + 1) (.extends xs h)
-        (Schema.rankOk_any hAcyclic hWFX _) hdeps hWFh hNEF' hneg f (neigh G n) hSat
+  | constraint _ => intro _ _ _ _ h; exact h
+  | ofShape _ | «extends» _ _ =>
+      intro hdeps hWF hNEF' hneg hSat
+      exact SatisfiesMFuel_stratMono hWFExtra hNEF hZ hsub hagree hLo r _
+        (Schema.rankOk_fuelBound hAcyclic hr _) hdeps hWF hNEF' hneg _ hSat
   | or s1 s2 ih1 ih2 =>
-      intro hdeps hWF hNEF' hneg fuel n hSat
-      rcases fuel with _ | f
-      · exact hSat
-      simp only [ShapeExpr.depsIn, ShapeExpr.depsAux, DepInfo.union_refs,
-        ShapeExpr.extendsTargets, Finset.union_subset_iff] at hdeps
-      simp only [ShapeExpr.WellFormedExtra] at hWF
-      simp only [ShapeExpr.NotIsExtendsFree] at hNEF'
+      intro hdeps hWF hNEF' hneg hSat
+      rw [ShapeExpr.depsIn_or] at hdeps
       simp only [ShapeExpr.depsAux, DepInfo.union_negRefs, Finset.union_subset_iff] at hneg
-      rcases hSat with h1 | h1
-      · exact Or.inl (ih1 ⟨hdeps.1.1, hdeps.2.1⟩ hWF.1 hNEF'.1 hneg.1 f n h1)
-      · exact Or.inr (ih2 ⟨hdeps.1.2, hdeps.2.2⟩ hWF.2 hNEF'.2 hneg.2 f n h1)
+      exact hSat.imp (ih1 hdeps.1 hWF.1 hNEF'.1 hneg.1) (ih2 hdeps.2 hWF.2 hNEF'.2 hneg.2)
   | and s1 s2 ih1 ih2 =>
-      intro hdeps hWF hNEF' hneg fuel n hSat
-      rcases fuel with _ | f
-      · exact hSat
-      simp only [ShapeExpr.depsIn, ShapeExpr.depsAux, DepInfo.union_refs,
-        ShapeExpr.extendsTargets, Finset.union_subset_iff] at hdeps
-      simp only [ShapeExpr.WellFormedExtra] at hWF
-      simp only [ShapeExpr.NotIsExtendsFree] at hNEF'
+      intro hdeps hWF hNEF' hneg hSat
+      rw [ShapeExpr.depsIn_and] at hdeps
       simp only [ShapeExpr.depsAux, DepInfo.union_negRefs, Finset.union_subset_iff] at hneg
-      exact ⟨ih1 ⟨hdeps.1.1, hdeps.2.1⟩ hWF.1 hNEF'.1 hneg.1 f n hSat.1,
-        ih2 ⟨hdeps.1.2, hdeps.2.2⟩ hWF.2 hNEF'.2 hneg.2 f n hSat.2⟩
+      exact ⟨ih1 hdeps.1 hWF.1 hNEF'.1 hneg.1 hSat.1, ih2 hdeps.2 hWF.2 hNEF'.2 hneg.2 hSat.2⟩
   | not s _ =>
-      intro _ hWF hNEF' hneg fuel n hSat
-      rcases fuel with _ | f
-      · exact hSat
-      simp only [ShapeExpr.WellFormedExtra] at hWF
-      simp only [ShapeExpr.NotIsExtendsFree] at hNEF'
-      simp only [ShapeExpr.depsAux] at hneg
-      rw [s.negRefs_true_eq_refs, s.depsAux_refs_indep true false] at hneg
-      show ¬ SatisfiesFuel f S G τ' n s
-      exact fun hc => hSat ((agreeFuel_noExtends hagree s hNEF' hneg f n).mpr hc)
+      intro _ _ hNEF' hneg hSat hc
+      have href := ShapeExpr.refs_subset_of_not_negRefs hneg
+      refine hSat ((SatisfiesAt_congr (fun t => t.NoExtends ∧ (t.depsAux false).refs ⊆ Lo)
+        ?_ ?_ ?_ ?_ s ⟨hNEF', href⟩).mpr hc)
+      · rintro a b ⟨hn, hrf⟩
+        simp only [ShapeExpr.depsAux, DepInfo.union_refs, Finset.union_subset_iff] at hrf
+        exact ⟨⟨hn.1, hrf.1⟩, ⟨hn.2, hrf.2⟩⟩
+      · rintro a b ⟨hn, hrf⟩
+        simp only [ShapeExpr.depsAux, DepInfo.union_refs, Finset.union_subset_iff] at hrf
+        exact ⟨⟨hn.1, hrf.1⟩, ⟨hn.2, hrf.2⟩⟩
+      · rintro a ⟨hn, hrf⟩
+        simp only [ShapeExpr.depsAux] at hrf
+        exact ⟨hn, a.depsAux_refs_indep false true ▸ hrf⟩
+      · rintro t ⟨hn, hrf⟩ M
+        obtain ⟨_, h1⟩ := SatisfiesMFuel_eq r S τ
+        obtain ⟨_, h2⟩ := SatisfiesMFuel_eq r S τ'
+        rw [h1, h2]
+        exact SatisfiesMAt_agree_noExtends hagree t hn hrf M
 
 /-! ### Definition 8 and Proposition 1 -/
 
@@ -1133,6 +798,10 @@ def Schema.univTyping (S : Schema) (G : Graph) : Typing := G.nodes ×ˢ (S.Y ∪
 /-- `Y_i^σ ∪ X_i^σ = {z ∈ Y ∪ X | σ(z) ≤ i}`. -/
 def Schema.stratum (S : Schema) (strat : Label → ℕ) (i : ℕ) : Finset Label :=
   (S.Y ∪ S.X).filter (fun z => strat z ≤ i)
+
+theorem Schema.mem_stratum {S : Schema} {strat : Label → ℕ} {i : ℕ} {z : Label} :
+    z ∈ S.stratum strat i ↔ z ∈ S.Y ∪ S.X ∧ strat z ≤ i := by
+  simp only [Schema.stratum, Finset.mem_filter]
 
 theorem Schema.stratum_mono {S : Schema} {strat : Label → ℕ} {i j : ℕ} (h : i ≤ j) :
     S.stratum strat i ⊆ S.stratum strat j := by
@@ -1210,10 +879,9 @@ theorem maxTypingAgreeing_restrictTo {S' : Schema} {G : Graph} {Lo : Finset Labe
 /-- `maxTypingAgreeing` is also a correct typing, if `Lo` contains the
 negative dependencies of each label of `S'`. The abstract-label case (the
 second bullet of `Schema.CorrectTyping`) goes from `τ` to `τ'` in the same
-way as the plain case. It applies `stratMonoM` to `S'.shapeDef x` (the
+way as the plain case. It applies `stratMono` to `S'.shapeDef x` (the
 descendant that is the witness), not to `S'.shapeDef L`. -/
-theorem maxTypingAgreeing_correct {S' : Schema} (hWFX : S'.WellFormedX)
-    (hAcyclic : S'.ExtAcyclic) (hWFExtra : S'.WellFormedExtra)
+theorem maxTypingAgreeing_correct {S' : Schema} (hAcyclic : S'.ExtAcyclic) (hWFExtra : S'.WellFormedExtra)
     (hNEF : S'.NotIsExtendsFree) (hDClosed : S'.DClosedOn (S'.Y ∪ S'.X)) {G : Graph}
     {Lo : Finset Label} {fixed : Typing} (hfixed_sub : fixed ⊆ S'.univTyping G)
     (hfixed_correct : S'.CorrectTyping G fixed)
@@ -1233,325 +901,31 @@ theorem maxTypingAgreeing_correct {S' : Schema} (hWFX : S'.WellFormedX)
     rw [htagree, maxTypingAgreeing_restrictTo hfixed_sub hfixed_correct]
   have htcorrectL := htcorrect n L htmem
   refine ⟨fun hLA => ?_, fun hLA => ?_⟩
-  · exact stratMonoFuel hWFX hAcyclic hWFExtra hNEF hDClosed hsub_t hagree_t hLo (S'.shapeDef L)
-      (S'.shapeDef_depsIn hDClosed hL) (hWFExtra L) (hNEF L) (hLo L hL) _ n (htcorrectL.1 hLA)
+  · exact SatisfiesFuel_stratMono hAcyclic hWFExtra hNEF le_rfl hDClosed hsub_t hagree_t hLo n
+      (S'.shapeDef L) (S'.shapeDef_depsIn hDClosed hL) (hWFExtra L) (hNEF L) (hLo L hL)
+      (htcorrectL.1 hLA)
   · obtain ⟨x, hxmem, hSatx⟩ := htcorrectL.2 hLA
     have hxY : x ∈ S'.Y ∪ S'.X := by
       have hxdesc : x ∈ S'.desc L := (Finset.mem_sdiff.mp hxmem).1
       exact Finset.mem_union_right _ (Schema.mem_desc.mp hxdesc).1
-    exact ⟨x, hxmem, stratMonoFuel hWFX hAcyclic hWFExtra hNEF hDClosed hsub_t hagree_t hLo
-      (S'.shapeDef x) (S'.shapeDef_depsIn hDClosed hxY) (hWFExtra x) (hNEF x) (hLo x hxY)
-      _ n hSatx⟩
+    exact ⟨x, hxmem, SatisfiesFuel_stratMono hAcyclic hWFExtra hNEF le_rfl hDClosed hsub_t
+      hagree_t hLo n (S'.shapeDef x) (S'.shapeDef_depsIn hDClosed hxY) (hWFExtra x) (hNEF x)
+      (hLo x hxY) hSatx⟩
 
 /-! ### Schema invariance of `Satisfies` across `stratRestrict`
 
-This is the last part that Proposition 1 needs. `Satisfies` is defined at
-a canonical fuel that depends on the schema (`reqFuel S s + 1`,
-`ShexLean/Shex2025Inheritance/Termination.lean`). Thus,
+This is the last part that Proposition 1 needs. `Satisfies` uses the
+schema in rule 18 (`.ancSet`, `.anc` and `shapeDef`), and its fuel
+`S.fuelBound` depends on the schema. Thus,
 `Satisfies (S.stratRestrict strat i) G τ n s` and
 `Satisfies (S.stratRestrict strat j) G τ n s` are different propositions.
-They use different concrete `SatisfiesFuel` fuel values, over different
-schemas with a different `X`.
 
 In 2017, `stratTypingSeq_correct` does not have this problem, because
-`Satisfies` never uses the schema. Here, a schema-invariance argument is
-necessary:
+`Satisfies` never uses the schema. Here, `SatisfiesFuel_transfer` (a change
+of schema at the same fuel) and `stableFuel` (a change of fuel) solve it. -/
 
-* `SatisfiesEFuel` (Table 1) never uses `S` or `G`.
-* In `SatisfiesMFuel` and `SatisfiesFuel`, the only case that depends on
-  the schema is `.extends`. It uses `S` only through `S.shapeDef`, `S.anc`
-  and `S.ancSet`.
-
-Thus, two schemas with the same `shapeDef`, that agree on `.anc` for each
-label that the dependencies of a shape can reach, give the same
-results. -/
-
-/-- `SatisfiesEFuel` (Table 1) does not depend on the schema or graph
-parameters. The proof applies to each pair of schemas or graphs at a
-shared fuel, with no side hypotheses. (The equations of Table 1 never use
-`S` or `G`. Refer to the module docstring of
-`ShexLean/Shex2025Inheritance/Semantics.lean`.) -/
-theorem SatisfiesEFuel_schema_indep (S1 S2 : Schema) (G1 G2 : Graph) :
-    ∀ (e : TripleExpr) (fuel : ℕ) (τ : Typing) (M : Finset Triple),
-      SatisfiesEFuel fuel S1 G1 τ M e ↔ SatisfiesEFuel fuel S2 G2 τ M e := by
-  intro e
-  induction e with
-  | empty => intro fuel τ M; rcases fuel with _ | f <;> rfl
-  | tc p z => intro fuel τ M; rcases fuel with _ | f <;> rfl
-  | choice e1 e2 ih1 ih2 =>
-      intro fuel τ M
-      rcases fuel with _ | f
-      · rfl
-      show SatisfiesEFuel f S1 G1 τ M e1 ∨ SatisfiesEFuel f S1 G1 τ M e2 ↔
-        SatisfiesEFuel f S2 G2 τ M e1 ∨ SatisfiesEFuel f S2 G2 τ M e2
-      rw [ih1 f τ M, ih2 f τ M]
-  | seq e1 e2 ih1 ih2 =>
-      intro fuel τ M
-      rcases fuel with _ | f
-      · rfl
-      show (∃ M1 M2, DisjointUnion M M1 M2 ∧
-            SatisfiesEFuel f S1 G1 τ M1 e1 ∧ SatisfiesEFuel f S1 G1 τ M2 e2) ↔
-          (∃ M1 M2, DisjointUnion M M1 M2 ∧
-            SatisfiesEFuel f S2 G2 τ M1 e1 ∧ SatisfiesEFuel f S2 G2 τ M2 e2)
-      constructor
-      · rintro ⟨M1, M2, hdu, h1, h2⟩
-        exact ⟨M1, M2, hdu, (ih1 f τ M1).mp h1, (ih2 f τ M2).mp h2⟩
-      · rintro ⟨M1, M2, hdu, h1, h2⟩
-        exact ⟨M1, M2, hdu, (ih1 f τ M1).mpr h1, (ih2 f τ M2).mpr h2⟩
-  | star e ih =>
-      intro fuel τ M
-      rcases fuel with _ | f
-      · rfl
-      show (∃ Ns : List (Finset Triple), DisjointUnionList M Ns ∧
-            ∀ Ni ∈ Ns, SatisfiesEFuel f S1 G1 τ Ni e) ↔
-          (∃ Ns : List (Finset Triple), DisjointUnionList M Ns ∧
-            ∀ Ni ∈ Ns, SatisfiesEFuel f S2 G2 τ Ni e)
-      constructor
-      · rintro ⟨Ns, hdu, hall⟩; exact ⟨Ns, hdu, fun Ni hNi => (ih f τ Ni).mp (hall Ni hNi)⟩
-      · rintro ⟨Ns, hdu, hall⟩; exact ⟨Ns, hdu, fun Ni hNi => (ih f τ Ni).mpr (hall Ni hNi)⟩
-
-/-- `SatisfiesMFuel` (Table 3) on a `NoExtends` shape also does not depend
-on the schema or the graph. The `.extends` case (the only case that
-depends on the schema) is not possible, and `.ofShape` only uses
-`SatisfiesEFuel_schema_indep`. -/
-theorem schemaAgreeM_noExtends (S1 S2 : Schema) (G1 G2 : Graph) :
-    ∀ (u : ShapeExpr), u.NoExtends →
-      ∀ (fuel : ℕ) (τ : Typing) (M : Finset Triple),
-        SatisfiesMFuel fuel S1 G1 τ M u ↔ SatisfiesMFuel fuel S2 G2 τ M u := by
-  intro u
-  induction u with
-  | constraint c => intro _ fuel τ M; rcases fuel with _ | f <;> rfl
-  | ofShape h =>
-      intro _ fuel τ M
-      rcases fuel with _ | f
-      · rfl
-      show (SatisfiesEFuel f S1 G1 τ (Me τ M h.triples) h.triples ∧
-            props (Mnotin τ M h.triples) ⊆ h.extra.getD ∅ ∧
-            (h.closed → props M ⊆ h.triples.props ∪ h.extra.getD ∅)) ↔
-          (SatisfiesEFuel f S2 G2 τ (Me τ M h.triples) h.triples ∧
-            props (Mnotin τ M h.triples) ⊆ h.extra.getD ∅ ∧
-            (h.closed → props M ⊆ h.triples.props ∪ h.extra.getD ∅))
-      rw [SatisfiesEFuel_schema_indep S1 S2 G1 G2 h.triples f τ (Me τ M h.triples)]
-  | «extends» xs h => intro hu; simp only [ShapeExpr.NoExtends] at hu
-  | or s1 s2 ih1 ih2 =>
-      intro hu fuel τ M
-      rcases fuel with _ | f
-      · rfl
-      simp only [ShapeExpr.NoExtends] at hu
-      show SatisfiesMFuel f S1 G1 τ M s1 ∨ SatisfiesMFuel f S1 G1 τ M s2 ↔
-        SatisfiesMFuel f S2 G2 τ M s1 ∨ SatisfiesMFuel f S2 G2 τ M s2
-      rw [ih1 hu.1 f τ M, ih2 hu.2 f τ M]
-  | and s1 s2 ih1 ih2 =>
-      intro hu fuel τ M
-      rcases fuel with _ | f
-      · rfl
-      simp only [ShapeExpr.NoExtends] at hu
-      show SatisfiesMFuel f S1 G1 τ M s1 ∧ SatisfiesMFuel f S1 G1 τ M s2 ↔
-        SatisfiesMFuel f S2 G2 τ M s1 ∧ SatisfiesMFuel f S2 G2 τ M s2
-      rw [ih1 hu.1 f τ M, ih2 hu.2 f τ M]
-  | not s ih =>
-      intro hu fuel τ M
-      rcases fuel with _ | f
-      · rfl
-      simp only [ShapeExpr.NoExtends] at hu
-      show ¬ SatisfiesMFuel f S1 G1 τ M s ↔ ¬ SatisfiesMFuel f S2 G2 τ M s
-      rw [ih hu f τ M]
-
-/-- `SatisfiesMFuel` (Table 3) for a general shape agrees between two
-schemas `S1` and `S2`, if these conditions are true:
-
-* `S1` and `S2` have the same `shapeDef`.
-* They agree on `.anc` for each label in a `D_S`-closed set `Z`.
-* `Z` contains the dependencies of the shape (`depsIn Z`).
-
-This is the schema version of `agreeM` (which changes `τ` over a fixed
-schema).
-
-A rank witness (`Schema.RankOk S1 r s`, `Termination.lean`) is necessary,
-to know when to stop the recursion into `restr(x)` with
-`schemaAgreeM_noExtends`, and use the rank-`r'` induction hypothesis in
-its place. There is no restriction on the locations of `extends` nodes.
-Only the rank bookkeeping of `S1` is necessary. (`hSD` makes `restr(x)`
-the same in the two schemas. Thus, the `RankOk` of `S1` is sufficient
-everywhere.) -/
-theorem schemaAgreeM {S1 S2 : Schema} (hSD : S1.shapeDef = S2.shapeDef)
-    {Z : Finset Label} (hZ : S1.DClosedOn Z)
-    (hAnc : ∀ x ∈ Z, S1.anc x = S2.anc x) {G : Graph} :
-    ∀ r (s : ShapeExpr), Schema.RankOk S1 r s → s.depsIn Z →
-      ∀ (fuel : ℕ) (τ : Typing) (M : Finset Triple),
-        SatisfiesMFuel fuel S1 G τ M s ↔ SatisfiesMFuel fuel S2 G τ M s := by
-  intro r
-  induction r with
-  | zero =>
-      intro s hs _ fuel τ M
-      exact schemaAgreeM_noExtends S1 S2 G G s hs fuel τ M
-  | succ r' ihr =>
-      intro s
-      induction s with
-      | constraint c => intro _ _ fuel τ M; rcases fuel with _ | f <;> rfl
-      | ofShape h =>
-          intro _ _ fuel τ M
-          rcases fuel with _ | f
-          · rfl
-          show (SatisfiesEFuel f S1 G τ (Me τ M h.triples) h.triples ∧
-                props (Mnotin τ M h.triples) ⊆ h.extra.getD ∅ ∧
-                (h.closed → props M ⊆ h.triples.props ∪ h.extra.getD ∅)) ↔
-              (SatisfiesEFuel f S2 G τ (Me τ M h.triples) h.triples ∧
-                props (Mnotin τ M h.triples) ⊆ h.extra.getD ∅ ∧
-                (h.closed → props M ⊆ h.triples.props ∪ h.extra.getD ∅))
-          rw [SatisfiesEFuel_schema_indep S1 S2 G G h.triples f τ (Me τ M h.triples)]
-      | «extends» xs h =>
-          intro hRank hdeps fuel τ M
-          rcases fuel with _ | f
-          · rfl
-          obtain ⟨_, hxsZ⟩ := hdeps
-          simp only [ShapeExpr.extendsTargets] at hxsZ
-          have hancSetEq : S1.ancSet xs = S2.ancSet xs := by
-            unfold Schema.ancSet
-            apply Finset.biUnion_congr rfl
-            intro x hx
-            exact hAnc x (hxsZ hx)
-          have hancZ : S1.ancSet xs ⊆ Z := S1.ancSet_subset hZ hxsZ
-          have hRankAt : ∀ x ∈ S1.ancSet xs, ∀ u, (S1.shapeDef x).restrOf = some u →
-              Schema.RankOk S1 r' u := hRank
-          show (∃ M' Mx, DisjointUnionOn M M' (S1.ancSet xs) Mx ∧
-                SatisfiesMFuel f S1 G τ M' (.ofShape h) ∧
-                (∀ x ∈ S1.ancSet xs, SatisfiesEFuel f S1 G τ (Mx x) (S1.shapeDef x).extTe) ∧
-                (∀ x ∈ S1.ancSet xs, ∀ u, (S1.shapeDef x).restrOf = some u →
-                  SatisfiesMFuel f S1 G τ ((S1.anc x).biUnion Mx) u)) ↔
-              (∃ M' Mx, DisjointUnionOn M M' (S2.ancSet xs) Mx ∧
-                SatisfiesMFuel f S2 G τ M' (.ofShape h) ∧
-                (∀ x ∈ S2.ancSet xs, SatisfiesEFuel f S2 G τ (Mx x) (S2.shapeDef x).extTe) ∧
-                (∀ x ∈ S2.ancSet xs, ∀ u, (S2.shapeDef x).restrOf = some u →
-                  SatisfiesMFuel f S2 G τ ((S2.anc x).biUnion Mx) u))
-          rw [hancSetEq]
-          refine exists_congr fun M' => exists_congr fun Mx => and_congr_right fun _ => ?_
-          have he : SatisfiesMFuel f S1 G τ M' (.ofShape h) ↔ SatisfiesMFuel f S2 G τ M' (.ofShape h) :=
-            schemaAgreeM_noExtends S1 S2 G G (.ofShape h) trivial f τ M'
-          have hext : (∀ x ∈ S2.ancSet xs, SatisfiesEFuel f S1 G τ (Mx x) (S1.shapeDef x).extTe) ↔
-              (∀ x ∈ S2.ancSet xs, SatisfiesEFuel f S2 G τ (Mx x) (S2.shapeDef x).extTe) := by
-            refine forall_congr' fun x => forall_congr' fun _ => ?_
-            rw [hSD]; exact SatisfiesEFuel_schema_indep S1 S2 G G _ f τ (Mx x)
-          have hrestr : (∀ x ∈ S2.ancSet xs, ∀ u, (S1.shapeDef x).restrOf = some u →
-                SatisfiesMFuel f S1 G τ ((S1.anc x).biUnion Mx) u) ↔
-              (∀ x ∈ S2.ancSet xs, ∀ u, (S2.shapeDef x).restrOf = some u →
-                SatisfiesMFuel f S2 G τ ((S2.anc x).biUnion Mx) u) := by
-            refine forall_congr' fun x => forall_congr' fun hx => forall_congr' fun u => ?_
-            have hx1 : x ∈ S1.ancSet xs := by rw [hancSetEq]; exact hx
-            have hxZ : x ∈ Z := hancZ hx1
-            rw [hSD]
-            refine imp_congr_right fun hru => ?_
-            rw [← hSD] at hru
-            have hurefsZ : u.depsIn Z := by
-              have hurefs : (u.depsAux false).refs ⊆ Z :=
-                Finset.Subset.trans (restrOf_refs_subset hru) (S1.shapeDef_depsIn hZ hxZ).1
-              have huext : u.extendsTargets ⊆ Z :=
-                Finset.Subset.trans (restrOf_extendsTargets_subset hru) (S1.shapeDef_depsIn hZ hxZ).2
-              exact ⟨hurefs, huext⟩
-            rw [hAnc x hxZ]
-            exact ihr u (hRankAt x hx1 u hru) hurefsZ f τ _
-          rw [he, hext, hrestr]
-      | or s1 s2 ih1 ih2 =>
-          intro hRank hdeps fuel τ M
-          rcases fuel with _ | f
-          · rfl
-          simp only [ShapeExpr.depsIn, ShapeExpr.depsAux, DepInfo.union_refs,
-            ShapeExpr.extendsTargets, Finset.union_subset_iff] at hdeps
-          show SatisfiesMFuel f S1 G τ M s1 ∨ SatisfiesMFuel f S1 G τ M s2 ↔
-            SatisfiesMFuel f S2 G τ M s1 ∨ SatisfiesMFuel f S2 G τ M s2
-          rw [ih1 hRank.1 ⟨hdeps.1.1, hdeps.2.1⟩ f τ M, ih2 hRank.2 ⟨hdeps.1.2, hdeps.2.2⟩ f τ M]
-      | and s1 s2 ih1 ih2 =>
-          intro hRank hdeps fuel τ M
-          rcases fuel with _ | f
-          · rfl
-          simp only [ShapeExpr.depsIn, ShapeExpr.depsAux, DepInfo.union_refs,
-            ShapeExpr.extendsTargets, Finset.union_subset_iff] at hdeps
-          show SatisfiesMFuel f S1 G τ M s1 ∧ SatisfiesMFuel f S1 G τ M s2 ↔
-            SatisfiesMFuel f S2 G τ M s1 ∧ SatisfiesMFuel f S2 G τ M s2
-          rw [ih1 hRank.1 ⟨hdeps.1.1, hdeps.2.1⟩ f τ M, ih2 hRank.2 ⟨hdeps.1.2, hdeps.2.2⟩ f τ M]
-      | not s ih =>
-          intro hRank hdeps fuel τ M
-          rcases fuel with _ | f
-          · rfl
-          have hdeps' : s.depsIn Z := by
-            refine ⟨?_, ?_⟩
-            · rw [s.depsAux_refs_indep false true]
-              simpa [ShapeExpr.depsAux] using hdeps.1
-            · simpa [ShapeExpr.extendsTargets] using hdeps.2
-          show ¬ SatisfiesMFuel f S1 G τ M s ↔ ¬ SatisfiesMFuel f S2 G τ M s
-          rw [ih hRank hdeps' f τ M]
-
-/-- `SatisfiesFuel` (Table 2): the same schema-agreement fact, one level
-higher. `.ofShape` and `.extends` follow directly from `schemaAgreeM`
-(with a rank witness from `Schema.rankOk_any`). Each other case is
-self-recursion. -/
-theorem schemaAgreeFuel {S1 S2 : Schema} (hSD : S1.shapeDef = S2.shapeDef)
-    (hWFX1 : S1.WellFormedX) (hAcyclic1 : S1.ExtAcyclic)
-    {Z : Finset Label} (hZ : S1.DClosedOn Z)
-    (hAnc : ∀ x ∈ Z, S1.anc x = S2.anc x) {G : Graph} :
-    ∀ (s : ShapeExpr), s.depsIn Z →
-      ∀ (fuel : ℕ) (τ : Typing) (n : RDFNode),
-        SatisfiesFuel fuel S1 G τ n s ↔ SatisfiesFuel fuel S2 G τ n s := by
-  intro s
-  induction s with
-  | constraint c => intro _ fuel τ n; rcases fuel with _ | f <;> rfl
-  | ofShape h =>
-      intro hdeps fuel τ n
-      rcases fuel with _ | f
-      · rfl
-      show SatisfiesMFuel f S1 G τ (neigh G n) (.ofShape h) ↔
-        SatisfiesMFuel f S2 G τ (neigh G n) (.ofShape h)
-      exact schemaAgreeM hSD hZ hAnc (S1.X.sup S1.extRank + 1) (.ofShape h)
-        (Schema.rankOk_any hAcyclic1 hWFX1 _) hdeps f τ (neigh G n)
-  | «extends» xs h =>
-      intro hdeps fuel τ n
-      rcases fuel with _ | f
-      · rfl
-      show SatisfiesMFuel f S1 G τ (neigh G n) (.extends xs h) ↔
-        SatisfiesMFuel f S2 G τ (neigh G n) (.extends xs h)
-      exact schemaAgreeM hSD hZ hAnc (S1.X.sup S1.extRank + 1) (.extends xs h)
-        (Schema.rankOk_any hAcyclic1 hWFX1 _) hdeps f τ (neigh G n)
-  | or s1 s2 ih1 ih2 =>
-      intro hdeps fuel τ n
-      rcases fuel with _ | f
-      · rfl
-      simp only [ShapeExpr.depsIn, ShapeExpr.depsAux, DepInfo.union_refs,
-        ShapeExpr.extendsTargets, Finset.union_subset_iff] at hdeps
-      show SatisfiesFuel f S1 G τ n s1 ∨ SatisfiesFuel f S1 G τ n s2 ↔
-        SatisfiesFuel f S2 G τ n s1 ∨ SatisfiesFuel f S2 G τ n s2
-      rw [ih1 ⟨hdeps.1.1, hdeps.2.1⟩ f τ n, ih2 ⟨hdeps.1.2, hdeps.2.2⟩ f τ n]
-  | and s1 s2 ih1 ih2 =>
-      intro hdeps fuel τ n
-      rcases fuel with _ | f
-      · rfl
-      simp only [ShapeExpr.depsIn, ShapeExpr.depsAux, DepInfo.union_refs,
-        ShapeExpr.extendsTargets, Finset.union_subset_iff] at hdeps
-      show SatisfiesFuel f S1 G τ n s1 ∧ SatisfiesFuel f S1 G τ n s2 ↔
-        SatisfiesFuel f S2 G τ n s1 ∧ SatisfiesFuel f S2 G τ n s2
-      rw [ih1 ⟨hdeps.1.1, hdeps.2.1⟩ f τ n, ih2 ⟨hdeps.1.2, hdeps.2.2⟩ f τ n]
-  | not s ih =>
-      intro hdeps fuel τ n
-      rcases fuel with _ | f
-      · rfl
-      have hdeps' : s.depsIn Z := by
-        refine ⟨?_, ?_⟩
-        · rw [s.depsAux_refs_indep false true]
-          simpa [ShapeExpr.depsAux] using hdeps.1
-        · simpa [ShapeExpr.extendsTargets] using hdeps.2
-      show ¬ SatisfiesFuel f S1 G τ n s ↔ ¬ SatisfiesFuel f S2 G τ n s
-      rw [ih hdeps' f τ n]
-
-/-- `WellFormedX` stays true for each `stratRestrict`. Its `X` only
-becomes smaller. The witness that `WellFormedX` gives for `x ∈ S.X` does
-not depend on the restriction that `x` also satisfies (if any). -/
-theorem Schema.stratRestrict_WellFormedX {S : Schema} (hWFX : S.WellFormedX)
-    (strat : Label → ℕ) (i : ℕ) : (S.stratRestrict strat i).WellFormedX := by
-  intro x hx
-  simp only [Schema.stratRestrict, Finset.mem_filter] at hx
-  exact hWFX x hx.1
-
-/-- `ExtAcyclic` stays true for each `stratRestrict`, in the same way as
-`WellFormedX`. Its `X` only becomes smaller, and `extEdge` uses only
+/-- `ExtAcyclic` stays true for each `stratRestrict`. Its `X` only becomes
+smaller, and `extEdge` uses only
 `shapeDef` (`stratRestrict` never changes `shapeDef`). Thus, a cycle in
 the restriction is also a cycle in `S`. -/
 theorem Schema.stratRestrict_ExtAcyclic {S : Schema} (hAcyclic : S.ExtAcyclic)
@@ -1603,7 +977,7 @@ theorem Schema.stratRestrict_anc_eq {S : Schema} (hDClosed : S.DClosed) (strat :
 with each higher restriction `S.stratRestrict strat j` (`i ≤ j`).
 
 These are syntactically different schemas (a different `X`, and thus
-different `reqFuel` and `ancSet` bookkeeping). But the evaluation of
+different `fuelBound` and `ancSet` bookkeeping). But the evaluation of
 `def(x)` never goes outside the strata `≤ i` (`Schema.shapeDef_depsIn`
 and `Schema.stratum_DClosedOn`). In that region, the `.anc` of the two
 schemas is the same (`Schema.stratRestrict_anc_eq`). Thus, all that
@@ -1613,52 +987,40 @@ The proof combines two lemmas:
 
 * `stableFuel` (same schema): it connects the canonical fuel of each side
   to a shared sufficient value.
-* `schemaAgreeFuel` (same fuel): it connects the two schemas.
+* `SatisfiesFuel_transfer` (same fuel): it connects the two schemas.
 
 This solves the problem that stops a direct port, in the 2017 style, of
 the inductive step of `stratTypingSeq_correct`. In 2017, `Satisfies` does
 not depend on the schema. Here, it does. -/
-theorem Satisfies_stratRestrict_agree {S : Schema} (hWFX : S.WellFormedX)
+theorem Satisfies_stratRestrict_agree {S : Schema}
     (hAcyclic : S.ExtAcyclic) (hDClosed : S.DClosed) (strat : Stratification S)
     {i j : ℕ} (hij : i ≤ j) {x : Label} (hxY : x ∈ S.Y ∪ S.X) (hxi : strat.strat x ≤ i)
     {G : Graph} {τ : Typing} {n : RDFNode} :
     Satisfies (S.stratRestrict strat.strat i) G τ n (S.shapeDef x) ↔
     Satisfies (S.stratRestrict strat.strat j) G τ n (S.shapeDef x) := by
-  have hZDCl : S.DClosedOn (S.stratum strat.strat i) := Schema.stratum_DClosedOn hDClosed strat i
-  have hxZ : x ∈ S.stratum strat.strat i := by
-    simp only [Schema.stratum, Finset.mem_filter]; exact ⟨hxY, hxi⟩
-  have hdeps : (S.shapeDef x).depsIn (S.stratum strat.strat i) := S.shapeDef_depsIn hZDCl hxZ
+  have hZ : S.DClosedOn (S.stratum strat.strat i) := Schema.stratum_DClosedOn hDClosed strat i
+  have hxZ : x ∈ S.stratum strat.strat i := Schema.mem_stratum.mpr ⟨hxY, hxi⟩
   have hAnc : ∀ y ∈ S.stratum strat.strat i,
       (S.stratRestrict strat.strat i).anc y = (S.stratRestrict strat.strat j).anc y := by
     intro y hy
-    simp only [Schema.stratum, Finset.mem_filter] at hy
-    rw [Schema.stratRestrict_anc_eq hDClosed strat hy.1 hy.2,
-      Schema.stratRestrict_anc_eq hDClosed strat hy.1 (hy.2.trans hij)]
-  have hWFX1 : (S.stratRestrict strat.strat i).WellFormedX :=
-    Schema.stratRestrict_WellFormedX hWFX strat.strat i
-  have hWFX2 : (S.stratRestrict strat.strat j).WellFormedX :=
-    Schema.stratRestrict_WellFormedX hWFX strat.strat j
-  have hAcyclic1 : (S.stratRestrict strat.strat i).ExtAcyclic :=
-    Schema.stratRestrict_ExtAcyclic hAcyclic strat.strat i
-  have hAcyclic2 : (S.stratRestrict strat.strat j).ExtAcyclic :=
-    Schema.stratRestrict_ExtAcyclic hAcyclic strat.strat j
-  set F := max (Schema.reqFuelGen (S.stratRestrict strat.strat i) (S.shapeDef x) + 1)
-    (Schema.reqFuelGen (S.stratRestrict strat.strat j) (S.shapeDef x) + 1) with hFdef
-  have hstep1 : Satisfies (S.stratRestrict strat.strat i) G τ n (S.shapeDef x) ↔
-      SatisfiesFuel F (S.stratRestrict strat.strat i) G τ n (S.shapeDef x) :=
-    stableFuel hWFX1 hAcyclic1 (S.shapeDef x)
-      (Schema.reqFuelGen (S.stratRestrict strat.strat i) (S.shapeDef x) + 1) F
-      (le_refl _) (le_max_left _ _) G τ n
-  have hstep2 : Satisfies (S.stratRestrict strat.strat j) G τ n (S.shapeDef x) ↔
-      SatisfiesFuel F (S.stratRestrict strat.strat j) G τ n (S.shapeDef x) :=
-    stableFuel hWFX2 hAcyclic2 (S.shapeDef x)
-      (Schema.reqFuelGen (S.stratRestrict strat.strat j) (S.shapeDef x) + 1) F
-      (le_refl _) (le_max_right _ _) G τ n
-  have hcross : SatisfiesFuel F (S.stratRestrict strat.strat i) G τ n (S.shapeDef x) ↔
-      SatisfiesFuel F (S.stratRestrict strat.strat j) G τ n (S.shapeDef x) :=
-    schemaAgreeFuel (S1 := S.stratRestrict strat.strat i) (S2 := S.stratRestrict strat.strat j)
-      rfl hWFX1 hAcyclic1 hZDCl hAnc (S.shapeDef x) hdeps F τ n
-  rw [hstep1, hstep2, hcross]
+    obtain ⟨hyY, hyi⟩ := Schema.mem_stratum.mp hy
+    rw [Schema.stratRestrict_anc_eq hDClosed strat hyY hyi,
+      Schema.stratRestrict_anc_eq hDClosed strat hyY (hyi.trans hij)]
+  have hAc1 := Schema.stratRestrict_ExtAcyclic hAcyclic strat.strat i
+  have hAc2 := Schema.stratRestrict_ExtAcyclic hAcyclic strat.strat j
+  have hF1 := le_max_left (S.stratRestrict strat.strat i).fuelBound
+    (S.stratRestrict strat.strat j).fuelBound
+  have hF2 := le_max_right (S.stratRestrict strat.strat i).fuelBound
+    (S.stratRestrict strat.strat j).fuelBound
+  calc Satisfies (S.stratRestrict strat.strat i) G τ n (S.shapeDef x)
+      _ ↔ SatisfiesFuel _ (S.stratRestrict strat.strat i) G τ n (S.shapeDef x) :=
+        stableFuel hAc1 le_rfl hF1 G τ n _
+      _ ↔ SatisfiesFuel _ (S.stratRestrict strat.strat j) G τ n (S.shapeDef x) :=
+        SatisfiesFuel_transfer (S2 := S.stratRestrict strat.strat j) hAc1 hF1 hZ
+          (fun _ _ _ => Iff.rfl) rfl hAnc
+          (S.shapeDef_depsIn hZ hxZ) n
+      _ ↔ Satisfies (S.stratRestrict strat.strat j) G τ n (S.shapeDef x) :=
+        (stableFuel hAc2 le_rfl hF2 G τ n _).symm
 
 /-- `(S.stratRestrict strat i).Y ∪ (S.stratRestrict strat i).X` (a union of
 two sets, each with its own filter) and `S.stratum strat i` (one filter
@@ -1669,10 +1031,6 @@ theorem Schema.stratRestrict_YX_eq_stratum (S : Schema) (strat : Label → ℕ) 
     (S.stratRestrict strat i).Y ∪ (S.stratRestrict strat i).X = S.stratum strat i := by
   unfold Schema.stratRestrict Schema.stratum
   rw [Finset.filter_union]
-
-theorem Schema.mem_stratum {S : Schema} {strat : Label → ℕ} {i : ℕ} {z : Label} :
-    z ∈ S.stratum strat i ↔ z ∈ S.Y ∪ S.X ∧ strat z ≤ i := by
-  simp only [Schema.stratum, Finset.mem_filter]
 
 /-- The labels of `S.stratRestrict strat i` are the labels of `S` with a
 stratum `≤ i`. -/
@@ -1734,7 +1092,7 @@ Each part (`.A` membership, and the `.desc \ .A` witnesses) is monotone in
 the restriction level, because `stratRestrict` only makes `Y`, `X` and `A`
 larger when `i` becomes larger. The important step is to move the
 `Satisfies` witnesses with `Satisfies_stratRestrict_agree`. -/
-theorem Schema.correctTyping_stratRestrict_mono {S : Schema} (hWFX : S.WellFormedX)
+theorem Schema.correctTyping_stratRestrict_mono {S : Schema}
     (hAcyclic : S.ExtAcyclic) (hDClosed : S.DClosed) (strat : Stratification S)
     {i j : ℕ} (hij : i ≤ j) {G : Graph} {t : Typing}
     (ht_sub : t ⊆ (S.stratRestrict strat.strat i).univTyping G)
@@ -1749,7 +1107,7 @@ theorem Schema.correctTyping_stratRestrict_mono {S : Schema} (hWFX : S.WellForme
     · rintro ⟨hLA, _⟩; exact ⟨hLA, hLi⟩
   obtain ⟨hcorrectPlain, hcorrectAbs⟩ := ht_correct n L hmem
   refine ⟨fun hLnotA => ?_, fun hLA => ?_⟩
-  · exact (Satisfies_stratRestrict_agree hWFX hAcyclic hDClosed strat hij hLY hLi).mp
+  · exact (Satisfies_stratRestrict_agree hAcyclic hDClosed strat hij hLY hLi).mp
       (hcorrectPlain (fun h => hLnotA (hAiff.mp h)))
   · obtain ⟨x, hxmem, hSatx⟩ := hcorrectAbs (hAiff.mpr hLA)
     rw [Finset.mem_sdiff, Schema.mem_desc] at hxmem
@@ -1762,7 +1120,7 @@ theorem Schema.correctTyping_stratRestrict_mono {S : Schema} (hWFX : S.WellForme
       rw [Finset.mem_sdiff, Schema.mem_desc, Schema.mem_stratRestrict_X, Schema.mem_stratRestrict_A]
       exact ⟨⟨⟨hxX, hxi.trans hij⟩, hxpath⟩, fun h => hxnA ⟨h.1, hxi⟩⟩
     exact ⟨x, hxmem',
-      (Satisfies_stratRestrict_agree hWFX hAcyclic hDClosed strat hij hxY hxi).mp hSatx⟩
+      (Satisfies_stratRestrict_agree hAcyclic hDClosed strat hij hxY hxi).mp hSatx⟩
 
 /-- The sequence `τ_i` of Definition 8, as one recursion on `ℕ`:
 
@@ -1800,7 +1158,7 @@ The inductive step combines two lemmas:
 
 This solves the problem that a direct port in the 2017 style does not
 solve. Refer to the docstring of `Satisfies_stratRestrict_agree`. -/
-theorem stratTypingSeq_correct {S : Schema} (hWFX : S.WellFormedX) (hAcyclic : S.ExtAcyclic)
+theorem stratTypingSeq_correct {S : Schema} (hAcyclic : S.ExtAcyclic)
     (hWFExtra : S.WellFormedExtra) (hNEF : S.NotIsExtendsFree) (hDClosed : S.DClosed)
     (strat : Stratification S) (G : Graph) (i : ℕ) :
       stratTypingSeq S strat.strat G i ⊆ (S.stratRestrict strat.strat i).univTyping G ∧
@@ -1821,7 +1179,7 @@ theorem stratTypingSeq_correct {S : Schema} (hWFX : S.WellFormedX) (hAcyclic : S
         exact Schema.mem_stratRestrict_YX.mpr ⟨hpY, hpi.trans (Nat.le_succ i)⟩
       have hcorrect_i' : (S.stratRestrict strat.strat (i + 1)).CorrectTyping G
           (stratTypingSeq S strat.strat G i) :=
-        Schema.correctTyping_stratRestrict_mono hWFX hAcyclic hDClosed strat (Nat.le_succ i)
+        Schema.correctTyping_stratRestrict_mono hAcyclic hDClosed strat (Nat.le_succ i)
           hsub_i hcorrect_i
       have hLo : ∀ z ∈ (S.stratRestrict strat.strat (i + 1)).Y ∪
             (S.stratRestrict strat.strat (i + 1)).X,
@@ -1835,23 +1193,21 @@ theorem stratTypingSeq_correct {S : Schema} (hWFX : S.WellFormedX) (hAcyclic : S
         exact Schema.mem_stratum.mpr ⟨hz'Y, by omega⟩
       have hDClosed1 : (S.stratRestrict strat.strat (i + 1)).DClosed :=
         Schema.stratRestrict_DClosed hDClosed strat (i + 1)
-      have hWFX1 : (S.stratRestrict strat.strat (i + 1)).WellFormedX :=
-        Schema.stratRestrict_WellFormedX hWFX strat.strat (i + 1)
       have hAcyclic1 : (S.stratRestrict strat.strat (i + 1)).ExtAcyclic :=
         Schema.stratRestrict_ExtAcyclic hAcyclic strat.strat (i + 1)
       refine ⟨maxTypingAgreeing_subset _ G _ _, ?_⟩
       show (S.stratRestrict strat.strat (i + 1)).CorrectTyping G
         (maxTypingAgreeing (S.stratRestrict strat.strat (i + 1)) G (S.stratum strat.strat i)
           (stratTypingSeq S strat.strat G i))
-      exact maxTypingAgreeing_correct hWFX1 hAcyclic1 hWFExtra hNEF hDClosed1 hsub_i' hcorrect_i' hLo
+      exact maxTypingAgreeing_correct hAcyclic1 hWFExtra hNEF hDClosed1 hsub_i' hcorrect_i' hLo
 
 /-- **Proposition 1.** For every schema `S`, stratification `σ` of `S`, and
 graph `G`, the typing `τ_max(S,σ,G)` is a correct typing. -/
-theorem proposition1 {S : Schema} (hWFX : S.WellFormedX) (hAcyclic : S.ExtAcyclic)
+theorem proposition1 {S : Schema} (hAcyclic : S.ExtAcyclic)
     (hWFExtra : S.WellFormedExtra) (hNEF : S.NotIsExtendsFree) (hDClosed : S.DClosed)
     (strat : Stratification S) (G : Graph) :
     S.CorrectTyping G (Typing8 G S strat) := by
-  have := (stratTypingSeq_correct hWFX hAcyclic hWFExtra hNEF hDClosed strat G strat.k).2
+  have := (stratTypingSeq_correct hAcyclic hWFExtra hNEF hDClosed strat G strat.k).2
   rwa [Schema.stratRestrict_top] at this
 
 end ShexLean.Inheritance

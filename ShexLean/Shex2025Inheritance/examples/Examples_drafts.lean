@@ -114,7 +114,7 @@ theorem a_satisfies_x1 :
   have hancSet : S.ancSet {"x2"} = {"x2"} := by
     unfold Schema.ancSet; simp [hanc2]
   rw [hx1shape]
-  show SatisfiesMFuel 3 S G τ (neigh G a) (.extends {"x2"} ⟨false, none, .tc "p" "c1"⟩)
+  show SatisfiesMFuel bigFuel1 S τ (neigh G a) (.extends {"x2"} ⟨false, none, .tc "p" "c1"⟩)
   refine ⟨{⟨a, "p", .lit (.str "v1")⟩}, fun _ => {⟨a, "p", .lit (.str "v2")⟩},
     ⟨?_, ?_, ?_⟩, ?_, ?_, ?_⟩
   · rw [hancSet]; decide
@@ -126,7 +126,7 @@ theorem a_satisfies_x1 :
   · rw [hancSet]
     intro x hx
     simp only [Finset.mem_singleton] at hx; subst hx
-    show SatisfiesEFuel 2 S G τ {⟨a, "p", .lit (.str "v2")⟩} (S.shapeDef "x2").extTe
+    show SatisfiesE τ {⟨a, "p", .lit (.str "v2")⟩} (S.shapeDef "x2").extTe
     rw [hx2shape]
     exact ⟨a, .lit (.str "v2"), rfl, by decide⟩
   · rw [hancSet]
@@ -168,7 +168,7 @@ theorem b_doesnt_satisfy_x1 :
   have hancSet : S.ancSet {"x2"} = {"x2"} := by
     unfold Schema.ancSet; simp [hanc2]
   rw [hx1shape]
-  show ¬ SatisfiesMFuel 3 S G τ (neigh G b) (.extends {"x2"} ⟨false, none, .tc "p" "c1"⟩)
+  show ¬ SatisfiesMFuel bigFuel1 S τ (neigh G b) (.extends {"x2"} ⟨false, none, .tc "p" "c1"⟩)
   have hneighb : neigh G b =
       {⟨b, "p", .lit (.str "v1")⟩, ⟨b, "p", .lit (.str "v3")⟩} := by decide
   rw [hneighb]

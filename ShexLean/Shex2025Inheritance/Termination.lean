@@ -10,20 +10,14 @@ Lemma 1 (§4.2) of the 2025 paper "Shape Expressions with Inheritance":
 > of `G` by `S`, and label `z ∈ Y ∪ X`.
 
 `Semantics.lean` avoids the termination problem with an explicit argument
-`Fuel : ℕ` in `SatisfiesFuel`, `SatisfiesMFuel` and `SatisfiesEFuel`. Each
-recursive call decreases `Fuel`, and the result is `False` when no fuel
-remains. Thus, the Lean function is total by construction, but it is not
+`Fuel : ℕ` in `SatisfiesMFuel`. The fuel counts the depth of nested
+`restr(x)` evaluations in rule 18. At the lowest layer, each `restr(x)` is
+`False`. Thus, the Lean function is total by construction, but it is not
 yet the real relation of the paper (which does not depend on fuel).
 
 This file shows that, for a well-defined schema, the result stops
 depending on `Fuel` when `Fuel` is sufficiently large. Thus, the
 approximation bounded by fuel becomes equal to the real relation.
-
-In the 2017 formalization, `typing` gives the shape of a reference. Thus,
-termination is a free structural recursion on the syntax tree. Here, the
-`extends` rule of Table 3 does a recursion into the definitions of other
-labels (`(S.shapeDef x).extTe` and `.restrOf`, for each ancestor `x`). This
-is a schema lookup. It is not a subterm of the current expression.
 
 The termination argument of the paper (the proof sketch of Lemma 1) is one
 sentence: the tree of recursive calls is finite "due to the acyclic nature
@@ -31,14 +25,15 @@ of the extension hierarchy". A precise proof needs two items:
 
 * A rank function on labels that is a witness of the acyclicity of `H_S`
   (`Schema.extRank` below).
-* A combined measure that decreases on each recursive call. This includes
-  the `extends` steps (controlled by the rank) and the ordinary structural
-  steps on the syntax tree (`Schema.reqFuelR` and `Schema.reqFuelGen`).
+* A proof that `extRank` bounds the depth of nested `restr(x)` evaluations
+  (`Schema.RankOk` and `Schema.rankOk_any`).
 
 The proof has the same generality as Lemma 1 of the paper. It assumes only
-`WellFormedX` (Definition 2) and `ExtAcyclic` (Definition 6). It puts no
-restriction on the locations of `extends` nodes. An `extends` node can
-also be inside a restriction `u` (`extends X h and u`).
+`ExtAcyclic` (Definition 6). (`WellFormedX` is not necessary: for a label
+that is not well-formed, `ext-te(x)` and `restr(x)` are junk values that
+do not recurse.) It puts no restriction on the locations of `extends`
+nodes. An `extends` node can also be inside a restriction `u`
+(`extends X h and u`).
 -/
 
 namespace ShexLean.Inheritance
@@ -104,220 +99,26 @@ def ShapeExpr.NoExtends : ShapeExpr → Prop
   | .and s1 s2 => s1.NoExtends ∧ s2.NoExtends
   | .not s => s.NoExtends
 
-/-! ### The stabilization argument
+/-! ### The rank witness
 
-The argument follows the dependency chain of the definitions (refer to the
-module docstring of `Semantics.lean`):
+`Schema.RankOk S r s` says that `r` layers of `SatisfiesMAt` are
+sufficient for `s`. It is made in the same way as `SatisfiesMFuel`:
 
-1. `SatisfiesEFuel` becomes stable alone (it does no schema lookups).
-2. `SatisfiesMFuel` becomes stable with step 1 and a base case for
-   `NoExtends` shapes.
-3. `SatisfiesFuel` becomes stable with step 2. -/
-
-/-- The structural size of a triple expression. This is a large (not
-tight) bound that gives sufficient fuel. Each recursive call of
-`SatisfiesEFuel` is on a strictly smaller sub-expression. Thus, the size
-decreases by 1 or more at each step. -/
-def TripleExpr.size : TripleExpr → ℕ
-  | .empty => 1
-  | .tc _ _ => 1
-  | .choice e1 e2 => e1.size + e2.size + 1
-  | .seq e1 e2 => e1.size + e2.size + 1
-  | .star e => e.size + 1
-
-/-- `SatisfiesEFuel` becomes stable when `Fuel ≥ e.size`. Table 1 never
-does a schema lookup (`τ` gives the label of `.tc`, refer to the module
-docstring of `Semantics.lean`). Thus, the proof needs no hypothesis on
-`S`. It is a plain structural induction on `e`. -/
-theorem stableE (e : TripleExpr) :
-    ∀ fuel1 fuel2, e.size ≤ fuel1 → e.size ≤ fuel2 →
-      ∀ (S : Schema) (G : Graph) (τ : Typing) (M : Finset Triple),
-        SatisfiesEFuel fuel1 S G τ M e ↔ SatisfiesEFuel fuel2 S G τ M e := by
-  induction e with
-  | empty =>
-      intro fuel1 fuel2 h1 h2 S G τ M
-      rcases fuel1 with _ | f1
-      · simp [TripleExpr.size] at h1
-      rcases fuel2 with _ | f2
-      · simp [TripleExpr.size] at h2
-      rfl
-  | tc p z =>
-      intro fuel1 fuel2 h1 h2 S G τ M
-      rcases fuel1 with _ | f1
-      · simp [TripleExpr.size] at h1
-      rcases fuel2 with _ | f2
-      · simp [TripleExpr.size] at h2
-      rfl
-  | choice e1 e2 ih1 ih2 =>
-      intro fuel1 fuel2 h1 h2 S G τ M
-      rcases fuel1 with _ | f1
-      · simp [TripleExpr.size] at h1
-      rcases fuel2 with _ | f2
-      · simp [TripleExpr.size] at h2
-      simp only [TripleExpr.size] at h1 h2
-      show SatisfiesEFuel f1 S G τ M e1 ∨ SatisfiesEFuel f1 S G τ M e2 ↔
-        SatisfiesEFuel f2 S G τ M e1 ∨ SatisfiesEFuel f2 S G τ M e2
-      rw [ih1 f1 f2 (by omega) (by omega) S G τ M, ih2 f1 f2 (by omega) (by omega) S G τ M]
-  | seq e1 e2 ih1 ih2 =>
-      intro fuel1 fuel2 h1 h2 S G τ M
-      rcases fuel1 with _ | f1
-      · simp [TripleExpr.size] at h1
-      rcases fuel2 with _ | f2
-      · simp [TripleExpr.size] at h2
-      simp only [TripleExpr.size] at h1 h2
-      show (∃ M1 M2, DisjointUnion M M1 M2 ∧
-            SatisfiesEFuel f1 S G τ M1 e1 ∧ SatisfiesEFuel f1 S G τ M2 e2) ↔
-          (∃ M1 M2, DisjointUnion M M1 M2 ∧
-            SatisfiesEFuel f2 S G τ M1 e1 ∧ SatisfiesEFuel f2 S G τ M2 e2)
-      constructor
-      · rintro ⟨M1, M2, hdu, h1', h2'⟩
-        exact ⟨M1, M2, hdu, (ih1 f1 f2 (by omega) (by omega) S G τ M1).mp h1',
-          (ih2 f1 f2 (by omega) (by omega) S G τ M2).mp h2'⟩
-      · rintro ⟨M1, M2, hdu, h1', h2'⟩
-        exact ⟨M1, M2, hdu, (ih1 f1 f2 (by omega) (by omega) S G τ M1).mpr h1',
-          (ih2 f1 f2 (by omega) (by omega) S G τ M2).mpr h2'⟩
-  | star e ih =>
-      intro fuel1 fuel2 h1 h2 S G τ M
-      rcases fuel1 with _ | f1
-      · simp [TripleExpr.size] at h1
-      rcases fuel2 with _ | f2
-      · simp [TripleExpr.size] at h2
-      simp only [TripleExpr.size] at h1 h2
-      show (∃ Ns : List (Finset Triple), DisjointUnionList M Ns ∧
-            ∀ Ni ∈ Ns, SatisfiesEFuel f1 S G τ Ni e) ↔
-          (∃ Ns : List (Finset Triple), DisjointUnionList M Ns ∧
-            ∀ Ni ∈ Ns, SatisfiesEFuel f2 S G τ Ni e)
-      constructor
-      · rintro ⟨Ns, hdu, hall⟩
-        exact ⟨Ns, hdu, fun Ni hNi => (ih f1 f2 (by omega) (by omega) S G τ Ni).mp (hall Ni hNi)⟩
-      · rintro ⟨Ns, hdu, hall⟩
-        exact ⟨Ns, hdu, fun Ni hNi => (ih f1 f2 (by omega) (by omega) S G τ Ni).mpr (hall Ni hNi)⟩
-
-/-- The structural size of a shape expression. (It has the same role as
-`TripleExpr.size`: a large bound.) -/
-def ShapeExpr.size : ShapeExpr → ℕ
-  | .constraint _ => 1
-  | .ofShape h => h.triples.size + 1
-  | .extends _ h => h.triples.size + 1
-  | .or s1 s2 => s1.size + s2.size + 1
-  | .and s1 s2 => s1.size + s2.size + 1
-  | .not s => s.size + 1
-
-/-- `SatisfiesMFuel` becomes stable on each `NoExtends` shape when
-`Fuel ≥ s.size`. It needs no hypothesis on the schema, because such a
-shape never uses rule 18. We prove it before the general `stableMGen`
-below, because `restr(x)` also needs it. `restr(x)` is not a subterm of
-the shape of the general induction. -/
-theorem stableM_noExtends (u : ShapeExpr) (hu : u.NoExtends) :
-    ∀ fuel1 fuel2, u.size ≤ fuel1 → u.size ≤ fuel2 →
-      ∀ (S : Schema) (G : Graph) (τ : Typing) (M : Finset Triple),
-        SatisfiesMFuel fuel1 S G τ M u ↔ SatisfiesMFuel fuel2 S G τ M u := by
-  induction u with
-  | constraint c =>
-      intro fuel1 fuel2 h1 h2 S G τ M
-      rcases fuel1 with _ | f1
-      · simp [ShapeExpr.size] at h1
-      rcases fuel2 with _ | f2
-      · simp [ShapeExpr.size] at h2
-      rfl
-  | ofShape h =>
-      intro fuel1 fuel2 h1 h2 S G τ M
-      rcases fuel1 with _ | f1
-      · simp [ShapeExpr.size] at h1
-      rcases fuel2 with _ | f2
-      · simp [ShapeExpr.size] at h2
-      simp only [ShapeExpr.size] at h1 h2
-      show (SatisfiesEFuel f1 S G τ (Me τ M h.triples) h.triples ∧
-            props (Mnotin τ M h.triples) ⊆ h.extra.getD ∅ ∧
-            (h.closed → props M ⊆ h.triples.props ∪ h.extra.getD ∅)) ↔
-          (SatisfiesEFuel f2 S G τ (Me τ M h.triples) h.triples ∧
-            props (Mnotin τ M h.triples) ⊆ h.extra.getD ∅ ∧
-            (h.closed → props M ⊆ h.triples.props ∪ h.extra.getD ∅))
-      rw [stableE h.triples f1 f2 (by omega) (by omega) S G τ (Me τ M h.triples)]
-  | «extends» xs h => simp only [ShapeExpr.NoExtends] at hu
-  | or s1 s2 ih1 ih2 =>
-      intro fuel1 fuel2 h1 h2 S G τ M
-      rcases fuel1 with _ | f1
-      · simp [ShapeExpr.size] at h1
-      rcases fuel2 with _ | f2
-      · simp [ShapeExpr.size] at h2
-      simp only [ShapeExpr.size] at h1 h2
-      simp only [ShapeExpr.NoExtends] at hu
-      show SatisfiesMFuel f1 S G τ M s1 ∨ SatisfiesMFuel f1 S G τ M s2 ↔
-        SatisfiesMFuel f2 S G τ M s1 ∨ SatisfiesMFuel f2 S G τ M s2
-      rw [ih1 hu.1 f1 f2 (by omega) (by omega) S G τ M, ih2 hu.2 f1 f2 (by omega) (by omega) S G τ M]
-  | and s1 s2 ih1 ih2 =>
-      intro fuel1 fuel2 h1 h2 S G τ M
-      rcases fuel1 with _ | f1
-      · simp [ShapeExpr.size] at h1
-      rcases fuel2 with _ | f2
-      · simp [ShapeExpr.size] at h2
-      simp only [ShapeExpr.size] at h1 h2
-      simp only [ShapeExpr.NoExtends] at hu
-      show SatisfiesMFuel f1 S G τ M s1 ∧ SatisfiesMFuel f1 S G τ M s2 ↔
-        SatisfiesMFuel f2 S G τ M s1 ∧ SatisfiesMFuel f2 S G τ M s2
-      rw [ih1 hu.1 f1 f2 (by omega) (by omega) S G τ M, ih2 hu.2 f1 f2 (by omega) (by omega) S G τ M]
-  | not s ih =>
-      intro fuel1 fuel2 h1 h2 S G τ M
-      rcases fuel1 with _ | f1
-      · simp [ShapeExpr.size] at h1
-      rcases fuel2 with _ | f2
-      · simp [ShapeExpr.size] at h2
-      simp only [ShapeExpr.size] at h1 h2
-      simp only [ShapeExpr.NoExtends] at hu
-      show ¬ SatisfiesMFuel f1 S G τ M s ↔ ¬ SatisfiesMFuel f2 S G τ M s
-      rw [ih hu f1 f2 (by omega) (by omega) S G τ M]
-
-/-! ### The fuel bound indexed by rank, and why it is sufficient
-
-* `ShapeExpr.reqFuelAt S lower s` computes a fuel bound for `s`. For each
-  `.extends` node, it uses `lower` as the bound for the restrictions of
-  the ancestors.
-* `Schema.reqFuelR S r` gives `lower` recursively, indexed by a rank
-  budget `r`:
-  * `reqFuelR S 0 := ShapeExpr.size`. This is sound at rank 0, where each
-    reachable shape is `NoExtends`.
-  * `reqFuelR S (r+1) := reqFuelAt S (reqFuelR S r)`.
-
-`Schema.RankOk S r s` is the side condition: rank `r` covers each extends
-target that is reachable from `s`. It is made in the same way as
-`reqFuelR`.
+* `RankOkAt S lowerOk s` checks one layer. For each `.extends` node of
+  `s`, the restriction `restr(x)` of each ancestor `x` must satisfy
+  `lowerOk`.
+* `RankOk S 0 := RankOkAt S (fun _ => False)`: no `restr(x)` is reachable.
+* `RankOk S (r+1) := RankOkAt S (RankOk S r)`.
 
 `Schema.rankOk_shapeDef` is the acyclicity argument. For `x ∈ S.X`,
 `RankOk S (extRank x) (S.shapeDef x)` is true, by strong induction on
 `extRank x`. The reason is that each extends target reachable from the
 definition of `x` has a strictly smaller rank (`extRank_lt_of_extEdge`).
 
-`Schema.rankOk_any` extends this result to each `ShapeExpr`, not only to
-an `S.shapeDef x`. It uses one global rank bound,
-`S.X.sup S.extRank + 1`. This also covers the top-level queries
-`S.shapeDef z` for a simple label `z` that is not in `S.X`. -/
+`Schema.rankOk_any` extends this result to each `ShapeExpr`, with one
+global rank bound, `S.X.sup S.extRank + 1`. -/
 
-noncomputable def ShapeExpr.reqFuelAt (S : Schema) (lower : ShapeExpr → ℕ) : ShapeExpr → ℕ
-  | .constraint _ => 1
-  | .ofShape h => h.triples.size + 1
-  | .extends xs h =>
-      max (h.triples.size + 1)
-        ((S.ancSet xs).sup (fun x =>
-          max ((S.shapeDef x).extTe.size + 1)
-            (match (S.shapeDef x).restrOf with
-             | none => 0
-             | some u => lower u))) + 1
-  | .or s1 s2 => max (ShapeExpr.reqFuelAt S lower s1) (ShapeExpr.reqFuelAt S lower s2) + 1
-  | .and s1 s2 => max (ShapeExpr.reqFuelAt S lower s1) (ShapeExpr.reqFuelAt S lower s2) + 1
-  | .not s => ShapeExpr.reqFuelAt S lower s + 1
-
-/-- The fuel bound indexed by rank. `reqFuelR S r` is `reqFuelAt` iterated
-`r` times. It starts from plain `ShapeExpr.size`, which is sound at rank
-`0`, where each reachable shape is `NoExtends`. -/
-noncomputable def Schema.reqFuelR (S : Schema) : ℕ → ShapeExpr → ℕ
-  | 0 => ShapeExpr.size
-  | r + 1 => ShapeExpr.reqFuelAt S (Schema.reqFuelR S r)
-
-/-- The rank-`r` version of `ShapeExpr.NoExtends`. For each `.extends`
-node, the restrictions of the ancestors are covered, unfolded through `r`
-more cascading `.extends` steps. `RankOk S 0` is the same as
-`NoExtends`. -/
+/-- One layer of the rank witness. Refer to the section docstring. -/
 def Schema.RankOkAt (S : Schema) (lowerOk : ShapeExpr → Prop) : ShapeExpr → Prop
   | .constraint _ => True
   | .ofShape _ => True
@@ -326,29 +127,18 @@ def Schema.RankOkAt (S : Schema) (lowerOk : ShapeExpr → Prop) : ShapeExpr → 
   | .and s1 s2 => Schema.RankOkAt S lowerOk s1 ∧ Schema.RankOkAt S lowerOk s2
   | .not s => Schema.RankOkAt S lowerOk s
 
-noncomputable def Schema.RankOk (S : Schema) : ℕ → ShapeExpr → Prop
-  | 0 => ShapeExpr.NoExtends
+def Schema.RankOk (S : Schema) : ℕ → ShapeExpr → Prop
+  | 0 => Schema.RankOkAt S (fun _ => False)
   | r + 1 => Schema.RankOkAt S (Schema.RankOk S r)
 
 theorem Schema.RankOkAt.of_noExtends (S : Schema) (lowerOk : ShapeExpr → Prop) :
     ∀ s : ShapeExpr, s.NoExtends → Schema.RankOkAt S lowerOk s := by
   intro s
   induction s with
-  | constraint c => intro _; trivial
-  | ofShape h => intro _; trivial
-  | «extends» xs h => intro hs; simp [ShapeExpr.NoExtends] at hs
-  | or s1 s2 ih1 ih2 =>
-      intro hs
-      simp only [ShapeExpr.NoExtends] at hs
-      exact ⟨ih1 hs.1, ih2 hs.2⟩
-  | and s1 s2 ih1 ih2 =>
-      intro hs
-      simp only [ShapeExpr.NoExtends] at hs
-      exact ⟨ih1 hs.1, ih2 hs.2⟩
-  | not s ih =>
-      intro hs
-      simp only [ShapeExpr.NoExtends] at hs
-      exact ih hs
+  | constraint _ | ofShape _ => intro _; trivial
+  | «extends» _ _ => intro hs; exact hs.elim
+  | or _ _ ih1 ih2 | and _ _ ih1 ih2 => intro hs; exact ⟨ih1 hs.1, ih2 hs.2⟩
+  | not _ ih => exact ih
 
 theorem Schema.RankOkAt.mono_pred (S : Schema) {P Q : ShapeExpr → Prop} (hPQ : ∀ u, P u → Q u) :
     ∀ s, Schema.RankOkAt S P s → Schema.RankOkAt S Q s := by
@@ -368,14 +158,8 @@ rank is also sufficient. -/
 theorem Schema.RankOk.mono {S : Schema} : ∀ r s, Schema.RankOk S r s → Schema.RankOk S (r + 1) s := by
   intro r
   induction r with
-  | zero =>
-      intro s hs
-      show Schema.RankOkAt S (Schema.RankOk S 0) s
-      exact Schema.RankOkAt.of_noExtends S _ s hs
-  | succ r' ih =>
-      intro s hs
-      show Schema.RankOkAt S (Schema.RankOk S (r' + 1)) s
-      exact Schema.RankOkAt.mono_pred S ih s hs
+  | zero => exact Schema.RankOkAt.mono_pred S (fun _ h => h.elim)
+  | succ r' ih => exact Schema.RankOkAt.mono_pred S ih
 
 theorem Schema.RankOk.mono_le {S : Schema} {r r' : ℕ} (h : r ≤ r') :
     ∀ s, Schema.RankOk S r s → Schema.RankOk S r' s := by
@@ -450,7 +234,7 @@ of `x`. The proof is by strong induction on `extRank x`, with
 `RankOkAt_of_edges`. This is the precise form of the termination argument
 of Lemma 1. `ExtAcyclic` alone is sufficient. There is no other
 restriction on the locations of `extends` nodes. -/
-theorem Schema.rankOk_shapeDef {S : Schema} (hAcyclic : S.ExtAcyclic) (hWFX : S.WellFormedX) :
+theorem Schema.rankOk_shapeDef {S : Schema} (hAcyclic : S.ExtAcyclic) :
     ∀ x ∈ S.X, Schema.RankOk S (S.extRank x) (S.shapeDef x) := by
   have key : ∀ n x, x ∈ S.X → S.extRank x = n → Schema.RankOk S (S.extRank x) (S.shapeDef x) := by
     intro n
@@ -472,7 +256,7 @@ theorem Schema.rankOk_shapeDef {S : Schema} (hAcyclic : S.ExtAcyclic) (hWFX : S.
 /-- Extends `rankOk_shapeDef` from one `x ∈ S.X` to each `ShapeExpr`
 (also to `S.shapeDef z` for a simple label `z` that is not in `S.X`). The
 global bound `S.X.sup S.extRank + 1` is always sufficient. -/
-theorem Schema.rankOk_any {S : Schema} (hAcyclic : S.ExtAcyclic) (hWFX : S.WellFormedX) :
+theorem Schema.rankOk_any {S : Schema} (hAcyclic : S.ExtAcyclic) :
     ∀ e : ShapeExpr, Schema.RankOk S (S.X.sup S.extRank + 1) e := by
   intro e
   induction e with
@@ -483,261 +267,103 @@ theorem Schema.rankOk_any {S : Schema} (hAcyclic : S.ExtAcyclic) (hWFX : S.WellF
       intro x' hx' u hu
       have hx'X : x' ∈ S.X := Schema.ancSet_subset_X hx'
       have hrank : S.extRank x' ≤ S.X.sup S.extRank := Finset.le_sup hx'X
-      have hok := Schema.rankOk_shapeDef hAcyclic hWFX x' hx'X
+      have hok := Schema.rankOk_shapeDef hAcyclic x' hx'X
       have hru := Schema.RankOk_restrOf hx'X hu hok
       exact Schema.RankOk.mono_le hrank u hru
   | or s1 s2 ih1 ih2 => exact ⟨ih1, ih2⟩
   | and s1 s2 ih1 ih2 => exact ⟨ih1, ih2⟩
   | not s ih => exact ih
 
-/-- `SatisfiesMFuel` becomes stable at the rank-`r` fuel `reqFuelR S r s`,
-if `RankOk S r s` is true. The proof is by induction on `r`:
+/-- The fuel that is always sufficient for `S` (refer to `rankOk_any`). -/
+noncomputable def Schema.fuelBound (S : Schema) : ℕ := S.X.sup S.extRank + 1
 
-* Rank 0 is `stableM_noExtends`.
-* At each higher rank, the induction hypothesis of rank `r'` gives the
-  stability of a restriction. -/
-theorem stableMGen (S : Schema) (_hWFX : S.WellFormedX) :
-    ∀ r s, Schema.RankOk S r s →
-      ∀ fuel1 fuel2, Schema.reqFuelR S r s ≤ fuel1 → Schema.reqFuelR S r s ≤ fuel2 →
-        ∀ (G : Graph) (τ : Typing) (M : Finset Triple),
-          SatisfiesMFuel fuel1 S G τ M s ↔ SatisfiesMFuel fuel2 S G τ M s := by
+theorem Schema.rankOk_fuelBound {S : Schema} (hAcyclic : S.ExtAcyclic) {r : ℕ}
+    (hr : S.fuelBound ≤ r) (s : ShapeExpr) : Schema.RankOk S r s :=
+  Schema.RankOk.mono_le hr s (Schema.rankOk_any hAcyclic s)
+
+/-! ### The stabilization argument -/
+
+/-- One layer of Table 3 depends on `restr` only through its values on the
+restrictions that the rank witness covers. The proof is a plain
+structural induction. -/
+theorem SatisfiesMAt_congr_restr {S : Schema} {τ : Typing}
+    {restr1 restr2 : Finset Triple → ShapeExpr → Prop} {P : ShapeExpr → Prop}
+    (hr : ∀ u, P u → ∀ M, restr1 M u ↔ restr2 M u) :
+    ∀ s, S.RankOkAt P s → ∀ M, SatisfiesMAt S τ restr1 M s ↔ SatisfiesMAt S τ restr2 M s := by
+  intro s
+  induction s with
+  | constraint _ | ofShape _ => intros; rfl
+  | «extends» xs h =>
+      intro hRank M
+      simp only [SatisfiesMAt]
+      refine exists_congr fun M' => exists_congr fun Mx => and_congr_right fun _ =>
+        and_congr_right fun _ => and_congr_right fun _ => ?_
+      exact forall₂_congr fun x hx => forall₂_congr fun u hu => hr u (hRank x hx u hu) _
+  | or s1 s2 ih1 ih2 => intro hRank M; exact or_congr (ih1 hRank.1 M) (ih2 hRank.2 M)
+  | and s1 s2 ih1 ih2 => intro hRank M; exact and_congr (ih1 hRank.1 M) (ih2 hRank.2 M)
+  | not s ih => intro hRank M; exact not_congr (ih hRank M)
+
+/-- `SatisfiesMFuel` is stable above a sufficient rank: if `RankOk S r s`,
+each fuel `r' ≥ r` gives the same result. The proof is an induction on
+`r`. Each step is `SatisfiesMAt_congr_restr`. -/
+theorem stableM {S : Schema} {τ : Typing} :
+    ∀ r s, Schema.RankOk S r s → ∀ r', r ≤ r' → ∀ M,
+      SatisfiesMFuel r S τ M s ↔ SatisfiesMFuel r' S τ M s := by
   intro r
   induction r with
   | zero =>
-      intro s hs fuel1 fuel2 h1 h2 G τ M
-      exact stableM_noExtends s hs fuel1 fuel2 h1 h2 S G τ M
-  | succ r' ihr =>
-      intro s
-      induction s with
-      | constraint c =>
-          intro _ fuel1 fuel2 h1 h2 G τ M
-          rcases fuel1 with _ | f1
-          · simp [Schema.reqFuelR, ShapeExpr.reqFuelAt] at h1
-          rcases fuel2 with _ | f2
-          · simp [Schema.reqFuelR, ShapeExpr.reqFuelAt] at h2
-          rfl
-      | ofShape h =>
-          intro _ fuel1 fuel2 h1 h2 G τ M
-          rcases fuel1 with _ | f1
-          · simp [Schema.reqFuelR, ShapeExpr.reqFuelAt] at h1
-          rcases fuel2 with _ | f2
-          · simp [Schema.reqFuelR, ShapeExpr.reqFuelAt] at h2
-          simp only [Schema.reqFuelR, ShapeExpr.reqFuelAt] at h1 h2
-          show (SatisfiesEFuel f1 S G τ (Me τ M h.triples) h.triples ∧
-                props (Mnotin τ M h.triples) ⊆ h.extra.getD ∅ ∧
-                (h.closed → props M ⊆ h.triples.props ∪ h.extra.getD ∅)) ↔
-              (SatisfiesEFuel f2 S G τ (Me τ M h.triples) h.triples ∧
-                props (Mnotin τ M h.triples) ⊆ h.extra.getD ∅ ∧
-                (h.closed → props M ⊆ h.triples.props ∪ h.extra.getD ∅))
-          rw [stableE h.triples f1 f2 (by omega) (by omega) S G τ (Me τ M h.triples)]
-      | «extends» xs h =>
-          intro hRank fuel1 fuel2 h1 h2 G τ M
-          rcases fuel1 with _ | f1
-          · simp [Schema.reqFuelR, ShapeExpr.reqFuelAt] at h1
-          rcases fuel2 with _ | f2
-          · simp [Schema.reqFuelR, ShapeExpr.reqFuelAt] at h2
-          simp only [Schema.reqFuelR, ShapeExpr.reqFuelAt] at h1 h2
-          have hRankAt : ∀ x ∈ S.ancSet xs, ∀ u, (S.shapeDef x).restrOf = some u →
-              Schema.RankOk S r' u := hRank
-          have hboundE : ∀ x ∈ S.ancSet xs, (S.shapeDef x).extTe.size + 1 ≤ f1 ∧
-              (S.shapeDef x).extTe.size + 1 ≤ f2 := by
-            intro x hx
-            have hle : max ((S.shapeDef x).extTe.size + 1)
-                (match (S.shapeDef x).restrOf with
-                 | none => 0 | some u => Schema.reqFuelR S r' u) ≤
-                  (S.ancSet xs).sup (fun x => max ((S.shapeDef x).extTe.size + 1)
-                    (match (S.shapeDef x).restrOf with
-                     | none => 0 | some u => Schema.reqFuelR S r' u)) :=
-              Finset.le_sup (f := fun x => max ((S.shapeDef x).extTe.size + 1)
-                (match (S.shapeDef x).restrOf with
-                 | none => 0 | some u => Schema.reqFuelR S r' u)) hx
-            omega
-          have hboundR : ∀ x ∈ S.ancSet xs, ∀ u, (S.shapeDef x).restrOf = some u →
-              Schema.reqFuelR S r' u ≤ f1 ∧ Schema.reqFuelR S r' u ≤ f2 := by
-            intro x hx u hu
-            have hle : max ((S.shapeDef x).extTe.size + 1) (Schema.reqFuelR S r' u) ≤
-                (S.ancSet xs).sup (fun x => max ((S.shapeDef x).extTe.size + 1)
-                  (match (S.shapeDef x).restrOf with
-                   | none => 0 | some u => Schema.reqFuelR S r' u)) := by
-              have := Finset.le_sup (f := fun x => max ((S.shapeDef x).extTe.size + 1)
-                (match (S.shapeDef x).restrOf with
-                 | none => 0 | some u => Schema.reqFuelR S r' u)) hx
-              rw [hu] at this
-              exact this
-            omega
-          show (∃ M' Mx, DisjointUnionOn M M' (S.ancSet xs) Mx ∧
-                SatisfiesMFuel f1 S G τ M' (.ofShape h) ∧
-                (∀ x ∈ S.ancSet xs, SatisfiesEFuel f1 S G τ (Mx x) (S.shapeDef x).extTe) ∧
-                (∀ x ∈ S.ancSet xs, ∀ u, (S.shapeDef x).restrOf = some u →
-                  SatisfiesMFuel f1 S G τ ((S.anc x).biUnion Mx) u)) ↔
-              (∃ M' Mx, DisjointUnionOn M M' (S.ancSet xs) Mx ∧
-                SatisfiesMFuel f2 S G τ M' (.ofShape h) ∧
-                (∀ x ∈ S.ancSet xs, SatisfiesEFuel f2 S G τ (Mx x) (S.shapeDef x).extTe) ∧
-                (∀ x ∈ S.ancSet xs, ∀ u, (S.shapeDef x).restrOf = some u →
-                  SatisfiesMFuel f2 S G τ ((S.anc x).biUnion Mx) u))
-          refine exists_congr fun M' => exists_congr fun Mx => and_congr_right fun _ => ?_
-          have hofshapesize : (ShapeExpr.ofShape h).size = h.triples.size + 1 := rfl
-          have he : SatisfiesMFuel f1 S G τ M' (.ofShape h) ↔ SatisfiesMFuel f2 S G τ M' (.ofShape h) :=
-            stableM_noExtends (.ofShape h) trivial f1 f2 (by rw [hofshapesize]; omega)
-              (by rw [hofshapesize]; omega) S G τ M'
-          have hext : (∀ x ∈ S.ancSet xs, SatisfiesEFuel f1 S G τ (Mx x) (S.shapeDef x).extTe) ↔
-              (∀ x ∈ S.ancSet xs, SatisfiesEFuel f2 S G τ (Mx x) (S.shapeDef x).extTe) := by
-            refine forall_congr' fun x => forall_congr' fun hx => ?_
-            obtain ⟨hb1, hb2⟩ := hboundE x hx
-            exact stableE (S.shapeDef x).extTe f1 f2 (by omega) (by omega) S G τ (Mx x)
-          have hrestr : (∀ x ∈ S.ancSet xs, ∀ u, (S.shapeDef x).restrOf = some u →
-                SatisfiesMFuel f1 S G τ ((S.anc x).biUnion Mx) u) ↔
-              (∀ x ∈ S.ancSet xs, ∀ u, (S.shapeDef x).restrOf = some u →
-                SatisfiesMFuel f2 S G τ ((S.anc x).biUnion Mx) u) := by
-            refine forall_congr' fun x => forall_congr' fun hx => forall_congr' fun u => ?_
-            refine imp_congr_right fun hru => ?_
-            obtain ⟨hb1, hb2⟩ := hboundR x hx u hru
-            exact ihr u (hRankAt x hx u hru) f1 f2 hb1 hb2 G τ _
-          rw [he, hext, hrestr]
-      | or s1 s2 ih1 ih2 =>
-          intro hRank fuel1 fuel2 h1 h2 G τ M
-          rcases fuel1 with _ | f1
-          · simp [Schema.reqFuelR, ShapeExpr.reqFuelAt] at h1
-          rcases fuel2 with _ | f2
-          · simp [Schema.reqFuelR, ShapeExpr.reqFuelAt] at h2
-          have e1 : Schema.reqFuelR S (r' + 1) s1 = ShapeExpr.reqFuelAt S (Schema.reqFuelR S r') s1 := rfl
-          have e2 : Schema.reqFuelR S (r' + 1) s2 = ShapeExpr.reqFuelAt S (Schema.reqFuelR S r') s2 := rfl
-          simp only [Schema.reqFuelR, ShapeExpr.reqFuelAt] at h1 h2
-          show SatisfiesMFuel f1 S G τ M s1 ∨ SatisfiesMFuel f1 S G τ M s2 ↔
-            SatisfiesMFuel f2 S G τ M s1 ∨ SatisfiesMFuel f2 S G τ M s2
-          rw [ih1 hRank.1 f1 f2 (by omega) (by omega) G τ M,
-              ih2 hRank.2 f1 f2 (by omega) (by omega) G τ M]
-      | and s1 s2 ih1 ih2 =>
-          intro hRank fuel1 fuel2 h1 h2 G τ M
-          rcases fuel1 with _ | f1
-          · simp [Schema.reqFuelR, ShapeExpr.reqFuelAt] at h1
-          rcases fuel2 with _ | f2
-          · simp [Schema.reqFuelR, ShapeExpr.reqFuelAt] at h2
-          have e1 : Schema.reqFuelR S (r' + 1) s1 = ShapeExpr.reqFuelAt S (Schema.reqFuelR S r') s1 := rfl
-          have e2 : Schema.reqFuelR S (r' + 1) s2 = ShapeExpr.reqFuelAt S (Schema.reqFuelR S r') s2 := rfl
-          simp only [Schema.reqFuelR, ShapeExpr.reqFuelAt] at h1 h2
-          show SatisfiesMFuel f1 S G τ M s1 ∧ SatisfiesMFuel f1 S G τ M s2 ↔
-            SatisfiesMFuel f2 S G τ M s1 ∧ SatisfiesMFuel f2 S G τ M s2
-          rw [ih1 hRank.1 f1 f2 (by omega) (by omega) G τ M,
-              ih2 hRank.2 f1 f2 (by omega) (by omega) G τ M]
-      | not s ih =>
-          intro hRank fuel1 fuel2 h1 h2 G τ M
-          rcases fuel1 with _ | f1
-          · simp [Schema.reqFuelR, ShapeExpr.reqFuelAt] at h1
-          rcases fuel2 with _ | f2
-          · simp [Schema.reqFuelR, ShapeExpr.reqFuelAt] at h2
-          have e1 : Schema.reqFuelR S (r' + 1) s = ShapeExpr.reqFuelAt S (Schema.reqFuelR S r') s := rfl
-          simp only [Schema.reqFuelR, ShapeExpr.reqFuelAt] at h1 h2
-          show ¬ SatisfiesMFuel f1 S G τ M s ↔ ¬ SatisfiesMFuel f2 S G τ M s
-          rw [ih hRank f1 f2 (by omega) (by omega) G τ M]
+      intro s hs r' _ M
+      cases r' with
+      | zero => rfl
+      | succ r' => exact SatisfiesMAt_congr_restr (fun _ h => h.elim) s hs M
+  | succ r ih =>
+      intro s hs r' hr' M
+      obtain ⟨r', rfl⟩ : ∃ k, r' = k + 1 := ⟨r' - 1, by omega⟩
+      exact SatisfiesMAt_congr_restr (fun u hu M => ih u hu r' (by omega) M) s hs M
 
-/-- The fuel bound that does not depend on rank. It is `reqFuelR` at the
-largest rank that the schema can need, `S.X.sup S.extRank + 1`.
-`rankOk_any` shows that this rank is always sufficient for each shape. -/
-noncomputable def Schema.reqFuelGen (S : Schema) (s : ShapeExpr) : ℕ :=
-  Schema.reqFuelR S (S.X.sup S.extRank + 1) s
-
-theorem stableMGenFinal {S : Schema} (hWFX : S.WellFormedX) (hAcyclic : S.ExtAcyclic) (s : ShapeExpr) :
-    ∀ fuel1 fuel2, Schema.reqFuelGen S s ≤ fuel1 → Schema.reqFuelGen S s ≤ fuel2 →
-      ∀ (G : Graph) (τ : Typing) (M : Finset Triple),
-        SatisfiesMFuel fuel1 S G τ M s ↔ SatisfiesMFuel fuel2 S G τ M s :=
-  stableMGen S hWFX (S.X.sup S.extRank + 1) s (Schema.rankOk_any hAcyclic hWFX s)
-
-/-- `SatisfiesFuel` (Table 2) becomes stable when
-`Fuel ≥ reqFuelGen S s + 1`, for a schema that satisfies `WellFormedX` and
-`ExtAcyclic`. -/
-theorem stableFuel {S : Schema} (hWFX : S.WellFormedX) (hAcyclic : S.ExtAcyclic) (s : ShapeExpr) :
-    ∀ fuel1 fuel2, Schema.reqFuelGen S s + 1 ≤ fuel1 → Schema.reqFuelGen S s + 1 ≤ fuel2 →
-      ∀ (G : Graph) (τ : Typing) (n : RDFNode),
-        SatisfiesFuel fuel1 S G τ n s ↔ SatisfiesFuel fuel2 S G τ n s := by
+/-- Table 2 is structural. Thus, if two Table-3 evaluators agree on the
+leaves (`.ofShape` and `.extends`) that satisfy a predicate `Q`, and `Q`
+goes down through `or`, `and` and `not`, the two results agree. -/
+theorem SatisfiesAt_congr {G : Graph} {satM1 satM2 : Finset Triple → ShapeExpr → Prop}
+    {n : RDFNode} (Q : ShapeExpr → Prop)
+    (hor : ∀ {a b}, Q (.or a b) → Q a ∧ Q b) (hand : ∀ {a b}, Q (.and a b) → Q a ∧ Q b)
+    (hnot : ∀ {a}, Q (.not a) → Q a) (hleaf : ∀ t, Q t → ∀ M, satM1 M t ↔ satM2 M t) :
+    ∀ s, Q s → (SatisfiesAt G satM1 n s ↔ SatisfiesAt G satM2 n s) := by
+  intro s
   induction s with
-  | constraint c =>
-      intro fuel1 fuel2 h1 h2 G τ n
-      rcases fuel1 with _ | f1
-      · omega
-      rcases fuel2 with _ | f2
-      · omega
-      rfl
-  | ofShape h =>
-      intro fuel1 fuel2 h1 h2 G τ n
-      rcases fuel1 with _ | f1
-      · omega
-      rcases fuel2 with _ | f2
-      · omega
-      show SatisfiesMFuel f1 S G τ (neigh G n) (.ofShape h) ↔
-        SatisfiesMFuel f2 S G τ (neigh G n) (.ofShape h)
-      exact stableMGenFinal hWFX hAcyclic (.ofShape h) f1 f2 (by omega) (by omega) G τ (neigh G n)
-  | «extends» xs h =>
-      intro fuel1 fuel2 h1 h2 G τ n
-      rcases fuel1 with _ | f1
-      · omega
-      rcases fuel2 with _ | f2
-      · omega
-      show SatisfiesMFuel f1 S G τ (neigh G n) (.extends xs h) ↔
-        SatisfiesMFuel f2 S G τ (neigh G n) (.extends xs h)
-      exact stableMGenFinal hWFX hAcyclic (.extends xs h) f1 f2 (by omega) (by omega) G τ (neigh G n)
-  | or s1 s2 ih1 ih2 =>
-      intro fuel1 fuel2 h1 h2 G τ n
-      rcases fuel1 with _ | f1
-      · omega
-      rcases fuel2 with _ | f2
-      · omega
-      have e1 : Schema.reqFuelGen S (.or s1 s2) =
-          max (Schema.reqFuelR S (S.X.sup S.extRank + 1) s1)
-              (Schema.reqFuelR S (S.X.sup S.extRank + 1) s2) + 1 := rfl
-      have ea : Schema.reqFuelGen S s1 = Schema.reqFuelR S (S.X.sup S.extRank + 1) s1 := rfl
-      have eb : Schema.reqFuelGen S s2 = Schema.reqFuelR S (S.X.sup S.extRank + 1) s2 := rfl
-      rw [e1] at h1 h2
-      show SatisfiesFuel f1 S G τ n s1 ∨ SatisfiesFuel f1 S G τ n s2 ↔
-        SatisfiesFuel f2 S G τ n s1 ∨ SatisfiesFuel f2 S G τ n s2
-      rw [ih1 f1 f2 (by omega) (by omega) G τ n, ih2 f1 f2 (by omega) (by omega) G τ n]
-  | and s1 s2 ih1 ih2 =>
-      intro fuel1 fuel2 h1 h2 G τ n
-      rcases fuel1 with _ | f1
-      · omega
-      rcases fuel2 with _ | f2
-      · omega
-      have e1 : Schema.reqFuelGen S (.and s1 s2) =
-          max (Schema.reqFuelR S (S.X.sup S.extRank + 1) s1)
-              (Schema.reqFuelR S (S.X.sup S.extRank + 1) s2) + 1 := rfl
-      have ea : Schema.reqFuelGen S s1 = Schema.reqFuelR S (S.X.sup S.extRank + 1) s1 := rfl
-      have eb : Schema.reqFuelGen S s2 = Schema.reqFuelR S (S.X.sup S.extRank + 1) s2 := rfl
-      rw [e1] at h1 h2
-      show SatisfiesFuel f1 S G τ n s1 ∧ SatisfiesFuel f1 S G τ n s2 ↔
-        SatisfiesFuel f2 S G τ n s1 ∧ SatisfiesFuel f2 S G τ n s2
-      rw [ih1 f1 f2 (by omega) (by omega) G τ n, ih2 f1 f2 (by omega) (by omega) G τ n]
-  | not s ih =>
-      intro fuel1 fuel2 h1 h2 G τ n
-      rcases fuel1 with _ | f1
-      · omega
-      rcases fuel2 with _ | f2
-      · omega
-      have e1 : Schema.reqFuelGen S (.not s) = Schema.reqFuelR S (S.X.sup S.extRank + 1) s + 1 := rfl
-      have ea : Schema.reqFuelGen S s = Schema.reqFuelR S (S.X.sup S.extRank + 1) s := rfl
-      rw [e1] at h1 h2
-      show ¬ SatisfiesFuel f1 S G τ n s ↔ ¬ SatisfiesFuel f2 S G τ n s
-      rw [ih f1 f2 (by omega) (by omega) G τ n]
+  | constraint _ => intros; rfl
+  | ofShape h => intro hQ; exact hleaf _ hQ _
+  | «extends» xs h => intro hQ; exact hleaf _ hQ _
+  | or s1 s2 ih1 ih2 => intro hQ; exact or_congr (ih1 (hor hQ).1) (ih2 (hor hQ).2)
+  | and s1 s2 ih1 ih2 => intro hQ; exact and_congr (ih1 (hand hQ).1) (ih2 (hand hQ).2)
+  | not s ih => intro hQ; exact not_congr (ih (hnot hQ))
+
+/-- `SatisfiesFuel` (Table 2) is stable above `S.fuelBound`. -/
+theorem stableFuel {S : Schema} (hAcyclic : S.ExtAcyclic) {r r' : ℕ}
+    (hr : S.fuelBound ≤ r) (hr' : r ≤ r') (G : Graph) (τ : Typing) (n : RDFNode) (s : ShapeExpr) :
+    SatisfiesFuel r S G τ n s ↔ SatisfiesFuel r' S G τ n s :=
+  SatisfiesAt_congr (fun _ => True) (fun _ => ⟨trivial, trivial⟩) (fun _ => ⟨trivial, trivial⟩)
+    (fun _ => trivial)
+    (fun t _ M => stableM r t (Schema.rankOk_fuelBound hAcyclic hr t) r' hr' M) s trivial
 
 /-! ### Packaging: the real `Satisfies`, and Lemma 1 -/
 
-/-- The real `n, τ ⊨_S def(z)` (with no `Fuel` parameter). It evaluates at
-a canonical fuel amount that is concretely sufficient. By `stableFuel`,
-the result does not depend on this choice. `lemma1` below records this. -/
+/-- The real `n, τ ⊨_S s` (with no `Fuel` parameter). It evaluates at the
+fuel `S.fuelBound`, which is sufficient. By `stableFuel`, each larger fuel
+gives the same result. `lemma1` below records this. -/
 noncomputable def Satisfies (S : Schema) (G : Graph) (τ : Typing) (n : RDFNode)
     (s : ShapeExpr) : Prop :=
-  SatisfiesFuel (Schema.reqFuelGen S s + 1) S G τ n s
+  SatisfiesFuel S.fuelBound S G τ n s
 
-/-- Lemma 1. Let `S` be a schema that satisfies `WellFormedX` and
-`ExtAcyclic`. (These are the hypotheses of the paper. There is no
-restriction on the locations of `extends` nodes.) Then the evaluation of
-`n, τ ⊨_S def(z)` terminates. Each sufficiently large `Fuel` gives the
-same answer as `Satisfies` (defined above at one canonical fuel value),
-for each node `n`, typing `τ` and label `z ∈ Y ∪ X`. -/
-theorem lemma1 {S : Schema} (hWFX : S.WellFormedX) (hAcyclic : S.ExtAcyclic)
+/-- Lemma 1. Let `S` be a schema that satisfies `ExtAcyclic`. (This is the
+hypothesis of the paper. There is no restriction on the locations of
+`extends` nodes.) Then the evaluation of `n, τ ⊨_S def(z)` terminates.
+Each sufficiently large `Fuel` gives the same answer as `Satisfies`, for
+each node `n`, typing `τ` and label `z`. -/
+theorem lemma1 {S : Schema} (hAcyclic : S.ExtAcyclic)
     (G : Graph) (τ : Typing) (n : RDFNode) (z : Label) (fuel : ℕ)
-    (hfuel : Schema.reqFuelGen S (S.shapeDef z) + 1 ≤ fuel) :
+    (hfuel : S.fuelBound ≤ fuel) :
     SatisfiesFuel fuel S G τ n (S.shapeDef z) ↔ Satisfies S G τ n (S.shapeDef z) :=
-  stableFuel hWFX hAcyclic (S.shapeDef z) fuel (Schema.reqFuelGen S (S.shapeDef z) + 1) hfuel
-    (le_refl _) G τ n
+  (stableFuel hAcyclic le_rfl hfuel G τ n (S.shapeDef z)).symm
 
 end ShexLean.Inheritance

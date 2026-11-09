@@ -113,7 +113,7 @@ def bigFuel : ℕ := 10
 /-- `M24, τ ⊨ e` (Example 3). Split it into `{(n,p,2)}` (which satisfies
 `p @T_even`) and `{(n,p,4)}` (which satisfies `(p @T_<5)*` with one
 part). -/
-theorem M24_satisfies_e : SatisfiesEFuel bigFuel S_ex5 default τ_ex3 M24 e_ex3 := by
+theorem M24_satisfies_e : SatisfiesE τ_ex3 M24 e_ex3 := by
   refine ⟨{tp "p" (.lit (.int 2))}, {tp "p" (.lit (.int 4))}, ⟨by decide, by decide⟩, ?_, ?_⟩
   · exact ⟨n_ex3, .lit (.int 2), rfl, by decide⟩
   · refine Or.inl ⟨[{tp "p" (.lit (.int 4))}], ⟨by decide, by decide⟩, ?_⟩
@@ -125,7 +125,7 @@ theorem M24_satisfies_e : SatisfiesEFuel bigFuel S_ex5 default τ_ex3 M24 e_ex3 
 /-- `M246, τ ⊨ e` (Example 3). Split it into `{(n,p,6)}` (which satisfies
 `p @T_even`) and `{(n,p,2),(n,p,4)}` (which satisfies `(p @T_<5)*` with
 two parts). -/
-theorem M246_satisfies_e : SatisfiesEFuel bigFuel S_ex5 default τ_ex3 M246 e_ex3 := by
+theorem M246_satisfies_e : SatisfiesE τ_ex3 M246 e_ex3 := by
   refine ⟨{tp "p" (.lit (.int 6))}, {tp "p" (.lit (.int 2)), tp "p" (.lit (.int 4))},
     ⟨by decide, by decide⟩, ?_, ?_⟩
   · exact ⟨n_ex3, .lit (.int 6), rfl, by decide⟩
@@ -138,7 +138,7 @@ theorem M246_satisfies_e : SatisfiesEFuel bigFuel S_ex5 default τ_ex3 M246 e_ex
 
 /-- `M2a, τ ⊨ e` (Example 3). Split it into `{(n,p,2)}` (which satisfies
 `p @T_even`) and `{(n,p,"a")}` (which satisfies `p @T_str`). -/
-theorem M2a_satisfies_e : SatisfiesEFuel bigFuel S_ex5 default τ_ex3 M2a e_ex3 := by
+theorem M2a_satisfies_e : SatisfiesE τ_ex3 M2a e_ex3 := by
   refine ⟨{tp "p" (.lit (.int 2))}, {tp "p" (.lit (.str "a"))}, ⟨by decide, by decide⟩, ?_, ?_⟩
   · exact ⟨n_ex3, .lit (.int 2), rfl, by decide⟩
   · exact Or.inr ⟨n_ex3, .lit (.str "a"), rfl, by decide⟩
@@ -158,7 +158,7 @@ private theorem mem_of_mem_foldr_union {α : Type*} [DecidableEq α] (l : List (
 
 /-- `M24a, τ ¬⊨ e` (the fourth fact of Example 3). No split of `M24a`
 satisfies `e`. (`M24`, `M246` and `M2a` have such a split.) -/
-theorem M24a_not_satisfies_e : ¬ SatisfiesEFuel bigFuel S_ex5 default τ_ex3 M24a e_ex3 := by
+theorem M24a_not_satisfies_e : ¬ SatisfiesE τ_ex3 M24a e_ex3 := by
   rintro ⟨N1, N2, ⟨hdisj, hunion⟩, ⟨n1, o1, hN1eq, hty1⟩, hN2⟩
   have ha_mem : tp "p" (.lit (.str "a")) ∈ M24a := by decide
   have ha_notin_N1 : tp "p" (.lit (.str "a")) ∉ N1 := by
@@ -172,8 +172,8 @@ theorem M24a_not_satisfies_e : ¬ SatisfiesEFuel bigFuel S_ex5 default τ_ex3 M2
     rcases Finset.mem_union.mp (hunion ▸ ha_mem) with h | h
     · exact absurd h ha_notin_N1
     · exact h
-  rcases (hN2 : SatisfiesEFuel _ S_ex5 default τ_ex3 N2 (.star (.tc "p" "T_lt5")) ∨
-      SatisfiesEFuel _ S_ex5 default τ_ex3 N2 (.tc "p" "T_str")) with hN2star | hN2str
+  rcases (hN2 : SatisfiesE τ_ex3 N2 (.star (.tc "p" "T_lt5")) ∨
+      SatisfiesE τ_ex3 N2 (.tc "p" "T_str")) with hN2star | hN2str
   · obtain ⟨Ns, ⟨-, hunion2⟩, hall⟩ := hN2star
     obtain ⟨Ni, hNi_mem, ha_in_Ni⟩ := mem_of_mem_foldr_union Ns (hunion2 ▸ ha_mem_N2)
     obtain ⟨ni, oi, hNieq, htyi⟩ := hall Ni hNi_mem
@@ -204,7 +204,7 @@ end ShexLean.Inheritance
 
 namespace Examples
 
-open ShexLean.Inheritance (e_ex3 M24 M246 M2a M24a S_ex5 τ_ex3 bigFuel satisfiesEFuel_decidable)
+open ShexLean.Inheritance (e_ex3 M24 M246 M2a M24a S_ex5 τ_ex3 bigFuel satisfiesE_decidable)
 open ShexLean (Graph.render Typing.render renderDecide)
 
 /-- The triple expression of Example 3, matched against `M24`, `M246`,
@@ -213,7 +213,7 @@ open ShexLean (Graph.render Typing.render renderDecide)
 * `graphText` and `typingText` render the real `Finset Triple` and
   `Typing` values.
 * Each claim `M,τ ⊨ e` is a `native_decide` computation with
-  `satisfiesEFuel_decidable`.
+  `satisfiesE_decidable`.
 
 This is decidable with no condition, because Table 1 never uses
 `NodeConstraint` or `extends`. Thus, no `XClosed`, `RestrOk` or `FOk`
@@ -230,9 +230,9 @@ def inheritance2025TripleMatch : Example where
     s!"M24a = {Graph.render M24a}"
   typingText :=
     s!"τ = {Typing.render τ_ex3}\n" ++
-    s!"M24, τ ⊨ e = {renderDecide (satisfiesEFuel_decidable bigFuel S_ex5 default τ_ex3 M24 e_ex3)}\n" ++
-    s!"M246, τ ⊨ e = {renderDecide (satisfiesEFuel_decidable bigFuel S_ex5 default τ_ex3 M246 e_ex3)}\n" ++
-    s!"M2a, τ ⊨ e = {renderDecide (satisfiesEFuel_decidable bigFuel S_ex5 default τ_ex3 M2a e_ex3)}\n" ++
-    s!"M24a, τ ⊨ e = {renderDecide (satisfiesEFuel_decidable bigFuel S_ex5 default τ_ex3 M24a e_ex3)}"
+    s!"M24, τ ⊨ e = {renderDecide (satisfiesE_decidable τ_ex3 M24 e_ex3)}\n" ++
+    s!"M246, τ ⊨ e = {renderDecide (satisfiesE_decidable τ_ex3 M246 e_ex3)}\n" ++
+    s!"M2a, τ ⊨ e = {renderDecide (satisfiesE_decidable τ_ex3 M2a e_ex3)}\n" ++
+    s!"M24a, τ ⊨ e = {renderDecide (satisfiesE_decidable τ_ex3 M24a e_ex3)}"
 
 end Examples

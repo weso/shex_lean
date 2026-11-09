@@ -6,7 +6,7 @@ import Mathlib.Data.Finset.Sort
 This file renders `Graph`, `Schema` and `Typing` values as display text for
 the worked examples. It uses the `Decidable` instances in
 `ShexLean/Shex2025Inheritance/Decidable.lean` (`satisfiesFuel_decidable`,
-`satisfiesMFuel_decidable` and `satisfiesEFuel_decidable`) to compute the
+`satisfiesMFuel_decidable` and `satisfiesE_decidable`) to compute the
 `true` and `false` results.
 
 `NodeConstraint := RDFNode → Prop` is opaque (Def 1). (In 2017, the

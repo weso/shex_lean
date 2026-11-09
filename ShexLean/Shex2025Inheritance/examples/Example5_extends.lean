@@ -28,7 +28,7 @@ Thus, `anc({x0}) = {x0}`, and `M24` splits into two parts:
 * `Mx0`, which satisfies `ext-te(x0) = p @T_even`. (`x0` has no
   restriction.) -/
 theorem M24_satisfies_defx1 :
-    SatisfiesMFuel bigFuel S_ex5 default τ_ex3 M24 (S_ex5.shapeDef "x1") := by
+    SatisfiesMFuel bigFuel S_ex5 τ_ex3 M24 (S_ex5.shapeDef "x1") := by
   have hx1shape : S_ex5.shapeDef "x1" = .extends {"x0"} ⟨false, none, .tc "p" "T_even"⟩ := rfl
   rw [hx1shape]
   have hx0shape : S_ex5.shapeDef "x0" = .extends ∅ ⟨false, none, .tc "p" "T_even"⟩ := rfl
@@ -64,7 +64,7 @@ theorem M24_satisfies_defx1 :
     intro x hx
     simp only [Finset.mem_singleton] at hx
     subst hx
-    show SatisfiesEFuel bigFuel S_ex5 default τ_ex3 {tp "p" (.lit (.int 4))}
+    show SatisfiesE τ_ex3 {tp "p" (.lit (.int 4))}
       (S_ex5.shapeDef "x0").extTe
     exact ⟨n_ex3, .lit (.int 4), rfl, by decide⟩
   · rw [hanc]
@@ -82,7 +82,7 @@ three parts:
 * `Mx1={4}` and `Mx0={6}`, which both satisfy `ext-te = p @T_even`.
   (`x0` and `x1` have no restriction.) -/
 theorem M246_satisfies_defx2 :
-    SatisfiesMFuel bigFuel S_ex5 default τ_ex3 M246 (S_ex5.shapeDef "x2") := by
+    SatisfiesMFuel bigFuel S_ex5 τ_ex3 M246 (S_ex5.shapeDef "x2") := by
   have hx2shape : S_ex5.shapeDef "x2" = .extends {"x1"} ⟨false, none, .tc "p" "T_lt5"⟩ := rfl
   rw [hx2shape]
   have hx1shape : S_ex5.shapeDef "x1" = .extends {"x0"} ⟨false, none, .tc "p" "T_even"⟩ := rfl
@@ -145,7 +145,7 @@ needs *three* pairwise disjoint singletons (`M'`, `Mx1` and `Mx0`; a plain
 `.tc` forces each of them). Thus, each `M` that satisfies it has exactly
 three elements. But `M24.card = 2`. -/
 theorem M24_not_satisfies_defx2 :
-    ¬ SatisfiesMFuel bigFuel S_ex5 default τ_ex3 M24 (S_ex5.shapeDef "x2") := by
+    ¬ SatisfiesMFuel bigFuel S_ex5 τ_ex3 M24 (S_ex5.shapeDef "x2") := by
   have hx2shape : S_ex5.shapeDef "x2" = .extends {"x1"} ⟨false, none, .tc "p" "T_lt5"⟩ := rfl
   rw [hx2shape]
   rintro ⟨M', Mx, ⟨hdisjM', hpw, hunion⟩, hM', hMx, -⟩
@@ -218,7 +218,7 @@ theorem M24_not_satisfies_defx2 :
   leftover triple with `"a"`. (A plain `⟨ε⟩` forces `M' = ∅`.)
 * `Mx0={2}` satisfies `ext-te(x0) = p @T_even`. -/
 theorem M2a_satisfies_defx5 :
-    SatisfiesMFuel bigFuel S_ex5 default τ_ex3 M2a (S_ex5.shapeDef "x5") := by
+    SatisfiesMFuel bigFuel S_ex5 τ_ex3 M2a (S_ex5.shapeDef "x5") := by
   have hx5shape : S_ex5.shapeDef "x5" = .extends {"x0"} ⟨false, some {"p"}, .empty⟩ := rfl
   rw [hx5shape]
   have hx0shape : S_ex5.shapeDef "x0" = .extends ∅ ⟨false, none, .tc "p" "T_even"⟩ := rfl
@@ -254,7 +254,7 @@ theorem M2a_satisfies_defx5 :
       unfold Mnotin
       simp [TripleExpr.props, TripleExpr.tcs]
     refine ⟨?_, ?_, by simp⟩
-    · show SatisfiesEFuel _ S_ex5 default τ_ex3
+    · show SatisfiesE τ_ex3
         (Me τ_ex3 {tp "p" (.lit (.str "a"))} TripleExpr.empty) TripleExpr.empty
       rw [hMe_empty]; rfl
     · show props (Mnotin τ_ex3 {tp "p" (.lit (.str "a"))} (TripleExpr.empty)) ⊆ ({"p"} : Finset IRI)
@@ -280,7 +280,7 @@ addition to the triples of `x6`, and the four sets of the paper do not
 give them without reuse. This proof checks only the obstruction of the
 `"a"` triple, which the claim of the paper shows. -/
 theorem M24a_not_satisfies_defx6 :
-    ¬ SatisfiesMFuel bigFuel S_ex5 default τ_ex3 M24a (S_ex5.shapeDef "x6") := by
+    ¬ SatisfiesMFuel bigFuel S_ex5 τ_ex3 M24a (S_ex5.shapeDef "x6") := by
   have hx6shape : S_ex5.shapeDef "x6" = .extends {"x3"} ⟨false, none, .tc "p" "T_even"⟩ := rfl
   rw [hx6shape]
   rintro ⟨M', Mx, ⟨-, -, hunion⟩, hM', hMx, -⟩
@@ -364,7 +364,7 @@ open ShexLean (Triple Label Graph.render Typing.render renderDecide)
 `M ⊨ def(L)`. -/
 def satMEx5 (M : Finset Triple) (L : Label)
     (hOk : (S_ex5.shapeDef L).MOk S_ex5) : String :=
-  renderDecide (satisfiesMFuel_decidable S_ex5 default τ_ex3 S_ex5_XClosed S_ex5_RestrOk
+  renderDecide (satisfiesMFuel_decidable S_ex5 τ_ex3 S_ex5_XClosed S_ex5_RestrOk
     bigFuel M (S_ex5.shapeDef L) hOk)
 
 /-- The `extends` chain of Example 5.

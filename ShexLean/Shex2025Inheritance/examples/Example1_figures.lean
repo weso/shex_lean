@@ -192,11 +192,12 @@ theorem anc_one_parent {S : Schema} {x p : Label} (hx : x ∈ S.X) (hp : p ∈ S
 and has no `extra` (rule 17 of Table 3). We use it at each location where
 the `M'` part of an `extends X ⟨ε⟩` is empty (`Radius` and
 `ColouredCircle`, which both use a plain `⟨ε⟩` as their shape). -/
-theorem empty_satisfies_emptyShape {S : Schema} {G : Graph} {τ : Typing} {fuel : ℕ} :
-    SatisfiesMFuel (fuel + 2) S G τ (∅ : Finset Triple) (.ofShape ⟨false, none, .empty⟩) := by
+theorem empty_satisfies_emptyShape {τ : Typing} :
+    SatisfiesShape τ (∅ : Finset Triple)
+      ⟨false, none, .empty⟩ := by
   have hMeEmpty : Me τ (∅ : Finset Triple) TripleExpr.empty = ∅ := by unfold Me; simp
   refine ⟨?_, ?_, fun h => absurd h (by decide)⟩
-  · show SatisfiesEFuel (fuel + 1) S G τ (Me τ (∅ : Finset Triple) TripleExpr.empty) TripleExpr.empty
+  · show SatisfiesE τ (Me τ (∅ : Finset Triple) TripleExpr.empty) TripleExpr.empty
     rw [hMeEmpty]; rfl
   · show props (Mnotin τ (∅ : Finset Triple) TripleExpr.empty) ⊆ (∅ : Finset IRI)
     unfold Mnotin
@@ -207,10 +208,11 @@ the only triple with the predicate `p`, and all the predicates of `junk`
 are different from `p`. We use it for the restriction `name @T_"colour"`
 of `Colour`, applied to the full neighbourhood of `a2` (which also has
 `scope` and `value` triples). -/
-theorem single_tc_ofShape_junk {S : Schema} {G : Graph} {τ : Typing} {fuel : ℕ}
+theorem single_tc_ofShape_junk {τ : Typing}
     {p : IRI} {z : Label} {t : Triple} {junk : Finset Triple}
     (hp : t.pred = p) (hjunk : ∀ t' ∈ junk, t'.pred ≠ p) (hty : τ.has t.obj z) :
-    SatisfiesMFuel (fuel + 2) S G τ (insert t junk) (.ofShape ⟨false, none, .tc p z⟩) := by
+    SatisfiesShape τ (insert t junk)
+      ⟨false, none, .tc p z⟩ := by
   have hMe : Me τ (insert t junk) (.tc p z) = {t} := by
     apply Finset.Subset.antisymm
     · intro t' ht'
@@ -248,12 +250,12 @@ exactly two triples and no junk. This is the version of
 of Fig. 1, for `Attribute` (on the nodes `a1` and `a3`, which have no
 other triples), and for the restriction
 `name @T_"radius" ; value @T_float` of `Radius`. -/
-theorem pair_tc_tc_ofShape {S : Schema} {G : Graph} {τ : Typing} {fuel : ℕ}
+theorem pair_tc_tc_ofShape {τ : Typing}
     {p1 p2 : IRI} {z1 z2 : Label} {t1 t2 : Triple}
     (hp1 : t1.pred = p1) (hp2 : t2.pred = p2) (hne : t1 ≠ t2)
     (hty1 : τ.has t1.obj z1) (hty2 : τ.has t2.obj z2) :
-    SatisfiesMFuel (fuel + 3) S G τ {t1, t2}
-      (.ofShape ⟨false, none, .seq (.tc p1 z1) (.tc p2 z2)⟩) := by
+    SatisfiesShape τ {t1, t2}
+      ⟨false, none, .seq (.tc p1 z1) (.tc p2 z2)⟩ := by
   have hMe : Me τ ({t1, t2} : Finset Triple) (.seq (.tc p1 z1) (.tc p2 z2)) = {t1, t2} := by
     apply Finset.Subset.antisymm
     · intro t ht; rw [mem_Me] at ht; exact ht.1
@@ -264,7 +266,7 @@ theorem pair_tc_tc_ofShape {S : Schema} {G : Graph} {τ : Typing} {fuel : ℕ}
       · exact ⟨Finset.mem_insert_self _ _, z1, by simp [TripleExpr.tcs, hp1], hty1⟩
       · exact ⟨Finset.mem_insert_of_mem (Finset.mem_singleton_self _), z2,
           by simp [TripleExpr.tcs, hp2], hty2⟩
-  refine ofShape_of_Me_eq_self (fuel := fuel + 2) hMe ⟨{t1}, {t2}, ⟨?_, ?_⟩,
+  refine ofShape_of_Me_eq_self hMe ⟨{t1}, {t2}, ⟨?_, ?_⟩,
     ⟨t1.subj, t1.obj, by rw [← hp1], hty1⟩, ⟨t2.subj, t2.obj, by rw [← hp2], hty2⟩⟩
   · rw [Finset.disjoint_left]
     intro x hx1 hx2
@@ -277,13 +279,13 @@ of Table 3). This is the version of `pair_tc_tc_ofShape` that permits
 junk. We use it for `a2 ⊨ Attribute`. (The neighbourhood of `a2` also has
 a `scope` triple, which is not related to the `name` and `value` of
 `Attribute`.) -/
-theorem pair_tc_tc_ofShape_junk {S : Schema} {G : Graph} {τ : Typing} {fuel : ℕ}
+theorem pair_tc_tc_ofShape_junk {τ : Typing}
     {p1 p2 : IRI} {z1 z2 : Label} {t1 t2 : Triple} {junk : Finset Triple}
     (hp1 : t1.pred = p1) (hp2 : t2.pred = p2) (hne : t1 ≠ t2)
     (hjunk : ∀ t ∈ junk, t.pred ≠ p1 ∧ t.pred ≠ p2)
     (hty1 : τ.has t1.obj z1) (hty2 : τ.has t2.obj z2) :
-    SatisfiesMFuel (fuel + 3) S G τ (insert t1 (insert t2 junk))
-      (.ofShape ⟨false, none, .seq (.tc p1 z1) (.tc p2 z2)⟩) := by
+    SatisfiesShape τ (insert t1 (insert t2 junk))
+      ⟨false, none, .seq (.tc p1 z1) (.tc p2 z2)⟩ := by
   have hMe : Me τ (insert t1 (insert t2 junk)) (.seq (.tc p1 z1) (.tc p2 z2)) = {t1, t2} := by
     apply Finset.Subset.antisymm
     · intro t ht
@@ -403,7 +405,7 @@ theorem c1_satisfies_Coord :
   have hshape : S_fig1.shapeDef "Coord" =
       .ofShape ⟨false, none, .seq (.tc "x" "T_float") (.tc "y" "T_float")⟩ := rfl
   rw [hshape]
-  refine (?_ : SatisfiesMFuel _ S_fig1 G_fig1 τ_fig1 (neigh G_fig1 c1) _)
+  refine (?_ : SatisfiesMFuel _ S_fig1 τ_fig1 (neigh G_fig1 c1) _)
   have hneigh : neigh G_fig1 c1 =
       {(⟨c1, "x", .lit (.int 2)⟩ : Triple), ⟨c1, "y", .lit (.int 4)⟩} := by decide
   rw [hneigh]
@@ -415,7 +417,7 @@ theorem c2_satisfies_Coord :
   have hshape : S_fig1.shapeDef "Coord" =
       .ofShape ⟨false, none, .seq (.tc "x" "T_float") (.tc "y" "T_float")⟩ := rfl
   rw [hshape]
-  refine (?_ : SatisfiesMFuel _ S_fig1 G_fig1 τ_fig1 (neigh G_fig1 c2) _)
+  refine (?_ : SatisfiesMFuel _ S_fig1 τ_fig1 (neigh G_fig1 c2) _)
   have hneigh : neigh G_fig1 c2 =
       {(⟨c2, "x", .lit (.int 0)⟩ : Triple), ⟨c2, "y", .lit (.int (-2))⟩} := by decide
   rw [hneigh]
@@ -430,7 +432,7 @@ theorem a1_satisfies_Attribute :
   have hshape : S_fig1.shapeDef "Attribute" =
       .extends ∅ ⟨false, none, .seq (.tc "name" "T_str") (.tc "value" "T_any")⟩ := rfl
   rw [hshape]
-  refine (?_ : SatisfiesMFuel _ S_fig1 G_fig1 τ_fig1 (neigh G_fig1 a1) _)
+  refine (?_ : SatisfiesMFuel _ S_fig1 τ_fig1 (neigh G_fig1 a1) _)
   have hneigh : neigh G_fig1 a1 =
       {(⟨a1, "name", .lit (.str "radius")⟩ : Triple), ⟨a1, "value", .lit (.int 10)⟩} := by decide
   rw [hneigh]
@@ -450,7 +452,7 @@ theorem a3_satisfies_Attribute :
   have hshape : S_fig1.shapeDef "Attribute" =
       .extends ∅ ⟨false, none, .seq (.tc "name" "T_str") (.tc "value" "T_any")⟩ := rfl
   rw [hshape]
-  refine (?_ : SatisfiesMFuel _ S_fig1 G_fig1 τ_fig1 (neigh G_fig1 a3) _)
+  refine (?_ : SatisfiesMFuel _ S_fig1 τ_fig1 (neigh G_fig1 a3) _)
   have hneigh : neigh G_fig1 a3 =
       {(⟨a3, "name", .lit (.str "radius")⟩ : Triple), ⟨a3, "value", .lit (.int 7)⟩} := by decide
   rw [hneigh]
@@ -472,7 +474,7 @@ theorem a2_satisfies_Attribute :
   have hshape : S_fig1.shapeDef "Attribute" =
       .extends ∅ ⟨false, none, .seq (.tc "name" "T_str") (.tc "value" "T_any")⟩ := rfl
   rw [hshape]
-  refine (?_ : SatisfiesMFuel _ S_fig1 G_fig1 τ_fig1 (neigh G_fig1 a2) _)
+  refine (?_ : SatisfiesMFuel _ S_fig1 τ_fig1 (neigh G_fig1 a2) _)
   have hneigh : neigh G_fig1 a2 =
       insert (⟨a2, "name", .lit (.str "colour")⟩ : Triple)
         (insert (⟨a2, "value", .lit (.str "#ff0000")⟩ : Triple) {⟨a2, "scope", .lit (.str "fill")⟩}) := by
@@ -510,7 +512,7 @@ theorem a2_satisfies_Colour :
         (insert (⟨a2, "scope", .lit (.str "fill")⟩ : Triple)
           {⟨a2, "value", .lit (.str "#ff0000")⟩}) := by decide
   refine ⟨?_, ?_⟩
-  · refine (?_ : SatisfiesMFuel _ S_fig1 G_fig1 τ_fig1 (neigh G_fig1 a2) _)
+  · refine (?_ : SatisfiesMFuel _ S_fig1 τ_fig1 (neigh G_fig1 a2) _)
     rw [hneigh]
     refine ⟨{(⟨a2, "scope", .lit (.str "fill")⟩ : Triple)}, fun _ =>
       {(⟨a2, "name", .lit (.str "colour")⟩ : Triple), ⟨a2, "value", .lit (.str "#ff0000")⟩},
@@ -531,7 +533,7 @@ theorem a2_satisfies_Colour :
       have hAshape : S_fig1.shapeDef "Attribute" =
           .extends ∅ ⟨false, none, .seq (.tc "name" "T_str") (.tc "value" "T_any")⟩ := rfl
       rw [hAshape] at hu; simp [ShapeExpr.restrOf] at hu
-  · refine (?_ : SatisfiesMFuel _ S_fig1 G_fig1 τ_fig1 (neigh G_fig1 a2) _)
+  · refine (?_ : SatisfiesMFuel _ S_fig1 τ_fig1 (neigh G_fig1 a2) _)
     rw [hneigh]
     refine single_tc_ofShape_junk rfl ?_ (by decide)
     intro t ht
@@ -556,7 +558,7 @@ theorem a1_satisfies_Radius :
   have hneigh : neigh G_fig1 a1 =
       {(⟨a1, "name", .lit (.str "radius")⟩ : Triple), ⟨a1, "value", .lit (.int 10)⟩} := by decide
   refine ⟨?_, ?_⟩
-  · refine (?_ : SatisfiesMFuel _ S_fig1 G_fig1 τ_fig1 (neigh G_fig1 a1) _)
+  · refine (?_ : SatisfiesMFuel _ S_fig1 τ_fig1 (neigh G_fig1 a1) _)
     rw [hneigh]
     refine ⟨∅, fun _ =>
       {(⟨a1, "name", .lit (.str "radius")⟩ : Triple), ⟨a1, "value", .lit (.int 10)⟩},
@@ -576,7 +578,7 @@ theorem a1_satisfies_Radius :
       have hAshape : S_fig1.shapeDef "Attribute" =
           .extends ∅ ⟨false, none, .seq (.tc "name" "T_str") (.tc "value" "T_any")⟩ := rfl
       rw [hAshape] at hu; simp [ShapeExpr.restrOf] at hu
-  · refine (?_ : SatisfiesMFuel _ S_fig1 G_fig1 τ_fig1 (neigh G_fig1 a1) _)
+  · refine (?_ : SatisfiesMFuel _ S_fig1 τ_fig1 (neigh G_fig1 a1) _)
     rw [hneigh]
     exact pair_tc_tc_ofShape rfl rfl (by decide) (by decide) (by decide)
 
@@ -590,7 +592,7 @@ theorem a3_satisfies_Radius :
   have hneigh : neigh G_fig1 a3 =
       {(⟨a3, "name", .lit (.str "radius")⟩ : Triple), ⟨a3, "value", .lit (.int 7)⟩} := by decide
   refine ⟨?_, ?_⟩
-  · refine (?_ : SatisfiesMFuel _ S_fig1 G_fig1 τ_fig1 (neigh G_fig1 a3) _)
+  · refine (?_ : SatisfiesMFuel _ S_fig1 τ_fig1 (neigh G_fig1 a3) _)
     rw [hneigh]
     refine ⟨∅, fun _ =>
       {(⟨a3, "name", .lit (.str "radius")⟩ : Triple), ⟨a3, "value", .lit (.int 7)⟩},
@@ -610,7 +612,7 @@ theorem a3_satisfies_Radius :
       have hAshape : S_fig1.shapeDef "Attribute" =
           .extends ∅ ⟨false, none, .seq (.tc "name" "T_str") (.tc "value" "T_any")⟩ := rfl
       rw [hAshape] at hu; simp [ShapeExpr.restrOf] at hu
-  · refine (?_ : SatisfiesMFuel _ S_fig1 G_fig1 τ_fig1 (neigh G_fig1 a3) _)
+  · refine (?_ : SatisfiesMFuel _ S_fig1 τ_fig1 (neigh G_fig1 a3) _)
     rw [hneigh]
     exact pair_tc_tc_ofShape rfl rfl (by decide) (by decide) (by decide)
 
@@ -626,7 +628,7 @@ theorem f2_satisfies_Circle :
   have hshape : S_fig1.shapeDef "Circle" =
       .extends {"Figure"} ⟨false, none, .tc "attr" "Radius"⟩ := rfl
   rw [hshape]
-  refine (?_ : SatisfiesMFuel _ S_fig1 G_fig1 τ_fig1 (neigh G_fig1 f2) _)
+  refine (?_ : SatisfiesMFuel _ S_fig1 τ_fig1 (neigh G_fig1 f2) _)
   have hneigh : neigh G_fig1 f2 =
       {(⟨f2, "attr", a3⟩ : Triple), ⟨f2, "coord", c2⟩} := by decide
   rw [hneigh]
@@ -667,7 +669,7 @@ theorem f1_satisfies_ColouredCircle :
   have hshape : S_fig1.shapeDef "ColouredCircle" =
       .extends {"Circle", "ColouredFigure"} ⟨false, none, .empty⟩ := rfl
   rw [hshape]
-  refine (?_ : SatisfiesMFuel _ S_fig1 G_fig1 τ_fig1 (neigh G_fig1 f1) _)
+  refine (?_ : SatisfiesMFuel _ S_fig1 τ_fig1 (neigh G_fig1 f1) _)
   have hneigh : neigh G_fig1 f1 =
       {(⟨f1, "attr", a1⟩ : Triple), ⟨f1, "attr", a2⟩, ⟨f1, "coord", c1⟩} := by decide
   rw [hneigh]
