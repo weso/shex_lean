@@ -58,23 +58,11 @@ theorem Schema.anc_ssubset_of_extEdge {S : Schema} (hAcyclic : S.ExtAcyclic)
     S.anc y ⊂ S.anc x := by
   have hsub : S.anc y ⊆ S.anc x := by
     intro z hz
-    unfold Schema.anc at hz ⊢
-    have := Classical.decPred (Relation.ReflTransGen S.extEdge y)
-    have := Classical.decPred (Relation.ReflTransGen S.extEdge x)
-    simp only [Finset.mem_filter] at hz ⊢
+    rw [Schema.mem_anc] at hz ⊢
     exact ⟨hz.1, Relation.ReflTransGen.head hxy hz.2⟩
   refine ⟨hsub, fun hsub' => ?_⟩
-  have hxancx : x ∈ S.anc x := by
-    unfold Schema.anc
-    have := Classical.decPred (Relation.ReflTransGen S.extEdge x)
-    simp only [Finset.mem_filter]
-    exact ⟨hxX, Relation.ReflTransGen.refl⟩
-  have hxancy : x ∈ S.anc y := hsub' hxancx
-  have hxy' : Relation.ReflTransGen S.extEdge y x := by
-    unfold Schema.anc at hxancy
-    have := Classical.decPred (Relation.ReflTransGen S.extEdge y)
-    simp only [Finset.mem_filter] at hxancy
-    exact hxancy.2
+  have hxy' : Relation.ReflTransGen S.extEdge y x :=
+    (Schema.mem_anc.mp (hsub' (Schema.mem_anc_self hxX))).2
   rcases Relation.reflTransGen_iff_eq_or_transGen.mp hxy' with heq | htrans
   · exact hAcyclic x hxX (Relation.TransGen.single (heq.symm ▸ hxy))
   · exact hAcyclic x hxX (Relation.TransGen.head hxy htrans)
@@ -101,10 +89,7 @@ theorem Schema.extRank_le_of_mem_anc {S : Schema} {x x' : Label} (hx' : x' ∈ S
     S.extRank x' ≤ S.extRank x := by
   apply Finset.card_le_card
   intro z hz
-  unfold Schema.anc at hx' hz ⊢
-  have := Classical.decPred (Relation.ReflTransGen S.extEdge x)
-  have := Classical.decPred (Relation.ReflTransGen S.extEdge x')
-  simp only [Finset.mem_filter] at hx' hz ⊢
+  rw [Schema.mem_anc] at hx' hz ⊢
   exact ⟨hz.1, hx'.2.trans hz.2⟩
 
 /-! ### The base case: `NoExtends` shapes need no schema lookups -/
@@ -402,43 +387,20 @@ theorem Schema.RankOk.mono_le {S : Schema} {r r' : ℕ} (h : r ≤ r') :
 you can always write `extRank x` as `m + 1`. -/
 theorem Schema.extRank_succ {S : Schema} {x : Label} (hx : x ∈ S.X) :
     ∃ m, S.extRank x = m + 1 := by
-  have hxax : x ∈ S.anc x := by
-    unfold Schema.anc
-    have := Classical.decPred (Relation.ReflTransGen S.extEdge x)
-    simp only [Finset.mem_filter]
-    exact ⟨hx, Relation.ReflTransGen.refl⟩
-  have h1 : 1 ≤ S.extRank x := by
-    unfold Schema.extRank
-    exact Finset.one_le_card.mpr ⟨x, hxax⟩
+  have h1 : 1 ≤ S.extRank x := Finset.one_le_card.mpr ⟨x, Schema.mem_anc_self hx⟩
   exact ⟨S.extRank x - 1, by omega⟩
-
-theorem Schema.ancSet_subset_X {S : Schema} {xs : Finset Label} : S.ancSet xs ⊆ S.X := by
-  intro x' hx'
-  unfold Schema.ancSet at hx'
-  obtain ⟨z, -, hx'z⟩ := Finset.mem_biUnion.mp hx'
-  unfold Schema.anc at hx'z
-  have := Classical.decPred (Relation.ReflTransGen S.extEdge z)
-  simp only [Finset.mem_filter] at hx'z
-  exact hx'z.1
 
 /-- From the `RankOk` of the definition of `x` (`extends xs h [and u]`),
 get the `RankOk` of its restriction `u`. -/
-theorem Schema.RankOk_restrOf {S : Schema} (hWFX : S.WellFormedX) {x : Label} (hx : x ∈ S.X)
+theorem Schema.RankOk_restrOf {S : Schema} {x : Label} (hx : x ∈ S.X)
     {u : ShapeExpr} (hu : (S.shapeDef x).restrOf = some u)
     (hRank : Schema.RankOk S (S.extRank x) (S.shapeDef x)) :
     Schema.RankOk S (S.extRank x) u := by
-  obtain ⟨xs, h, hcase⟩ := hWFX x hx
-  rcases hcase with heq | ⟨u', heq⟩
-  · rw [heq] at hu; simp [ShapeExpr.restrOf] at hu
-  · rw [heq] at hu
-    simp only [ShapeExpr.restrOf] at hu
-    obtain rfl := Option.some.inj hu
-    rw [heq] at hRank
-    obtain ⟨m, hm⟩ := Schema.extRank_succ hx
-    rw [hm] at hRank ⊢
-    have hRank' := hRank
-    unfold Schema.RankOk at hRank'
-    exact hRank'.2
+  obtain ⟨xs, h, heq⟩ := ShapeExpr.restrOf_eq_some.mp hu
+  rw [heq] at hRank
+  obtain ⟨m, hm⟩ := Schema.extRank_succ hx
+  rw [hm] at hRank ⊢
+  exact hRank.2
 
 /-- Let `e` be a `ShapeExpr` whose direct `.extends` targets are all real
 edges of `H_S` out of `x`. Let each `x' ∈ S.X` with a strictly smaller
@@ -448,7 +410,7 @@ rank `m := extRank x - 1`.
 With `e := S.shapeDef x`, this closes the induction in
 `rankOk_shapeDef`. The statement is for a general `e`, because the
 restriction `u` of `x` needs the same fact. -/
-theorem Schema.RankOkAt_of_edges {S : Schema} (hAcyclic : S.ExtAcyclic) (hWFX : S.WellFormedX)
+theorem Schema.RankOkAt_of_edges {S : Schema} (hAcyclic : S.ExtAcyclic)
     {x : Label} (hx : x ∈ S.X)
     (IH : ∀ x' ∈ S.X, S.extRank x' < S.extRank x → Schema.RankOk S (S.extRank x') (S.shapeDef x'))
     {m : ℕ} (hm : S.extRank x = m + 1) :
@@ -463,15 +425,11 @@ theorem Schema.RankOkAt_of_edges {S : Schema} (hAcyclic : S.ExtAcyclic) (hWFX : 
       obtain ⟨z, hzzs, hx'z⟩ := Finset.mem_biUnion.mp hx'
       have hxz : S.extEdge x z := hzs z (by simpa [ShapeExpr.extendsTargets] using hzzs)
       have hrankz : S.extRank z < S.extRank x := Schema.extRank_lt_of_extEdge hAcyclic hx hxz
-      have hx'X : x' ∈ S.X := by
-        unfold Schema.anc at hx'z
-        have := Classical.decPred (Relation.ReflTransGen S.extEdge z)
-        simp only [Finset.mem_filter] at hx'z
-        exact hx'z.1
+      have hx'X : x' ∈ S.X := Schema.anc_subset_X hx'z
       have hrankx' : S.extRank x' ≤ S.extRank z := Schema.extRank_le_of_mem_anc hx'z
       have hrankx'm : S.extRank x' ≤ m := by omega
       have hIHx' : Schema.RankOk S (S.extRank x') (S.shapeDef x') := IH x' hx'X (by omega)
-      have hru := Schema.RankOk_restrOf hWFX hx'X hu hIHx'
+      have hru := Schema.RankOk_restrOf hx'X hu hIHx'
       exact Schema.RankOk.mono_le hrankx'm u hru
   | or s1 s2 ih1 ih2 =>
       intro hst
@@ -505,7 +463,7 @@ theorem Schema.rankOk_shapeDef {S : Schema} (hAcyclic : S.ExtAcyclic) (hWFX : S.
         intro x' hx' hlt
         exact IH (S.extRank x') (hxn ▸ hlt) x' hx' rfl
       have hedges : ∀ z ∈ (S.shapeDef x).extendsTargets, S.extEdge x z := fun z hz => hz
-      have hres := Schema.RankOkAt_of_edges hAcyclic hWFX hx hIH hm (S.shapeDef x) hedges
+      have hres := Schema.RankOkAt_of_edges hAcyclic hx hIH hm (S.shapeDef x) hedges
       rw [hm]
       exact hres
   intro x hx
@@ -526,7 +484,7 @@ theorem Schema.rankOk_any {S : Schema} (hAcyclic : S.ExtAcyclic) (hWFX : S.WellF
       have hx'X : x' ∈ S.X := Schema.ancSet_subset_X hx'
       have hrank : S.extRank x' ≤ S.X.sup S.extRank := Finset.le_sup hx'X
       have hok := Schema.rankOk_shapeDef hAcyclic hWFX x' hx'X
-      have hru := Schema.RankOk_restrOf hWFX hx'X hu hok
+      have hru := Schema.RankOk_restrOf hx'X hu hok
       exact Schema.RankOk.mono_le hrank u hru
   | or s1 s2 ih1 ih2 => exact ⟨ih1, ih2⟩
   | and s1 s2 ih1 ih2 => exact ⟨ih1, ih2⟩

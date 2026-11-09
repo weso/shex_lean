@@ -89,23 +89,11 @@ theorem Schema.anc_ssubset_of_extEdge {S : Schema} (hAcyclic : S.ExtAcyclic)
     S.anc y ⊂ S.anc x := by
   have hsub : S.anc y ⊆ S.anc x := by
     intro z hz
-    unfold Schema.anc at hz ⊢
-    have := Classical.decPred (Relation.ReflTransGen S.extEdge y)
-    have := Classical.decPred (Relation.ReflTransGen S.extEdge x)
-    simp only [Finset.mem_filter] at hz ⊢
+    rw [Schema.mem_anc] at hz ⊢
     exact ⟨hz.1, Relation.ReflTransGen.head hxy hz.2⟩
   refine ⟨hsub, fun hsub' => ?_⟩
-  have hxancx : x ∈ S.anc x := by
-    unfold Schema.anc
-    have := Classical.decPred (Relation.ReflTransGen S.extEdge x)
-    simp only [Finset.mem_filter]
-    exact ⟨hxX, Relation.ReflTransGen.refl⟩
-  have hxancy : x ∈ S.anc y := hsub' hxancx
-  have hxy' : Relation.ReflTransGen S.extEdge y x := by
-    unfold Schema.anc at hxancy
-    have := Classical.decPred (Relation.ReflTransGen S.extEdge y)
-    simp only [Finset.mem_filter] at hxancy
-    exact hxancy.2
+  have hxy' : Relation.ReflTransGen S.extEdge y x :=
+    (Schema.mem_anc.mp (hsub' (Schema.mem_anc_self hxX))).2
   rcases Relation.reflTransGen_iff_eq_or_transGen.mp hxy' with heq | htrans
   · exact hAcyclic x hxX (Relation.TransGen.single (heq.symm ▸ hxy))
   · exact hAcyclic x hxX (Relation.TransGen.head hxy htrans)
@@ -132,10 +120,7 @@ theorem Schema.extRank_le_of_mem_anc {S : Schema} {x x' : Label} (hx' : x' ∈ S
     S.extRank x' ≤ S.extRank x := by
   apply Finset.card_le_card
   intro z hz
-  unfold Schema.anc at hx' hz ⊢
-  have := Classical.decPred (Relation.ReflTransGen S.extEdge x)
-  have := Classical.decPred (Relation.ReflTransGen S.extEdge x')
-  simp only [Finset.mem_filter] at hx' hz ⊢
+  rw [Schema.mem_anc] at hx' hz ⊢
   exact ⟨hz.1, hx'.2.trans hz.2⟩
 
 /-! ### The extra well-formedness hypothesis (refer to the module docstring) -/
@@ -438,19 +423,10 @@ than `def(x)`, for the same reason that `extTeAt_size_le` bounds
 theorem restrOf_noExtends_and_size_le {S : Schema} (hWFExt : S.WellFormedExtends)
     {x : Label} {u : ShapeExpr} (hu : (S.shapeDef x).restrOf = some u) :
     u.NoExtends ∧ u.size ≤ (S.shapeDef x).size := by
+  obtain ⟨xs, hs, heq⟩ := ShapeExpr.restrOf_eq_some.mp hu
   have hWFx := hWFExt x
-  generalize hg : S.shapeDef x = e at hu hWFx
-  cases e with
-  | and s1 s2 =>
-      cases s1 with
-      | «extends» xs' h' =>
-          simp only [ShapeExpr.restrOf] at hu
-          simp only [ShapeExpr.WellFormedExtends] at hWFx
-          have hequ := Option.some.inj hu
-          subst hequ
-          exact ⟨hWFx, by simp only [ShapeExpr.size]; omega⟩
-      | _ => simp [ShapeExpr.restrOf] at hu
-  | _ => simp [ShapeExpr.restrOf] at hu
+  rw [heq] at hWFx ⊢
+  exact ⟨hWFx, by simp only [ShapeExpr.size]; omega⟩
 
 /-- Sufficient fuel for the evaluation of `SatisfiesMFuel` and
 `SatisfiesFuel` on `s` to become stable. The only case that is not plain
@@ -511,13 +487,7 @@ theorem stableM {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.WellFormedExtend
       rcases fuel2 with _ | f2
       · simp [ShapeExpr.reqFuel] at h2
       simp only [ShapeExpr.reqFuel] at h1 h2
-      have hancX : ∀ x ∈ S.ancSet xs, x ∈ S.X := by
-        intro x hx
-        unfold Schema.ancSet at hx
-        obtain ⟨y, _, hyx⟩ := Finset.mem_biUnion.mp hx
-        unfold Schema.anc at hyx
-        simp only [Finset.mem_filter] at hyx
-        exact hyx.1
+      have hancX : ∀ x ∈ S.ancSet xs, x ∈ S.X := fun _ hx => Schema.ancSet_subset_X hx
       have hboundDef : ∀ x ∈ S.ancSet xs, (S.shapeDef x).size ≤ S.maxDefSize := by
         intro x hx
         unfold Schema.maxDefSize

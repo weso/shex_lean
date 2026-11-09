@@ -12,6 +12,7 @@ import ShexLean.Shex2025Inheritance.examples.Example4_closed_extra
 import ShexLean.Shex2025Inheritance.examples.Example5_extends
 import ShexLean.Shex2025Inheritance.examples.Example6_dependency_graph
 import ShexLean.Shex2025Inheritance.examples.Example7_well_defined
+import ShexLean.Shex2025Inheritance.examples.Examples_drafts
 import ShexLean.Shex2026InheritanceDisjunction.examples.Example1_coloured_circle
 
 /-!

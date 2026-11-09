@@ -60,7 +60,8 @@ STYLE.md                           -- writing rules for comments and documentati
 `ShexLean.lean` imports each file that is not an example. Thus,
 `lake build ShexLean` type-checks the full formalization. The `Examples`
 library and the `shex_lean` executable build the worked examples
-separately (refer to "Running" below).
+separately (refer to "Running" below). `examples/Registry.lean` imports
+each example file. Thus, `lake build` type-checks all of them.
 
 ## Decidability
 
@@ -97,6 +98,9 @@ instances.
   (§3.3).
 - `Shex2017Schemas/Lemma2.lean`: the maximal typing does not depend on the
   stratification. The paper gives only a proof sketch for this result.
+- `Shex2017Schemas/CombStrat.lean`: a lexicographic combination of two
+  stratifications. The proof of Lemma 2 does not need it, but it is a
+  useful fact.
 - `Shex2017Schemas/ShapesSem.lean`: Definitions 5 and 6, `SHAPES_SEM`.
 - `Shex2017Schemas/Algorithm1.lean`: Algorithm 1 (§4.1). It is proved
   equal to the semantics.

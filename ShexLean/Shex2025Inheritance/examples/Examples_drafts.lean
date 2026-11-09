@@ -4,7 +4,9 @@ import ShexLean.Shex2025Inheritance.Render
 import Mathlib.Tactic.FinCases
 import Example
 
-namespace ShexLean.Inheritance
+-- The draft definitions are in their own namespace, so that their names do
+-- not conflict with the worked examples of `Example3_triple_match.lean`.
+namespace ShexLean.Inheritance.Drafts
 
 def bigFuel1 : ℕ := 4
 
@@ -203,3 +205,5 @@ theorem b_doesnt_satisfy_x1 :
     have hobj : (⟨b, "p", .lit (.str "v3")⟩ : Triple).obj = o := by rw [hv3Mx]
     rw [← hobj] at hty
     exact absurd hty (by decide)
+
+end ShexLean.Inheritance.Drafts

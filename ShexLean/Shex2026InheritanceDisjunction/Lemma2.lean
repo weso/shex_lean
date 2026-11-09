@@ -258,7 +258,7 @@ theorem restrictLabels_correct_restrictTo {S : Schema} (hWFX : S.WellFormedX)
   have hAiff : L ∈ (S.restrictLabels Ls1).A ↔ L ∈ (S.restrictLabels Ls2).A := by
     simp only [Schema.restrictLabels, Finset.mem_inter]
     exact ⟨fun ⟨hLA, _⟩ => ⟨hLA, hLs1Ls2 hL1⟩, fun ⟨hLA, _⟩ => ⟨hLA, hL1⟩⟩
-  have hagree1 : ∀ n' L', L' ∈ Ls1 → ((n', L') ∈ t ↔ (n', L') ∈ restrictTyping t Ls1) := by
+  have hagree1 : AgreeOn t (restrictTyping t Ls1) Ls1 := by
     intro n' L' hL'
     exact ⟨fun h => mem_restrictTyping.mpr ⟨h, hL'⟩, fun h => (mem_restrictTyping.mp h).1⟩
   refine ⟨fun hLnotA => ?_, fun hLA => ?_⟩

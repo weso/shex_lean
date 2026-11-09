@@ -9,6 +9,7 @@ import ShexLean.Shex2017Schemas.Stratification
 import ShexLean.Shex2017Schemas.MaximalTyping
 import ShexLean.Shex2017Schemas.Proposition1
 import ShexLean.Shex2017Schemas.Lemma2
+import ShexLean.Shex2017Schemas.CombStrat
 import ShexLean.Shex2017Schemas.ShapesSem
 import ShexLean.Shex2017Schemas.Algorithm1
 import ShexLean.Shex2017Schemas.Algorithm2
@@ -29,7 +30,6 @@ import ShexLean.Shex2025Inheritance.Decidable
 import ShexLean.Shex2025Inheritance.Render
 import ShexLean.Shex2026InheritanceDisjunction.Syntax
 import ShexLean.Shex2026InheritanceDisjunction.Semantics
-import ShexLean.Shex2026InheritanceDisjunction.examples.Example1_coloured_circle
 import ShexLean.Shex2026InheritanceDisjunction.Stratification
 import ShexLean.Shex2026InheritanceDisjunction.Termination
 import ShexLean.Shex2026InheritanceDisjunction.CorrectTyping

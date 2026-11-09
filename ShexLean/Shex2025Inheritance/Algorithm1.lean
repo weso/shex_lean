@@ -209,7 +209,7 @@ theorem refine1_correct {S : Schema} (hWFX : S.WellFormedX) (hAcyclic : S.ExtAcy
   · have hTsub' : T ⊆ (S.restrictLabels Ls').univTyping G :=
       hTsub.trans (Schema.univTyping_mono hLoLs')
     have hrestr := refine1_restrictTo (S' := S.restrictLabels Ls') (Lo := Lo) hTsub'
-    have hagree : ∀ n' L', L' ∈ Lo → ((n', L') ∈ T ↔ (n', L') ∈ refine1 (S.restrictLabels Ls') G Lo T) :=
+    have hagree : AgreeOn T (refine1 (S.restrictLabels Ls') G Lo T) Lo :=
       restrictTyping_agree hrestr.symm
     have hmemT : (n, L) ∈ T := (hagree n L hL).mpr hmem
     obtain ⟨hSatPlain, hSatAbs⟩ := hTcorrect n L hmemT
@@ -304,7 +304,7 @@ theorem maxTypingAgreeing_subset_refine1 {S : Schema} (hWFX : S.WellFormedX)
           (bigStart (S.restrictLabels Ls') G Lo T) with hcurn_def
         have hcurn_restrict : restrictTyping curn Lo = restrictTyping T Lo :=
           iterate_refineStep_restrictTo hTsub' n
-        have hagree : ∀ n' L', L' ∈ Lo → ((n', L') ∈ M ↔ (n', L') ∈ curn) := by
+        have hagree : AgreeOn M curn Lo := by
           intro n' L' hL'
           have h1 : ((n', L') ∈ M ↔ (n', L') ∈ T) := by
             constructor

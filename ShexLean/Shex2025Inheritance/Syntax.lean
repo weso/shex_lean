@@ -216,4 +216,46 @@ in this way. Rule 18 uses it. -/
 noncomputable def Schema.ancSet (S : Schema) (xs : Finset Label) : Finset Label :=
   xs.biUnion S.anc
 
+/-! ### Membership lemmas
+
+`anc` and `desc` are filters with a `Classical.decPred` instance. These
+lemmas fix the instance one time, here. Thus, the proofs in the other
+files use `rw` or `simp` with these lemmas, and never unfold the filters.
+This prevents instance mismatches at the call sites. -/
+
+theorem Schema.mem_anc {S : Schema} {x y : Label} :
+    y ∈ S.anc x ↔ y ∈ S.X ∧ Relation.ReflTransGen S.extEdge x y := by
+  unfold Schema.anc; simp only [Finset.mem_filter]
+
+theorem Schema.mem_desc {S : Schema} {x y : Label} :
+    y ∈ S.desc x ↔ y ∈ S.X ∧ Relation.ReflTransGen S.extEdge y x := by
+  unfold Schema.desc; simp only [Finset.mem_filter]
+
+theorem Schema.mem_ancSet {S : Schema} {xs : Finset Label} {y : Label} :
+    y ∈ S.ancSet xs ↔ ∃ x ∈ xs, y ∈ S.anc x := by
+  unfold Schema.ancSet; exact Finset.mem_biUnion
+
+/-- Each label of `X` is its own ancestor (the empty path of `H_S`). -/
+theorem Schema.mem_anc_self {S : Schema} {x : Label} (hx : x ∈ S.X) : x ∈ S.anc x :=
+  Schema.mem_anc.mpr ⟨hx, Relation.ReflTransGen.refl⟩
+
+theorem Schema.anc_subset_X {S : Schema} {x : Label} : S.anc x ⊆ S.X :=
+  fun _ hy => (Schema.mem_anc.mp hy).1
+
+theorem Schema.ancSet_subset_X {S : Schema} {xs : Finset Label} : S.ancSet xs ⊆ S.X := by
+  intro y hy
+  obtain ⟨_, _, hy⟩ := Schema.mem_ancSet.mp hy
+  exact Schema.anc_subset_X hy
+
+/-- `restr(x) = some u` exactly when `def(x)` has the form
+`extends X h and u`. The proofs about `restr(x)` use this lemma, and do not
+do a case analysis on `ShapeExpr` again. -/
+theorem ShapeExpr.restrOf_eq_some {s u : ShapeExpr} :
+    s.restrOf = some u ↔ ∃ xs h, s = .and (.extends xs h) u := by
+  constructor
+  · intro hs
+    rcases s with _ | _ | _ | _ | ⟨s1, s2⟩ | _ <;> try simp [ShapeExpr.restrOf] at hs
+    cases s1 <;> simp_all
+  · rintro ⟨xs, h, rfl⟩; rfl
+
 end ShexLean.Inheritance
