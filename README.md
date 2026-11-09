@@ -47,6 +47,9 @@ ShexLean/
                                       other part uses it.
   Shex2017Schemas/                 -- 2017 paper: syntax, semantics, algorithms, decidability
     examples/                      -- worked examples from the paper
+  InheritanceCore/                 -- the parts of the 2025 formalism that do not depend on the
+                                      payload of `extends` (triple expressions, shapes, Table 1,
+                                      rule 17), shared by the 2025 and 2026 directories
   Shex2025Inheritance/             -- 2025 paper: syntax, semantics, algorithm, decidability
     examples/                      -- worked examples from the paper
   Shex2026InheritanceDisjunction/  -- exploration: "extends on a disjunction" (§6 of 2025).
@@ -175,15 +178,16 @@ There is no `sorry` in the directory.**
     decidable.
 - `Shex2026InheritanceDisjunction/Semantics.lean`: the same as
   `Shex2025Inheritance/Semantics.lean`, except rule 18 (the `.extends` case
-  of `SatisfiesMFuel`). Rule 18 has one more existential witness,
+  of `SatisfiesMAt`). Rule 18 has one more existential witness,
   `pick : ShapeLabel → ℕ`. Each `.extends` occurrence selects `pick` one
   time, and all the ancestors that this occurrence reaches share it. This
   is the fix:
   - `S.ancSet` already puts each ancestor that one `.extends` clause can
     reach into one `Finset`, with no duplicates. (Multiple inheritance is
     written as many labels in one `xs`, not as many separate `.extends`
-    nodes. `WellFormedX` and `WellFormedExtends` already exclude the
-    second form.)
+    nodes. `WellFormedX` makes the definition of each `x ∈ X` one
+    `extends` clause at the top level. An `extends` nested in a
+    restriction `u` is a separate occurrence, with its own `pick`.)
   - Thus, two inheritance paths that go to the same disjunctive ancestor
     must use the *same* shared `pick` and `Mx` witness.
   - This is exactly "(1) record the choice, (2) check that the subtypes
@@ -191,28 +195,20 @@ There is no `sorry` in the directory.**
     typing.
 - `Shex2026InheritanceDisjunction/Stratification.lean`, `Termination.lean`:
   the dependency graph and Lemma 1 (independence from fuel), done again
-  for `hs` and `pick`. There are two new parts:
-  - `Shape.listDepInfo` is the union of the dependency information of all
-    the disjuncts. `pick` can select any of them, so a sound
-    stratification analysis must count them all.
-  - `Shape.listSize` and `extTeAt_size_le` give a bound on the syntax-tree
-    size that covers all the disjuncts together.
-
-  Note: this version of Lemma 1 needs an extra hypothesis,
-  `Schema.WellFormedExtends`, which forbids an `extends` nested in a
-  restriction `u`. (The 2025 version needs only `WellFormedX` and
-  `ExtAcyclic`.) The module docstring of `Termination.lean` tells why.
+  for `hs` and `pick`. `Shape.listDepInfo` is the union of the dependency
+  information of all the disjuncts. `pick` can select any of them, so a
+  sound stratification analysis must count them all. The proof of Lemma 1
+  is the same as in 2025, and needs only `ExtAcyclic`.
 - `Shex2026InheritanceDisjunction/CorrectTyping.lean`, `Algorithm1.lean`:
-  almost the same as the 2025 versions. They do not use the payload of
-  `.extends`. Their hypotheses use `WellFormedExtends` (from
-  `Termination.lean` above) where the 2025 versions use `ExtAcyclic`.
+  the same as the 2025 versions. They do not use the payload of
+  `.extends`.
 - `Shex2026InheritanceDisjunction/Proposition1.lean`: Proposition 1 of
   the paper, done again and **proved** for the relaxed semantics. The
-  agreement and monotonicity lemmas `agreeM`, `stratMonoM` and
-  `schemaAgreeM` are the lemmas that dereference `.extends`. Each of them
-  gets the same `pick` existential as rule 18, at the location where the
-  `Mx` witness already was. The other cases (`or`, `and`, `not`,
-  `.ofShape`) do not change.
+  agreement and monotonicity lemmas `SatisfiesMAt_transfer` and
+  `SatisfiesMAt_stratMono` are the lemmas that dereference `.extends`.
+  Each of them gets the same `pick` existential as rule 18, at the
+  location where the `Mx` witness already was. The other cases (`or`,
+  `and`, `not`, `.ofShape`) do not change.
 - `Shex2026InheritanceDisjunction/Lemma2.lean`: Lemma 2 of the paper (the
   maximal typing does not depend on the stratification). It is a
   mechanical port. It uses the results of `Proposition1.lean` abstractly,

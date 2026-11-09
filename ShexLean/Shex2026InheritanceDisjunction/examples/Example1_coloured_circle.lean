@@ -55,6 +55,8 @@ with the `Decidable` instances of this folder.
 
 namespace ShexLean.InheritanceDisjunction
 
+open ShexLean.InheritanceCore
+
 /-- A fuel bound that is sufficient for all the proofs in this file. -/
 def bigFuelDisj : ℕ := 10
 
@@ -186,11 +188,11 @@ theorem hancSetCircleColouredFigure :
 
 /-- The empty set trivially satisfies the trivial shape `[ε]`, which is not
 closed and has no `extra` (rule 17 of Table 3). -/
-theorem empty_satisfies_emptyShape {S : Schema} {G : Graph} {τ : Typing} {fuel : ℕ} :
-    SatisfiesMFuel (fuel + 2) S G τ (∅ : Finset Triple) (.ofShape ⟨false, none, .empty⟩) := by
+theorem empty_satisfies_emptyShape {τ : Typing} :
+    SatisfiesShape τ (∅ : Finset Triple) ⟨false, none, .empty⟩ := by
   have hMeEmpty : Me τ (∅ : Finset Triple) TripleExpr.empty = ∅ := by unfold Me; simp
   refine ⟨?_, ?_, fun h => absurd h (by decide)⟩
-  · show SatisfiesEFuel (fuel + 1) S G τ (Me τ (∅ : Finset Triple) TripleExpr.empty) TripleExpr.empty
+  · show SatisfiesE τ (Me τ (∅ : Finset Triple) TripleExpr.empty) TripleExpr.empty
     rw [hMeEmpty]; rfl
   · show props (Mnotin τ (∅ : Finset Triple) TripleExpr.empty) ⊆ (∅ : Finset IRI)
     unfold Mnotin
@@ -206,7 +208,7 @@ theorem f1_satisfies_ColouredCircle :
   have hshape : S_disj.shapeDef "ColouredCircle" =
       .extends {"Circle", "ColouredFigure"} [⟨false, none, .empty⟩] := rfl
   rw [hshape]
-  refine (?_ : SatisfiesMFuel _ S_disj G_disj τ_disj (neigh G_disj f1) _)
+  refine (?_ : SatisfiesMFuel _ S_disj τ_disj (neigh G_disj f1) _)
   have hneigh : neigh G_disj f1 = {(⟨f1, "coord", cCart⟩ : Triple)} := by decide
   rw [hneigh]
   refine ⟨∅, fun x => if x = "Figure" then {(⟨f1, "coord", cCart⟩ : Triple)} else ∅,
@@ -222,7 +224,7 @@ theorem f1_satisfies_ColouredCircle :
   · rw [hancSetCircleColouredFigure]
     intro x hx; simp only [Finset.mem_insert, Finset.mem_singleton] at hx
     rcases hx with rfl | rfl | rfl <;> [rfl; skip; rfl]
-    show SatisfiesEFuel _ S_disj G_disj τ_disj {(⟨f1, "coord", cCart⟩ : Triple)}
+    show SatisfiesE τ_disj {(⟨f1, "coord", cCart⟩ : Triple)}
       ((S_disj.shapeDef "Figure").extTeAt 0)
     have : (S_disj.shapeDef "Figure").extTeAt 0 = .tc "coord" "CartesianCoord" := rfl
     rw [this]
@@ -252,7 +254,7 @@ theorem f2_satisfies_ColouredCircle :
   have hshape : S_disj.shapeDef "ColouredCircle" =
       .extends {"Circle", "ColouredFigure"} [⟨false, none, .empty⟩] := rfl
   rw [hshape]
-  refine (?_ : SatisfiesMFuel _ S_disj G_disj τ_disj (neigh G_disj f2) _)
+  refine (?_ : SatisfiesMFuel _ S_disj τ_disj (neigh G_disj f2) _)
   have hneigh : neigh G_disj f2 = {(⟨f2, "coord", cPolar⟩ : Triple)} := by decide
   rw [hneigh]
   refine ⟨∅, fun x => if x = "Figure" then {(⟨f2, "coord", cPolar⟩ : Triple)} else ∅,
@@ -268,7 +270,7 @@ theorem f2_satisfies_ColouredCircle :
   · rw [hancSetCircleColouredFigure]
     intro x hx; simp only [Finset.mem_insert, Finset.mem_singleton] at hx
     rcases hx with rfl | rfl | rfl <;> [rfl; skip; rfl]
-    show SatisfiesEFuel _ S_disj G_disj τ_disj {(⟨f2, "coord", cPolar⟩ : Triple)}
+    show SatisfiesE τ_disj {(⟨f2, "coord", cPolar⟩ : Triple)}
       ((S_disj.shapeDef "Figure").extTeAt 1)
     have : (S_disj.shapeDef "Figure").extTeAt 1 = .tc "coord" "PolarCoord" := rfl
     rw [this]
@@ -307,7 +309,7 @@ theorem f3_not_satisfies_ColouredCircle :
   have hshape : S_disj.shapeDef "ColouredCircle" =
       .extends {"Circle", "ColouredFigure"} [⟨false, none, .empty⟩] := rfl
   rw [hshape]
-  show ¬ SatisfiesMFuel _ S_disj G_disj τ_disj (neigh G_disj f3) _
+  show ¬ SatisfiesMFuel _ S_disj τ_disj (neigh G_disj f3) _
   have hneigh : neigh G_disj f3 = {(⟨f3, "coord", cBad⟩ : Triple)} := by decide
   rw [hneigh]
   rintro ⟨M', Mx, pick, ⟨-, -, hunion⟩, -, hext, -⟩

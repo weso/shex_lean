@@ -2,46 +2,51 @@ import ShexLean.Shex2026InheritanceDisjunction.Proposition1
 import Mathlib.Data.Finset.Max
 
 /-!
+This file is a copy of the same file in `ShexLean/Shex2025Inheritance/`,
+for the relaxed rule 18 with disjunctive `extends`. It does not use the
+payload of `.extends`. Thus, its proofs do not change.
+
 Lemma 2 (§4.3) of the 2025 paper "Shape Expressions with Inheritance":
 `τ_max(S,σ,G)` (Definition 8) does not depend on the stratification `σ` of
-`S` that you select.
+`S` that you select. The paper gives only a sketch of this proof. This
+file gives a full argument, with these parts:
 
-This file is a port of `ShexLean/Shex2017Schemas/Lemma2.lean` of the 2017
-formalization. The paper gives only a sketch of this proof ("Proof.
-(Idea)..."). Thus, the 2017 file made a full, independent argument
-(Fusion, Swap, a process `cont1` that does not depend on a schedule, and
-Independence). This argument has almost the same structure here.
+- Fusion (`maxTypingAgreeing_fusion`): if you reveal labels in one batch,
+  or in two nested batches, you get the same `maxTypingAgreeing` result.
+- Swap (`maxTypingAgreeing_swap`): let two batches each depend only on a
+  common base, and not on each other. Then you can reveal them in the two
+  orders.
+- `cont1`: a canonical process. With a fixed stratification, it reveals at
+  each step the remaining batch with the smallest value. It continues
+  until all the labels are settled.
+- Independence (`cont1_indep`): the final answer of `cont1` does not
+  change if the first step reveals a different valid batch. The proof uses
+  Swap and strong induction on the number of remaining labels.
+- A chaining argument. It shows that `cont1` agrees with `Typing8` along
+  the checkpoints of each valid stratification. This gives
+  `Typing8 strat1 = Typing8 strat2` for all `strat1` and `strat2`.
 
-One part does **not** transfer directly. In 2017, `Satisfies` never uses
-the schema. Thus, "restrict the schema to a self-contained label set" was
-free (`Schema.restrictLabels`, with the same `shapeDef`, and no more
-invariance lemma). Here, `Satisfies` really depends on the schema
-(through `.anc` and `.ancSet`). For restrictions to a *stratum*,
-`Satisfies_stratRestrict_agree` of
-`ShexLean/Shex2026InheritanceDisjunction/Proposition1.lean` solves this
-problem. Thus, this file first makes the full schema-invariance argument
-more general:
-
-* From `Schema.stratRestrict` (related to a stratification).
-* To `Schema.restrictLabels` (any `D_S`-closed label set).
-
-The batches of `cont1`, which do not depend on a schedule, need this
-general form.
+`Satisfies` depends on the schema (through `.anc` and `.ancSet`). Thus, to
+reveal labels in a batch order of your choice, the proof needs a
+schema-invariance argument. `Satisfies_stratRestrict_agree` of
+`Proposition1.lean` is specific to strata, so it is not sufficient.
+`Schema.restrictLabels` restricts `S` to any `D_S`-closed label set (not
+related to a stratification). Its schema-invariance fact is
+`Satisfies_restrictLabels_agree`.
 -/
 
 namespace ShexLean.InheritanceDisjunction
 
+open ShexLean.InheritanceCore
+
 /-! ### `Schema.restrictLabels`: restriction to any label set
 
-This is a general form of `Schema.stratRestrict`
-(`ShexLean/Shex2026InheritanceDisjunction/Proposition1.lean`) that is not
-related to a stratification. Here, `Ls` is any label set. It is not
-necessarily `S.stratum strat i` for a `strat` and an `i`. -/
+Here, `Ls` is any label set. It is not necessarily a stratum
+`S.stratum strat i` for a `strat` and an `i` (`Schema.stratRestrict`,
+`Proposition1.lean`). -/
 
 /-- The restriction of `S` to a label set `Ls`. The definitions do not
-change. This is the `Schema.restrictLabels` of 2017
-(`ShexLean/Shex2017Schemas/Lemma2.lean`), and a general form of
-`Schema.stratRestrict`. -/
+change. -/
 def Schema.restrictLabels (S : Schema) (Ls : Finset Label) : Schema where
   Y := S.Y ∩ Ls
   X := S.X ∩ Ls
@@ -61,22 +66,22 @@ theorem Schema.restrictLabels_YX_eq {S : Schema} {Ls : Finset Label}
   rw [← Finset.union_inter_distrib_right]
   exact Finset.inter_eq_right.mpr hLs
 
-/-- `WellFormedX` stays true for each `restrictLabels`. This is the general
-version of `Schema.stratRestrict_WellFormedX`. -/
-theorem Schema.restrictLabels_WellFormedX {S : Schema} (hWFX : S.WellFormedX)
-    (Ls : Finset Label) : (S.restrictLabels Ls).WellFormedX := by
+/-- `ExtAcyclic` stays true for each `restrictLabels`. This is the general
+version of `Schema.stratRestrict_ExtAcyclic`. -/
+theorem Schema.restrictLabels_ExtAcyclic {S : Schema} (hAcyclic : S.ExtAcyclic)
+    (Ls : Finset Label) : (S.restrictLabels Ls).ExtAcyclic := by
   intro x hx
   simp only [Schema.restrictLabels, Finset.mem_inter] at hx
-  exact hWFX x hx.1
+  exact hAcyclic x hx.1
 
 /-- `restrictLabels` does not change the edges of `D_S`. This is the
 general version of `Schema.stratRestrict_DEdge_eq`. -/
 theorem Schema.restrictLabels_DEdge_eq (S : Schema) (Ls : Finset Label) :
     (S.restrictLabels Ls).DEdge = S.DEdge := rfl
 
-/-- `(restrictLabels Ls).Y ∪ (restrictLabels Ls).X ⊆ Ls` always (also when
-`Ls ⊄ Y ∪ X`). The definition uses intersections, so it never adds labels
-outside `Ls`. This changes a hypothesis `∀ z ∈ Ls, ...` into the form
+/-- `(restrictLabels Ls).Y ∪ (restrictLabels Ls).X ⊆ Ls` always. (The
+definition uses intersections, so it never adds labels outside `Ls`.) This
+changes a hypothesis `∀ z ∈ Ls, ...` into the form
 `∀ z ∈ (restrictLabels Ls).Y ∪ (restrictLabels Ls).X, ...` that
 `maxTypingAgreeing_correct` needs. -/
 theorem Schema.restrictLabels_mem_YX_subset (S : Schema) (Ls : Finset Label) :
@@ -89,10 +94,9 @@ theorem Schema.restrictLabels_mem_YX_subset (S : Schema) (Ls : Finset Label) :
 which is `Ls` when `Ls ⊆ Y ∪ X`), if `S` is `D_S`-closed on `Ls`.
 
 This is the general version of `Schema.stratRestrict_DClosed`. It is made
-in the same way, with the two simple bridge lemmas above (`rfl` and set
-equality). If you give `hLsClosed` directly, `whnf` becomes too slow, in
-the same way. (Refer to the docstring of `Schema.stratRestrict_DClosed`,
-in `ShexLean/Shex2026InheritanceDisjunction/Proposition1.lean`.) -/
+in the same way, with the two bridge lemmas above. If you give `hLsClosed`
+directly, `whnf` becomes too slow. (Refer to the docstring of
+`Schema.stratRestrict_DClosed` in `Proposition1.lean`.) -/
 theorem Schema.restrictLabels_DClosed {S : Schema} {Ls : Finset Label}
     (hLsClosed : S.DClosedOn Ls) (hLsYX : Ls ⊆ S.Y ∪ S.X) :
     (S.restrictLabels Ls).DClosedOn ((S.restrictLabels Ls).Y ∪ (S.restrictLabels Ls).X) := by
@@ -116,11 +120,10 @@ theorem Schema.univTyping_mono {S : Schema} {G : Graph} {Ls Ls' : Finset Label}
 /-! ### A restriction to a `D_S`-closed set does not change `.anc` and `.desc`
 
 This is the general version of `Schema.stratRestrict_anc_eq` (which uses
-`Stratification.le_of_path`, specific to a stratum). It uses the more basic
-fact below that result. If `Ls` is `D_S`-closed, then each label that
-`H_S` reaches from a member of `Ls`, in *the two* directions, already stays
-in `Ls`. The reason is that `dep-extends` is symmetric (Definition 5) and
-is part of `D_S`. -/
+`Stratification.le_of_path`, specific to a stratum). If `Ls` is
+`D_S`-closed, then each label that `H_S` reaches from a member of `Ls`, in
+the two directions, stays in `Ls`. The reason is that `dep-extends` is
+symmetric (Definition 5) and is part of `D_S`. -/
 
 /-- `S.anc x ⊆ Ls` if `x ∈ Ls` and `Ls` is `D_S`-closed. This follows
 directly from `Schema.ancSet_subset` with `xs = {x}`. -/
@@ -138,10 +141,10 @@ private theorem reflTransGen_reverse_of_symm {α : Type*} {r : α → α → Pro
   | tail hprev hstep ih => exact Relation.ReflTransGen.head (hsymm _ _ hstep) ih
 
 /-- `S.desc L ⊆ Ls` if `L ∈ Ls` and `Ls` is `D_S`-closed. This is the dual
-of `Schema.anc_subset_of_DClosedOn`, in the "descendant" direction. It
-needs the reversal above, because the reachability of `Schema.desc` goes in
-the opposite direction along `extEdge`. `dep-extends` (and thus `D_S`)
-does not depend on the direction. -/
+of `Schema.anc_subset_of_DClosedOn`. It needs the reversal above, because
+the reachability of `Schema.desc` goes in the opposite direction to
+`extEdge`. `dep-extends` (and thus `D_S`) does not depend on the
+direction. -/
 theorem Schema.desc_subset_of_DClosedOn {S : Schema} {Ls : Finset Label} (hLs : S.DClosedOn Ls)
     {L : Label} (hL : L ∈ Ls) : S.desc L ⊆ Ls := by
   intro x hx
@@ -191,64 +194,47 @@ theorem Schema.restrictLabels_desc_eq {S : Schema} {Ls : Finset Label} (hLsClose
 
 /-! ### `Satisfies` across `restrictLabels`, and lifting `CorrectTyping` -/
 
-/-- **The general schema-invariance fact** of this file. For a label in
-`Ls1`, `Satisfies` with `restrictLabels Ls1` agrees with `Satisfies` with
-each larger `D_S`-closed `restrictLabels Ls2 ⊇ Ls1`.
+/-- **The schema-invariance fact of this file.** For a label in `Ls1`,
+`Satisfies` with `restrictLabels Ls1` agrees with `Satisfies` with each
+larger `D_S`-closed `restrictLabels Ls2 ⊇ Ls1`.
 
-This is the general version (for any `D_S`-closed set) of
-`Satisfies_stratRestrict_agree`. It is made in the same way (`stableFuel`
-and `schemaAgreeFuel`), with `Schema.restrictLabels_anc_eq` in place of
+This is the version of `Satisfies_stratRestrict_agree` for any set. It is
+made in the same way (`stableFuel` and `SatisfiesFuel_transfer`), with
+`Schema.restrictLabels_anc_eq` in place of
 `Schema.stratRestrict_anc_eq`, which is specific to a stratum. -/
-theorem Satisfies_restrictLabels_agree {S : Schema} (hWFX : S.WellFormedX)
-    (hWFExt : S.WellFormedExtends) {Ls1 Ls2 : Finset Label} (hLs1Ls2 : Ls1 ⊆ Ls2)
+theorem Satisfies_restrictLabels_agree {S : Schema}
+    (hAcyclic : S.ExtAcyclic) {Ls1 Ls2 : Finset Label} (hLs1Ls2 : Ls1 ⊆ Ls2)
     (hLs1Closed : S.DClosedOn Ls1) (hLs2Closed : S.DClosedOn Ls2)
     {x : Label} (hxLs1 : x ∈ Ls1) {G : Graph} {τ : Typing} {n : RDFNode} :
     Satisfies (S.restrictLabels Ls1) G τ n (S.shapeDef x) ↔
     Satisfies (S.restrictLabels Ls2) G τ n (S.shapeDef x) := by
-  have hdeps : (S.shapeDef x).depsIn Ls1 := S.shapeDef_depsIn hLs1Closed hxLs1
   have hAnc : ∀ y ∈ Ls1, (S.restrictLabels Ls1).anc y = (S.restrictLabels Ls2).anc y := by
     intro y hy
     rw [Schema.restrictLabels_anc_eq hLs1Closed hy,
       Schema.restrictLabels_anc_eq hLs2Closed (hLs1Ls2 hy)]
-  have hWFX1 : (S.restrictLabels Ls1).WellFormedX := Schema.restrictLabels_WellFormedX hWFX Ls1
-  have hWFX2 : (S.restrictLabels Ls2).WellFormedX := Schema.restrictLabels_WellFormedX hWFX Ls2
-  set F := max (ShapeExpr.reqFuel (S.restrictLabels Ls1) (S.shapeDef x) + 1)
-    (ShapeExpr.reqFuel (S.restrictLabels Ls2) (S.shapeDef x) + 1) with hFdef
-  have hstep1 : Satisfies (S.restrictLabels Ls1) G τ n (S.shapeDef x) ↔
-      SatisfiesFuel F (S.restrictLabels Ls1) G τ n (S.shapeDef x) :=
-    stableFuel hWFX1 hWFExt (S.shapeDef x)
-      (ShapeExpr.reqFuel (S.restrictLabels Ls1) (S.shapeDef x) + 1) F
-      (le_refl _) (le_max_left _ _) G τ n
-  have hstep2 : Satisfies (S.restrictLabels Ls2) G τ n (S.shapeDef x) ↔
-      SatisfiesFuel F (S.restrictLabels Ls2) G τ n (S.shapeDef x) :=
-    stableFuel hWFX2 hWFExt (S.shapeDef x)
-      (ShapeExpr.reqFuel (S.restrictLabels Ls2) (S.shapeDef x) + 1) F
-      (le_refl _) (le_max_right _ _) G τ n
-  have hcross : SatisfiesFuel F (S.restrictLabels Ls1) G τ n (S.shapeDef x) ↔
-      SatisfiesFuel F (S.restrictLabels Ls2) G τ n (S.shapeDef x) :=
-    schemaAgreeFuel (S1 := S.restrictLabels Ls1) (S2 := S.restrictLabels Ls2)
-      rfl hWFExt hLs1Closed hAnc (S.shapeDef x) hdeps F τ n
-  rw [hstep1, hstep2, hcross]
+  have hAc1 := Schema.restrictLabels_ExtAcyclic hAcyclic Ls1
+  have hAc2 := Schema.restrictLabels_ExtAcyclic hAcyclic Ls2
+  have hF1 := le_max_left (S.restrictLabels Ls1).fuelBound (S.restrictLabels Ls2).fuelBound
+  have hF2 := le_max_right (S.restrictLabels Ls1).fuelBound (S.restrictLabels Ls2).fuelBound
+  calc Satisfies (S.restrictLabels Ls1) G τ n (S.shapeDef x)
+      _ ↔ SatisfiesFuel _ (S.restrictLabels Ls1) G τ n (S.shapeDef x) :=
+        stableFuel hAc1 le_rfl hF1 G τ n _
+      _ ↔ SatisfiesFuel _ (S.restrictLabels Ls2) G τ n (S.shapeDef x) :=
+        SatisfiesFuel_transfer (S2 := S.restrictLabels Ls2) hAc1 hF1 hLs1Closed
+          (fun _ _ _ => Iff.rfl) rfl hAnc (S.shapeDef_depsIn hLs1Closed hxLs1) n
+      _ ↔ Satisfies (S.restrictLabels Ls2) G τ n (S.shapeDef x) :=
+        (stableFuel hAc2 le_rfl hF2 G τ n _).symm
 
 /-- A correct typing of `restrictLabels Ls2` restricts to a correct typing
-of `restrictLabels Ls1`, for each `D_S`-closed `Ls1 ⊆ Ls2`. This is the
-version of `restrictLabels_correct_restrictTo` of 2017. It combines two
-steps:
-
-* A τ-restriction step (`Satisfies.agree`, which is already generic in
-  the schema, in `Proposition1.lean`).
-* A *schema*-restriction step (`Satisfies_restrictLabels_agree`, new in
-  this file).
-
-2017 needed only the first step, because there `Satisfies` never uses the
-schema.
+of `restrictLabels Ls1`, for each `D_S`-closed `Ls1 ⊆ Ls2`. The proof
+combines a typing-restriction step (`Satisfies.agree`, `Proposition1.lean`)
+with a schema-restriction step (`Satisfies_restrictLabels_agree`).
 
 The abstract-label case also needs `Schema.desc_subset_of_DClosedOn`. The
-descendant that is the witness is automatically also in `Ls1`, because the
-`D_S`-closure of `Ls1` already contains each `H_S` neighbour of `L`
-(`dep-extends` is symmetric), not only its ordinary `dep` references. -/
-theorem restrictLabels_correct_restrictTo {S : Schema} (hWFX : S.WellFormedX)
-    (hWFExt : S.WellFormedExtends) {G : Graph} {Ls1 Ls2 : Finset Label} {t : Typing}
+descendant that is the witness is also in `Ls1`, because the `D_S`-closure
+of `Ls1` contains each `H_S` neighbour of `L` (`dep-extends` is symmetric),
+not only its `dep` references. -/
+theorem restrictLabels_correct_restrictTo {S : Schema} (hAcyclic : S.ExtAcyclic) {G : Graph} {Ls1 Ls2 : Finset Label} {t : Typing}
     (hLs1Ls2 : Ls1 ⊆ Ls2) (hLs1Closed : S.DClosedOn Ls1) (hLs2Closed : S.DClosedOn Ls2)
     (ht : (S.restrictLabels Ls2).CorrectTyping G t) :
     (S.restrictLabels Ls1).CorrectTyping G (restrictTyping t Ls1) := by
@@ -265,9 +251,9 @@ theorem restrictLabels_correct_restrictTo {S : Schema} (hWFX : S.WellFormedX)
   · have hSat2 : Satisfies (S.restrictLabels Ls2) G t n (S.shapeDef L) :=
       hcorrectL.1 (fun h => hLnotA (hAiff.mpr h))
     have hSat1 : Satisfies (S.restrictLabels Ls1) G t n (S.shapeDef L) :=
-      (Satisfies_restrictLabels_agree hWFX hWFExt hLs1Ls2 hLs1Closed hLs2Closed hL1).mpr hSat2
+      (Satisfies_restrictLabels_agree hAcyclic hLs1Ls2 hLs1Closed hLs2Closed hL1).mpr hSat2
     have hdeps : (S.shapeDef L).depsIn Ls1 := S.shapeDef_depsIn hLs1Closed hL1
-    exact (Satisfies.agree (Schema.restrictLabels_WellFormedX hWFX Ls1) hWFExt hLs1Closed hagree1
+    exact (Satisfies.agree (Schema.restrictLabels_ExtAcyclic hAcyclic Ls1) hLs1Closed hagree1
       hdeps n).mp hSat1
   · obtain ⟨x, hxmem, hSatx⟩ := hcorrectL.2 (hAiff.mp hLA)
     rw [Finset.mem_sdiff, Schema.restrictLabels_desc_eq hLs2Closed (hLs1Ls2 hL1)] at hxmem
@@ -283,14 +269,12 @@ theorem restrictLabels_correct_restrictTo {S : Schema} (hWFX : S.WellFormedX)
       simp only [Schema.restrictLabels, Finset.mem_inter]
       exact fun h => hxnA h.1
     have hSat1 : Satisfies (S.restrictLabels Ls1) G t n (S.shapeDef x) :=
-      (Satisfies_restrictLabels_agree hWFX hWFExt hLs1Ls2 hLs1Closed hLs2Closed hxLs1).mpr hSatx
+      (Satisfies_restrictLabels_agree hAcyclic hLs1Ls2 hLs1Closed hLs2Closed hxLs1).mpr hSatx
     have hdepsx : (S.shapeDef x).depsIn Ls1 := S.shapeDef_depsIn hLs1Closed hxLs1
-    exact ⟨x, hxmem', (Satisfies.agree (Schema.restrictLabels_WellFormedX hWFX Ls1) hWFExt
-      hLs1Closed hagree1 hdepsx n).mp hSat1⟩
+    exact ⟨x, hxmem', (Satisfies.agree (Schema.restrictLabels_ExtAcyclic hAcyclic Ls1) hLs1Closed hagree1 hdepsx n).mp hSat1⟩
 
 /-- A restriction to `Lo2 ⊆ Lo1` and then to `Lo2` again is the same as a
-restriction to `Lo2` directly. This is the version of
-`Typing.restrictTo_restrictTo` of 2017. -/
+restriction to `Lo2` directly. -/
 theorem restrictTyping_restrictTyping {t : Typing} {Lo1 Lo2 : Finset Label}
     (h : Lo2 ⊆ Lo1) : restrictTyping (restrictTyping t Lo1) Lo2 = restrictTyping t Lo2 := by
   apply Finset.ext
@@ -304,16 +288,13 @@ theorem restrictTyping_restrictTyping {t : Typing} {Lo1 Lo2 : Finset Label}
 
 /-- A correct typing of `restrictLabels Ls1` is also a correct typing of
 `restrictLabels Ls2`, for each `Ls1 ⊆ Ls2` (both `D_S`-closed). This is
-the general version (for any set) of
-`Schema.correctTyping_stratRestrict_mono`.
+the version of `Schema.correctTyping_stratRestrict_mono` for any set.
 
-`restrictLabels_correct_restrictTo` also makes the *typing* smaller, and
-loses data. This lemma keeps `t` exactly as it is. Only the schema becomes
-larger. (As in `correctTyping_stratRestrict_mono`.) Each `.A` or `.desc`
-witness in `Ls1` trivially stays in the larger `Ls2`, because the
-intersection-based `restrictLabels` is monotone. -/
-theorem Schema.correctTyping_restrictLabels_mono {S : Schema} (hWFX : S.WellFormedX)
-    (hWFExt : S.WellFormedExtends) {Ls1 Ls2 : Finset Label} (hLs1Ls2 : Ls1 ⊆ Ls2)
+`restrictLabels_correct_restrictTo` also makes the typing smaller. This
+lemma keeps `t` with no change. Only the schema becomes larger. Each `.A`
+or `.desc` witness in `Ls1` stays in `Ls2`, because `restrictLabels` is
+monotone. -/
+theorem Schema.correctTyping_restrictLabels_mono {S : Schema} (hAcyclic : S.ExtAcyclic) {Ls1 Ls2 : Finset Label} (hLs1Ls2 : Ls1 ⊆ Ls2)
     (hLs1Closed : S.DClosedOn Ls1) (hLs2Closed : S.DClosedOn Ls2) {G : Graph} {t : Typing}
     (ht_sub : t ⊆ (S.restrictLabels Ls1).univTyping G)
     (ht_correct : (S.restrictLabels Ls1).CorrectTyping G t) :
@@ -328,7 +309,7 @@ theorem Schema.correctTyping_restrictLabels_mono {S : Schema} (hWFX : S.WellForm
     exact ⟨fun ⟨hLA, _⟩ => ⟨hLA, hLLs2⟩, fun ⟨hLA, _⟩ => ⟨hLA, hLLs1⟩⟩
   obtain ⟨hcorrectPlain, hcorrectAbs⟩ := ht_correct n L hmem
   refine ⟨fun hLnotA => ?_, fun hLA => ?_⟩
-  · exact (Satisfies_restrictLabels_agree hWFX hWFExt hLs1Ls2 hLs1Closed hLs2Closed hLLs1).mp
+  · exact (Satisfies_restrictLabels_agree hAcyclic hLs1Ls2 hLs1Closed hLs2Closed hLLs1).mp
       (hcorrectPlain (fun h => hLnotA (hAiff.mp h)))
   · obtain ⟨x, hxmem, hSatx⟩ := hcorrectAbs (hAiff.mpr hLA)
     rw [Finset.mem_sdiff, Schema.mem_desc] at hxmem
@@ -343,7 +324,7 @@ theorem Schema.correctTyping_restrictLabels_mono {S : Schema} (hWFX : S.WellForm
       simp only [Schema.restrictLabels, Finset.mem_inter]
       exact fun h => hxnA' h.1
     exact ⟨x, hxmem',
-      (Satisfies_restrictLabels_agree hWFX hWFExt hLs1Ls2 hLs1Closed hLs2Closed hxLs1).mp hSatx⟩
+      (Satisfies_restrictLabels_agree hAcyclic hLs1Ls2 hLs1Closed hLs2Closed hxLs1).mp hSatx⟩
 
 /-! ### Fusion -/
 
@@ -353,25 +334,14 @@ theorem Schema.correctTyping_restrictLabels_mono {S : Schema} (hWFX : S.WellForm
 * Reveal `Ls2` in two steps through an intermediate checkpoint `Ls1`
   (`Lo = Ls2`, and then `Lo = Ls1`).
 
-Thus, finer or coarser batches do not change the result of
-`maxTypingAgreeing`. The conditions are:
+The conditions are:
 
-* Each new label in `Ls2` has `D_S`-negative dependencies only in the
-  original `Ls`.
+* Each new label in `Ls2` has `D_S`-negative dependencies only in `Ls`.
 * `Ls1` is `D_S`-closed for its own positive dependencies.
 
-This is the version of `maxAgree_fusion` of 2017
-(`ShexLean/Shex2017Schemas/Lemma2.lean`). The proof is almost the same
-argument by inclusion in the two directions: each side, as a *full
-object*, is a valid candidate for the `maxTypingAgreeing` of the other
-side. The differences are:
-
-* It passes the four well-formedness hypotheses that
-  `maxTypingAgreeing_correct` and `restrictLabels_correct_restrictTo`
-  need.
-* It uses membership in `S.DEdge` and `S.DNegEdge` in place of the set
-  containment of `posDeps` and `negDeps` of 2017. -/
-theorem maxTypingAgreeing_fusion {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.WellFormedExtends)
+The proof is by inclusion in the two directions. Each side is a valid
+candidate for the `maxTypingAgreeing` of the other side. -/
+theorem maxTypingAgreeing_fusion {S : Schema} (hAcyclic : S.ExtAcyclic)
     (hWFExtra : S.WellFormedExtra) (hNEF : S.NotIsExtendsFree)
     {G : Graph} {Ls Ls1 Ls2 : Finset Label} {T : Typing}
     (hLsLs1 : Ls ⊆ Ls1) (hLs1Ls2 : Ls1 ⊆ Ls2)
@@ -386,32 +356,32 @@ theorem maxTypingAgreeing_fusion {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S
   set A := maxTypingAgreeing (S.restrictLabels Ls1) G Ls T with hA_def
   set B := maxTypingAgreeing (S.restrictLabels Ls2) G Ls1 A with hB_def
   set C := maxTypingAgreeing (S.restrictLabels Ls2) G Ls T with hC_def
-  have hWFX1 : (S.restrictLabels Ls1).WellFormedX := Schema.restrictLabels_WellFormedX hWFX Ls1
-  have hWFX2 : (S.restrictLabels Ls2).WellFormedX := Schema.restrictLabels_WellFormedX hWFX Ls2
+  have hAcyclic1 : (S.restrictLabels Ls1).ExtAcyclic := Schema.restrictLabels_ExtAcyclic hAcyclic Ls1
+  have hAcyclic2 : (S.restrictLabels Ls2).ExtAcyclic := Schema.restrictLabels_ExtAcyclic hAcyclic Ls2
   have hLs1Closed' := Schema.restrictLabels_DClosed hLs1Closed hLs1YX
   have hLs2Closed' := Schema.restrictLabels_DClosed hLs2Closed hLs2YX
   have hTsub1 : T ⊆ (S.restrictLabels Ls1).univTyping G := hTsub.trans (Schema.univTyping_mono hLsLs1)
   have hTcorrect1 : (S.restrictLabels Ls1).CorrectTyping G T :=
-    Schema.correctTyping_restrictLabels_mono hWFX hWFExt hLsLs1 hLsClosed hLs1Closed hTsub hTcorrect
+    Schema.correctTyping_restrictLabels_mono hAcyclic hLsLs1 hLsClosed hLs1Closed hTsub hTcorrect
   have hTsub2 : T ⊆ (S.restrictLabels Ls2).univTyping G :=
     hTsub.trans (Schema.univTyping_mono (hLsLs1.trans hLs1Ls2))
   have hTcorrect2 : (S.restrictLabels Ls2).CorrectTyping G T :=
-    Schema.correctTyping_restrictLabels_mono hWFX hWFExt (hLsLs1.trans hLs1Ls2) hLsClosed hLs2Closed
+    Schema.correctTyping_restrictLabels_mono hAcyclic (hLsLs1.trans hLs1Ls2) hLsClosed hLs2Closed
       hTsub hTcorrect
   have hAsub1 : A ⊆ (S.restrictLabels Ls1).univTyping G := maxTypingAgreeing_subset _ G _ _
   have hAcorrect1 : (S.restrictLabels Ls1).CorrectTyping G A :=
-    maxTypingAgreeing_correct hWFX1 hWFExt hWFExtra hNEF hLs1Closed' hTsub1 hTcorrect1
+    maxTypingAgreeing_correct hAcyclic1 hWFExtra hNEF hLs1Closed' hTsub1 hTcorrect1
       (fun z hz => hneg2 z (hLs1Ls2 (S.restrictLabels_mem_YX_subset Ls1 hz)))
   have hArestrict : restrictTyping A Ls = restrictTyping T Ls :=
     maxTypingAgreeing_restrictTo hTsub1 hTcorrect1
   have hAsub2 : A ⊆ (S.restrictLabels Ls2).univTyping G := hAsub1.trans (Schema.univTyping_mono hLs1Ls2)
   have hAcorrect2 : (S.restrictLabels Ls2).CorrectTyping G A :=
-    Schema.correctTyping_restrictLabels_mono hWFX hWFExt hLs1Ls2 hLs1Closed hLs2Closed hAsub1
+    Schema.correctTyping_restrictLabels_mono hAcyclic hLs1Ls2 hLs1Closed hLs2Closed hAsub1
       hAcorrect1
   have hAC : A ⊆ C := subset_maxTypingAgreeing hAsub2 hAcorrect2 hArestrict
   have hBsub2 : B ⊆ (S.restrictLabels Ls2).univTyping G := maxTypingAgreeing_subset _ G _ _
   have hBcorrect2 : (S.restrictLabels Ls2).CorrectTyping G B :=
-    maxTypingAgreeing_correct hWFX2 hWFExt hWFExtra hNEF hLs2Closed' hAsub2 hAcorrect2
+    maxTypingAgreeing_correct hAcyclic2 hWFExtra hNEF hLs2Closed' hAsub2 hAcorrect2
       (fun z hz => (hneg2 z (S.restrictLabels_mem_YX_subset Ls2 hz)).trans hLsLs1)
   have hBrestrict1 : restrictTyping B Ls1 = restrictTyping A Ls1 :=
     maxTypingAgreeing_restrictTo hAsub2 hAcorrect2
@@ -422,13 +392,13 @@ theorem maxTypingAgreeing_fusion {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S
   have hCB : C ⊆ B := by
     have hCsub2 : C ⊆ (S.restrictLabels Ls2).univTyping G := maxTypingAgreeing_subset _ G _ _
     have hCcorrect2 : (S.restrictLabels Ls2).CorrectTyping G C :=
-      maxTypingAgreeing_correct hWFX2 hWFExt hWFExtra hNEF hLs2Closed' hTsub2 hTcorrect2
+      maxTypingAgreeing_correct hAcyclic2 hWFExtra hNEF hLs2Closed' hTsub2 hTcorrect2
         (fun z hz => hneg2 z (S.restrictLabels_mem_YX_subset Ls2 hz))
     have hCrestrict : restrictTyping C Ls = restrictTyping T Ls :=
       maxTypingAgreeing_restrictTo hTsub2 hTcorrect2
     have hself1 : S.DClosedOn Ls1 := hLs1Closed
     have hCL1correct : (S.restrictLabels Ls1).CorrectTyping G (restrictTyping C Ls1) :=
-      restrictLabels_correct_restrictTo hWFX hWFExt hLs1Ls2 hself1 hLs2Closed hCcorrect2
+      restrictLabels_correct_restrictTo hAcyclic hLs1Ls2 hself1 hLs2Closed hCcorrect2
     have hCL1sub : restrictTyping C Ls1 ⊆ (S.restrictLabels Ls1).univTyping G := by
       intro p hp
       obtain ⟨hp1, hp2⟩ := mem_restrictTyping.mp hp
@@ -453,8 +423,8 @@ theorem maxTypingAgreeing_fusion {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S
   exact Finset.Subset.antisymm hBC hCB
 
 /-- `maxTypingAgreeing` does nothing if you ask it to reveal exactly the
-schema for which `fixed` is already correct and bounded. The only
-candidate that agrees with itself is `fixed`. -/
+schema for which `T` is already correct and bounded. The only candidate
+that agrees with itself is `T`. -/
 theorem maxTypingAgreeing_self {S' : Schema} {G : Graph} {T : Typing}
     (hTsub : T ⊆ S'.univTyping G) (hTcorrect : S'.CorrectTyping G T) :
     maxTypingAgreeing S' G (S'.Y ∪ S'.X) T = T := by
@@ -480,21 +450,17 @@ theorem maxTypingAgreeing_self {S' : Schema} {G : Graph} {T : Typing}
 /-!
 **Lemma 2, general statement.**
 
-The method is the same as in `ShexLean/Shex2017Schemas/Lemma2.lean` of
-2017. In general, it is not possible to align the checkpoints of a second
-stratification of your choice with a fixed combination of the checkpoints
-of the first one. Two labels that do not depend on each other in `D_S` can
-have opposite orders in two valid stratifications.
+Two labels that do not depend on each other in `D_S` can have opposite
+orders in two valid stratifications. Thus, in general, the checkpoints of
+a second stratification of your choice cannot align with a fixed
+combination of the checkpoints of the first one.
 
-In its place:
-
-1. We define one canonical process (`cont1`) that does not depend on a
-   schedule. It reveals *a* valid next batch at each step.
-2. We show that its result does not depend on the valid batch that each
-   step selects (`cont1_indep`, with `maxTypingAgreeing_swap`).
-3. We follow the process through the checkpoints of each stratification
-   separately. This shows that it is equal to `Typing8` for *the two*
-   stratifications.
+In its place, `cont1` is a canonical process that does not depend on a
+schedule. It reveals a valid next batch at each step. `cont1_indep` (with
+`maxTypingAgreeing_swap`) shows that its result does not depend on the
+valid batch that each step selects. Then, we follow the process through
+the checkpoints of each stratification. This shows that it is equal to
+`Typing8` for the two stratifications.
 -/
 
 /-- The labels, not yet in `Fixed`, with the smallest `strat` value. This
@@ -604,8 +570,8 @@ theorem cont1Fuel_stable (S : Schema) (strat : Stratification S) (G : Graph) :
 
 /-- `cont1 S strat G Fixed T`: continue the `remainingMin` process from
 `(Fixed, T)` until it gets to `S.Y ∪ S.X`. At each step, `strat` selects
-the batch. (This is a fixed, concrete choice. But `cont1_indep` below shows
-that *each* valid first step gives the same final answer.) -/
+the batch. `cont1_indep` below shows that each valid first step gives the
+same final answer. -/
 noncomputable def cont1 (S : Schema) (strat : Stratification S) (G : Graph)
     (Fixed : Finset Label) (T : Typing) : Typing :=
   cont1Fuel S strat G (S.Y ∪ S.X).card Fixed T
@@ -635,16 +601,14 @@ theorem cont1_step (S : Schema) (strat : Stratification S) (G : Graph)
   have := remainingMin_card_lt S strat.strat h
   omega
 
-/-- **Swap.** Let `A` and `B` be two batches. Let *each* batch depend
+/-- **Swap.** Let `A` and `B` be two batches. Let each batch depend
 (negatively) only on the common base `Ls0`, and let each batch be
 `D_S`-closed together with `Ls0`. Then you can reveal them in the two
 orders and get the same result. With `maxTypingAgreeing_fusion`, the two
 sides both become the one-step construction over `Ls0 ∪ A ∪ B`.
-
-This is the formal content of "a different order of independent material
-does not change the final typing". `cont1_indep` below uses it to show
-that the first step of `cont1` has no effect on the result. -/
-theorem maxTypingAgreeing_swap {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.WellFormedExtends)
+`cont1_indep` below uses this lemma to show that the first step of
+`cont1` has no effect on the result. -/
+theorem maxTypingAgreeing_swap {S : Schema} (hAcyclic : S.ExtAcyclic)
     (hWFExtra : S.WellFormedExtra) (hNEF : S.NotIsExtendsFree)
     {G : Graph} {Ls0 A B : Finset Label} {T : Typing}
     (hLs0Closed : S.DClosedOn Ls0) (hLs0AClosed : S.DClosedOn (Ls0 ∪ A))
@@ -674,18 +638,18 @@ theorem maxTypingAgreeing_swap {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.W
     intro x hx
     simp only [Finset.mem_union] at hx ⊢
     tauto
-  have hLHS := maxTypingAgreeing_fusion hWFX hWFExt hWFExtra hNEF hLs0LsA hLsA2
+  have hLHS := maxTypingAgreeing_fusion hAcyclic hWFExtra hNEF hLs0LsA hLsA2
     hLs0Closed hLs0AClosed hLs0ABClosed hLs0AYX hLs0ABYX hneg2' hTsub hTcorrect
-  have hRHS := maxTypingAgreeing_fusion hWFX hWFExt hWFExtra hNEF hLs0LsB hLsB2
+  have hRHS := maxTypingAgreeing_fusion hAcyclic hWFExtra hNEF hLs0LsB hLsB2
     hLs0Closed hLs0BClosed hLs0ABClosed hLs0BYX hLs0ABYX hneg2' hTsub hTcorrect
   rw [hLHS, hRHS]
 
 /-- **Independence.** Start `cont1` from a `D_S`-closed `(Fixed, T)`. Its
-final answer does not change if we first reveal *a* different valid batch
+final answer does not change if we first reveal a different valid batch
 `C`. (`C` is not necessarily the choice of `remainingMin`, and is not
 necessarily disjoint from `Fixed`.) Thus, `cont1` does not depend on the
 valid batch that its `strat` selects at each step. -/
-theorem cont1_indep {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.WellFormedExtends)
+theorem cont1_indep {S : Schema} (hAcyclic : S.ExtAcyclic)
     (hWFExtra : S.WellFormedExtra) (hNEF : S.NotIsExtendsFree) (hDClosed : S.DClosed)
     (strat : Stratification S) (G : Graph) :
     ∀ Fixed : Finset Label, ∀ T : Typing,
@@ -735,7 +699,7 @@ theorem cont1_indep {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.WellFormedEx
         have hTsubA₁ : T ⊆ (S.restrictLabels (Fixed ∪ A₁)).univTyping G :=
           hTsub.trans (Schema.univTyping_mono Finset.subset_union_left)
         have hTcorrectA₁ : (S.restrictLabels (Fixed ∪ A₁)).CorrectTyping G T :=
-          Schema.correctTyping_restrictLabels_mono hWFX hWFExt Finset.subset_union_left
+          Schema.correctTyping_restrictLabels_mono hAcyclic Finset.subset_union_left
             hFixedClosed hFA₁Closed hTsub hTcorrect
         have hTA₁sub : maxTypingAgreeing (S.restrictLabels (Fixed ∪ A₁)) G Fixed T ⊆
             (S.restrictLabels (Fixed ∪ A₁)).univTyping G := maxTypingAgreeing_subset _ G _ _
@@ -746,7 +710,7 @@ theorem cont1_indep {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.WellFormedEx
           · exact hA₁negRefs z hz
         have hTA₁correct : (S.restrictLabels (Fixed ∪ A₁)).CorrectTyping G
             (maxTypingAgreeing (S.restrictLabels (Fixed ∪ A₁)) G Fixed T) :=
-          maxTypingAgreeing_correct (Schema.restrictLabels_WellFormedX hWFX _) hWFExt hWFExtra hNEF
+          maxTypingAgreeing_correct (Schema.restrictLabels_ExtAcyclic hAcyclic _) hWFExtra hNEF
             (Schema.restrictLabels_DClosed hFA₁Closed hFA₁YX) hTsubA₁ hTcorrectA₁
             (fun z hz => hFA₁negRefs z (S.restrictLabels_mem_YX_subset (Fixed ∪ A₁) hz))
         -- First use of `ih`: base `Fixed ∪ A₁`, jump `C`.
@@ -770,7 +734,7 @@ theorem cont1_indep {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.WellFormedEx
         have hTsubC : T ⊆ (S.restrictLabels (Fixed ∪ C)).univTyping G :=
           hTsub.trans (Schema.univTyping_mono Finset.subset_union_left)
         have hTcorrectC : (S.restrictLabels (Fixed ∪ C)).CorrectTyping G T :=
-          Schema.correctTyping_restrictLabels_mono hWFX hWFExt Finset.subset_union_left
+          Schema.correctTyping_restrictLabels_mono hAcyclic Finset.subset_union_left
             hFixedClosed hFCClosed hTsub hTcorrect
         set T'' := maxTypingAgreeing (S.restrictLabels (Fixed ∪ C)) G Fixed T with hT''_def
         have hT''sub : T'' ⊆ (S.restrictLabels (Fixed ∪ C)).univTyping G :=
@@ -781,7 +745,7 @@ theorem cont1_indep {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.WellFormedEx
           · exact fun z' hz' => hFixedClosed z hz z' (Or.inl (S.dep_of_depShapeNeg hz'))
           · exact hCneg z hz
         have hT''correct : (S.restrictLabels (Fixed ∪ C)).CorrectTyping G T'' :=
-          maxTypingAgreeing_correct (Schema.restrictLabels_WellFormedX hWFX _) hWFExt hWFExtra hNEF
+          maxTypingAgreeing_correct (Schema.restrictLabels_ExtAcyclic hAcyclic _) hWFExtra hNEF
             (Schema.restrictLabels_DClosed hFCClosed hFCYX) hTsubC hTcorrectC
             (fun z hz => hFCnegRefs z (S.restrictLabels_mem_YX_subset (Fixed ∪ C) hz))
         have hcardC : ((S.Y ∪ S.X) \ (Fixed ∪ C)).card < card := by
@@ -818,7 +782,7 @@ theorem cont1_indep {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.WellFormedEx
             · exact Finset.mem_union_left _ (Finset.mem_union_left _ h)
             · exact Finset.mem_union_right _ h
         have hLs0ABYX : Fixed ∪ A₁ ∪ C ⊆ S.Y ∪ S.X := Finset.union_subset hFA₁YX hCsub
-        have hswap := maxTypingAgreeing_swap hWFX hWFExt hWFExtra hNEF hFixedClosed hFA₁Closed
+        have hswap := maxTypingAgreeing_swap hAcyclic hWFExtra hNEF hFixedClosed hFA₁Closed
           hFCClosed hLs0ABClosed hFA₁YX hFCYX hLs0ABYX hA₁negRefs hCneg hTsub hTcorrect
         have hcomm : Fixed ∪ A₁ ∪ C = Fixed ∪ C ∪ A₁ := by
           apply Finset.ext; intro x; simp only [Finset.mem_union]; tauto
@@ -847,9 +811,8 @@ theorem Schema.stratum_zero (S : Schema) (strat : Stratification S) :
   omega
 
 /-- A stronger result than `Schema.stratum_DClosedOn` for the negative
-side. The negative dependencies of a label are strictly *inside the
-previous* checkpoint, not only inside its own checkpoint. This is the
-version of `Schema.stratum_neg_confined` of 2017. -/
+side. The negative dependencies of a label are strictly inside the
+previous checkpoint, not only inside its own checkpoint. -/
 theorem Schema.stratum_negDep_confined {S : Schema} (strat : Stratification S) (hDClosed : S.DClosed)
     (i : ℕ) : ∀ z ∈ S.stratum strat.strat i,
       ((S.shapeDef z).depsAux false).negRefs ⊆ S.stratum strat.strat (i - 1) := by
@@ -862,16 +825,11 @@ theorem Schema.stratum_negDep_confined {S : Schema} (strat : Stratification S) (
   exact ⟨hz'YX, by omega⟩
 
 /-- `S.stratRestrict strat i` and `S.restrictLabels (S.stratum strat i)`
-make the same schema. (This is almost `rfl`, but not exactly, because the
-field filters of `stratRestrict` and the intersections of `restrictLabels`
-are different `Finset` expressions.)
-
-This lemma connects `stratTypingSeq_correct`
-(`ShexLean/Shex2026InheritanceDisjunction/Proposition1.lean`, which uses
-`stratRestrict`) with the `restrictLabels` vocabulary that the general
-argument of this file needs. It has the same role as
-`Schema.stratRestrict_eq_restrictLabels` of 2017
-(`ShexLean/Shex2017Schemas/Algorithm1.lean`). -/
+make the same schema. (This is not `rfl`, because the field filters of
+`stratRestrict` and the intersections of `restrictLabels` are different
+`Finset` expressions.) This lemma connects `stratTypingSeq_correct`
+(`Proposition1.lean`, which uses `stratRestrict`) with the
+`restrictLabels` vocabulary of this file. -/
 theorem Schema.stratRestrict_eq_restrictLabels (S : Schema) (strat : Label → ℕ) (i : ℕ) :
     S.stratRestrict strat i = S.restrictLabels (S.stratum strat i) := by
   unfold Schema.stratRestrict Schema.restrictLabels Schema.stratum
@@ -888,10 +846,10 @@ theorem Schema.stratRestrict_eq_restrictLabels (S : Schema) (strat : Label → �
     · rintro ⟨hxA, hxle⟩; exact ⟨hxA, Or.inr (S.A_subX hxA), hxle⟩
     · rintro ⟨hxA, _, hxle⟩; exact ⟨hxA, hxle⟩
 
-/-- Apply `cont1_indep` along the checkpoints of `strat'`. `cont1` uses
-*any* fixed `strat0` internally. It agrees with `strat'` at each checkpoint
-of `strat'`, for each `strat0`. -/
-theorem cont1_chain {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.WellFormedExtends)
+/-- Apply `cont1_indep` along the checkpoints of `strat'`. `cont1` uses a
+fixed `strat0` internally. It agrees with `strat'` at each checkpoint of
+`strat'`, for each `strat0`. -/
+theorem cont1_chain {S : Schema} (hAcyclic : S.ExtAcyclic)
     (hWFExtra : S.WellFormedExtra) (hNEF : S.NotIsExtendsFree) (hDClosed : S.DClosed)
     (strat0 : Stratification S) (G : Graph) (strat' : Stratification S) :
     ∀ i ≤ strat'.k,
@@ -900,8 +858,8 @@ theorem cont1_chain {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.WellFormedEx
   | 0, _ => by simp [Schema.stratum_zero, stratTypingSeq]
   | (i + 1), hi1 => by
       have hi : i ≤ strat'.k := by omega
-      have hIH := cont1_chain hWFX hWFExt hWFExtra hNEF hDClosed strat0 G strat' i hi
-      have hT' := stratTypingSeq_correct hWFX hWFExt hWFExtra hNEF hDClosed strat' G i
+      have hIH := cont1_chain hAcyclic hWFExtra hNEF hDClosed strat0 G strat' i hi
+      have hT' := stratTypingSeq_correct hAcyclic hWFExtra hNEF hDClosed strat' G i
       rw [Schema.stratRestrict_eq_restrictLabels] at hT'
       have hself : S.DClosedOn (S.stratum strat'.strat i) := Schema.stratum_DClosedOn hDClosed strat' i
       set C := S.stratum strat'.strat (i + 1) \ S.stratum strat'.strat i with hC_def
@@ -919,7 +877,7 @@ theorem cont1_chain {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.WellFormedEx
         rw [hUnion]
         have hz' : z ∈ S.stratum strat'.strat (i + 1) := hUnion ▸ Finset.mem_union_right _ hz
         exact Schema.stratum_DClosedOn hDClosed strat' (i + 1) z hz' z' hedge
-      have hindep := cont1_indep hWFX hWFExt hWFExtra hNEF hDClosed strat0 G
+      have hindep := cont1_indep hAcyclic hWFExtra hNEF hDClosed strat0 G
         (S.stratum strat'.strat i) (stratTypingSeq S strat'.strat G i)
         (Finset.filter_subset _ _) hself hT'.1 hT'.2 C hCsub hCneg hCpos
       have hstep : maxTypingAgreeing (S.restrictLabels (S.stratum strat'.strat (i + 1))) G
@@ -928,13 +886,13 @@ theorem cont1_chain {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.WellFormedEx
         rw [← Schema.stratRestrict_eq_restrictLabels]; rfl
       rw [hIH, hindep, hUnion, hstep]
 
-/-- `cont1 S strat0 G ∅ ∅` is equal to `Typing8` for *each* valid
+/-- `cont1 S strat0 G ∅ ∅` is equal to `Typing8` for each valid
 stratification. Thus, it is equal for `strat1` and also for `strat2`. -/
-theorem cont1_eq_Typing8 {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.WellFormedExtends)
+theorem cont1_eq_Typing8 {S : Schema} (hAcyclic : S.ExtAcyclic)
     (hWFExtra : S.WellFormedExtra) (hNEF : S.NotIsExtendsFree) (hDClosed : S.DClosed)
     (strat0 : Stratification S) (G : Graph) (strat' : Stratification S) :
     cont1 S strat0 G ∅ ∅ = Typing8 G S strat' := by
-  have h := cont1_chain hWFX hWFExt hWFExtra hNEF hDClosed strat0 G strat' strat'.k (le_refl _)
+  have h := cont1_chain hAcyclic hWFExtra hNEF hDClosed strat0 G strat' strat'.k (le_refl _)
   rw [h]
   apply cont1_done
   rw [Finset.not_nonempty_iff_eq_empty, Finset.sdiff_eq_empty_iff_subset]
@@ -945,13 +903,13 @@ theorem cont1_eq_Typing8 {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.WellFor
 /-- **Lemma 2.** `τ_max(S,σ,G)` (Definition 8) does not depend on the
 stratification `σ` of `S` that you select. The two sides are equal to
 `cont1 S strat1 G ∅ ∅`. This is a canonical process that always reveals
-each "ready" label (`remainingMin`). It does not depend on the valid
+each ready label (`remainingMin`). It does not depend on the valid
 stratification that justifies each step (`cont1_indep`). -/
-theorem lemma2 {S : Schema} (hWFX : S.WellFormedX) (hWFExt : S.WellFormedExtends)
+theorem lemma2 {S : Schema} (hAcyclic : S.ExtAcyclic)
     (hWFExtra : S.WellFormedExtra) (hNEF : S.NotIsExtendsFree) (hDClosed : S.DClosed)
     (strat1 strat2 : Stratification S) (G : Graph) :
     Typing8 G S strat1 = Typing8 G S strat2 := by
-  rw [← cont1_eq_Typing8 hWFX hWFExt hWFExtra hNEF hDClosed strat1 G strat1,
-    ← cont1_eq_Typing8 hWFX hWFExt hWFExtra hNEF hDClosed strat1 G strat2]
+  rw [← cont1_eq_Typing8 hAcyclic hWFExtra hNEF hDClosed strat1 G strat1,
+    ← cont1_eq_Typing8 hAcyclic hWFExtra hNEF hDClosed strat1 G strat2]
 
 end ShexLean.InheritanceDisjunction

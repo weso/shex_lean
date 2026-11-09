@@ -61,46 +61,9 @@ is that relation, made symmetric.
 
 namespace ShexLean.InheritanceDisjunction
 
+open ShexLean.InheritanceCore
+
 /-! ### Definition 5: the dependency graph `D_S` -/
-
-/-- The three label sets that one `depsAux` walk over a shape expression
-collects together:
-
-* `refs` (for `dep_S`): the labels with a reference at any location.
-* `negRefs` (for `dep-shape-neg_S`): the labels with a reference below a
-  `not`. (Refer to the docstring of `ShapeExpr.depsAux` for how this is
-  different from "an odd number of `not`".)
-* `extraNegRefs` (for `dep-extra-neg_S`): the labels with a reference in a
-  triple constraint whose property is also in the `extra` set of the same
-  shape. -/
-structure DepInfo where
-  refs : Finset Label
-  negRefs : Finset Label
-  extraNegRefs : Finset Label
-
-instance : Union DepInfo :=
-  ⟨fun a b => ⟨a.refs ∪ b.refs, a.negRefs ∪ b.negRefs, a.extraNegRefs ∪ b.extraNegRefs⟩⟩
-
-instance : EmptyCollection DepInfo := ⟨⟨∅, ∅, ∅⟩⟩
-
-@[simp] theorem DepInfo.union_refs (a b : DepInfo) : (a ∪ b).refs = a.refs ∪ b.refs := rfl
-@[simp] theorem DepInfo.union_negRefs (a b : DepInfo) :
-    (a ∪ b).negRefs = a.negRefs ∪ b.negRefs := rfl
-@[simp] theorem DepInfo.union_extraNegRefs (a b : DepInfo) :
-    (a ∪ b).extraNegRefs = a.extraNegRefs ∪ b.extraNegRefs := rfl
-@[simp] theorem DepInfo.empty_refs : (∅ : DepInfo).refs = ∅ := rfl
-@[simp] theorem DepInfo.empty_negRefs : (∅ : DepInfo).negRefs = ∅ := rfl
-@[simp] theorem DepInfo.empty_extraNegRefs : (∅ : DepInfo).extraNegRefs = ∅ := rfl
-
-/-- The dependency information of one shape `[closed][extra P]⟨e⟩` (the
-`h` of Definition 1). `neg` tells if the shape occurs below a `not`. (Refer
-to the docstring of `ShapeExpr.depsAux` to know why this means "below
-*any* `not`", and not "below an *odd number of* `not`" as in the text of
-Definition 5.) -/
-def Shape.depInfo (h : Shape) (neg : Bool) : DepInfo :=
-  { refs := h.triples.tcs.image Prod.snd
-    negRefs := if neg then h.triples.tcs.image Prod.snd else ∅
-    extraNegRefs := (h.triples.tcs.filter (fun pz => pz.1 ∈ h.extra.getD ∅)).image Prod.snd }
 
 /-- The combined dependency information of `hs`: the union of the
 `depInfo` of each disjunct. `pick` (rule 18 in `Semantics.lean`) can select
@@ -152,10 +115,8 @@ theorem Shape.listDepInfo_refs_indep (hs : List Shape) (neg1 neg2 : Bool) :
       simp [Shape.depInfo, ih]
 
 /-- The `.triples.refs` of each disjunct is a subset of the `.refs` of the
-combined `Shape.listDepInfo` of `hs`. This is the `refs` version of
-`Shape.triples_size_le_listSize`. `extTeAt_refs_subset` in
-`Proposition1.lean` uses it in the same way as `extTeAt_size_le` in
-`Termination.lean` uses the `.size` version. -/
+combined `Shape.listDepInfo` of `hs`. `extTeAt_refs_subset` in
+`Proposition1.lean` uses it. -/
 theorem Shape.triples_refs_subset_listDepInfo_refs {hs : List Shape} {h : Shape} (hmem : h ∈ hs)
     (neg : Bool) : h.triples.tcs.image Prod.snd ⊆ (Shape.listDepInfo hs neg).refs := by
   induction hs with

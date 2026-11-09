@@ -3,6 +3,7 @@ import ShexLean.Common.Typing
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Finset.Union
 import Mathlib.Logic.Relation
+import ShexLean.InheritanceCore.Syntax
 
 /-!
 An exploratory variant of `ShexLean.Shex2025Inheritance` (Definitions 1–3,
@@ -56,45 +57,7 @@ vocabulary that does not depend on a paper.
 
 namespace ShexLean.InheritanceDisjunction
 
-/-- The node constraint `c` of Def 1: "a boolean function over
-IRI ∪ Blank ∪ Literal". Thus, it is a function over `RDFNode`. It is fully
-abstract, as in the paper. (The 2017 formalization uses a concrete
-`ValueDescr`.) -/
-abbrev NodeConstraint := RDFNode → Prop
-
-/-- The grammar of triple expressions of Def 1:
-`e ::= ε | p @z | e|e | e;e | e*`. `tc p z` is the triple constraint
-`p @z`. `z` is a `Label` (from `ShexLean.Typing`). Thus, it is in `Y ∪ X`
-for the schema of the expression. -/
-inductive TripleExpr where
-  | empty : TripleExpr
-  | tc (p : IRI) (z : Label) : TripleExpr
-  | choice (e1 e2 : TripleExpr) : TripleExpr
-  | seq (e1 e2 : TripleExpr) : TripleExpr
-  | star (e : TripleExpr) : TripleExpr
-  deriving DecidableEq
-
-/-- The triple-constraint sub-expressions of `e` (`tcs(e)` in the paper),
-as pairs `(property, target label)`. -/
-def TripleExpr.tcs : TripleExpr → Finset (IRI × Label)
-  | .empty => ∅
-  | .tc p z => {(p, z)}
-  | .choice e1 e2 => e1.tcs ∪ e2.tcs
-  | .seq e1 e2 => e1.tcs ∪ e2.tcs
-  | .star e => e.tcs
-
-/-- The properties of the triple constraints of `e` (`props(e)` in the
-paper). -/
-def TripleExpr.props (e : TripleExpr) : Finset IRI := e.tcs.image Prod.fst
-
-/-- The shape `h ::= [closed] [extra P] ⟨e⟩` of Def 1. `extra := none` when
-there is no `extra` (thus, `P' = ∅` in rule 17 of Table 3).
-`extra := some P` when there is one. -/
-structure Shape where
-  closed : Bool
-  extra  : Option (Finset IRI)
-  triples : TripleExpr
-  deriving DecidableEq
+open ShexLean.InheritanceCore
 
 /-- The grammar of shape expressions of Def 1 (`u`, `t`, `c` and the
 Boolean connectives). This is all that the `def` of a schema can map a

@@ -1,5 +1,5 @@
 import ShexLean.Shex2026InheritanceDisjunction.Decidable
-import ShexLean.Shex2017Schemas.Render
+import ShexLean.InheritanceCore.Render
 import Mathlib.Data.Finset.Sort
 
 /-!
@@ -11,7 +11,7 @@ does two things:
 * It replaces `true`, `false` and text claims that a person typed by hand
   with values that the `Decidable` instances of this formalism compute
   (`satisfiesFuel_decidable`, `satisfiesMFuel_decidable` and
-  `satisfiesEFuel_decidable`, in
+  `satisfiesE_decidable`, in
   `ShexLean/Shex2026InheritanceDisjunction/Decidable.lean`).
 
 It uses directly these functions of the 2017 formalization:
@@ -29,17 +29,7 @@ on its own line.
 
 namespace ShexLean.InheritanceDisjunction
 
-def TripleExpr.render : TripleExpr → String
-  | .empty => "ε"
-  | .tc p z => s!"{p} @<{z}>"
-  | .choice e1 e2 => s!"({e1.render} | {e2.render})"
-  | .seq e1 e2 => s!"({e1.render} ; {e2.render})"
-  | .star e => s!"{e.render}*"
-
-def Shape.render (h : Shape) : String :=
-  (if h.closed then "closed " else "") ++
-    (match h.extra with | none => "" | some P => s!"extra {ShexLean.renderSorted (·) P} ") ++
-    s!"⟨{h.triples.render}⟩"
+open ShexLean.InheritanceCore
 
 def ShapeExpr.render : ShapeExpr → String
   | .ofShape h => h.render
