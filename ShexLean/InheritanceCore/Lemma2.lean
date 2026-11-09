@@ -65,7 +65,8 @@ The abstract-label case also needs `Schema.desc_subset_of_DClosedOn`. The
 descendant that is the witness is also in `Ls1`, because the `D_S`-closure
 of `Ls1` contains each `H_S` neighbour of `L` (`dep-extends` is symmetric),
 not only its `dep` references. -/
-theorem restrictLabels_correct_restrictTo {S : Schema E} (hAcyclic : S.ExtAcyclic) {G : Graph} {Ls1 Ls2 : Finset Label} {t : Typing}
+theorem restrictLabels_correct_restrictTo {S : Schema E} (hAcyclic : S.ExtAcyclic) {G : Graph}
+    {Ls1 Ls2 : Finset Label} {t : Typing}
     (hLs1Ls2 : Ls1 ⊆ Ls2) (hLs1Closed : S.DClosedOn Ls1) (hLs2Closed : S.DClosedOn Ls2)
     (ht : (S.restrictLabels Ls2).CorrectTyping G t) :
     (S.restrictLabels Ls1).CorrectTyping G (restrictTyping t Ls1) := by
@@ -102,7 +103,8 @@ theorem restrictLabels_correct_restrictTo {S : Schema E} (hAcyclic : S.ExtAcycli
     have hSat1 : Satisfies (S.restrictLabels Ls1) G t n (S.shapeDef x) :=
       (Satisfies_restrictLabels_agree hAcyclic hLs1Ls2 hLs1Closed hLs2Closed hxLs1).mpr hSatx
     have hdepsx : depsIn (S.shapeDef x) Ls1 := S.shapeDef_depsIn hLs1Closed hxLs1
-    exact ⟨x, hxmem', (Satisfies.agree (Schema.restrictLabels_ExtAcyclic hAcyclic Ls1) hLs1Closed hagree1 hdepsx n).mp hSat1⟩
+    exact ⟨x, hxmem', (Satisfies.agree (Schema.restrictLabels_ExtAcyclic hAcyclic Ls1) hLs1Closed
+      hagree1 hdepsx n).mp hSat1⟩
 
 /-- A restriction to `Lo2 ⊆ Lo1` and then to `Lo2` again is the same as a
 restriction to `Lo2` directly. -/
@@ -125,7 +127,8 @@ the version of `Schema.correctTyping_stratRestrict_mono` for any set.
 lemma keeps `t` with no change. Only the schema becomes larger. Each `.A`
 or `.desc` witness in `Ls1` stays in `Ls2`, because `restrictLabels` is
 monotone. -/
-theorem Schema.correctTyping_restrictLabels_mono {S : Schema E} (hAcyclic : S.ExtAcyclic) {Ls1 Ls2 : Finset Label} (hLs1Ls2 : Ls1 ⊆ Ls2)
+theorem Schema.correctTyping_restrictLabels_mono {S : Schema E} (hAcyclic : S.ExtAcyclic)
+    {Ls1 Ls2 : Finset Label} (hLs1Ls2 : Ls1 ⊆ Ls2)
     (hLs1Closed : S.DClosedOn Ls1) (hLs2Closed : S.DClosedOn Ls2) {G : Graph} {t : Typing}
     (ht_sub : t ⊆ (S.restrictLabels Ls1).univTyping G)
     (ht_correct : (S.restrictLabels Ls1).CorrectTyping G t) :
@@ -651,7 +654,8 @@ omit [InheritanceSemantics E] in
 /-- A stronger result than `Schema.stratum_DClosedOn` for the negative
 side. The negative dependencies of a label are strictly inside the
 previous checkpoint, not only inside its own checkpoint. -/
-theorem Schema.stratum_negDep_confined {S : Schema E} (strat : Stratification S) (hDClosed : S.DClosed)
+theorem Schema.stratum_negDep_confined {S : Schema E} (strat : Stratification S)
+    (hDClosed : S.DClosed)
     (i : ℕ) : ∀ z ∈ S.stratum strat.strat i,
       (ShapeSyntax.deps (S.shapeDef z)).negRefs ⊆ S.stratum strat.strat (i - 1) := by
   intro z hz z' hz'

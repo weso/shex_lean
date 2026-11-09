@@ -483,7 +483,8 @@ theorem Schema.stratRestrict_DEdge_eq (S : Schema E) (strat : Label → ℕ) (i 
 explicitly with `Schema.stratRestrict_YX_eq_stratum` and
 `Schema.stratRestrict_DEdge_eq` (not with `hDClosed` directly), for the
 same performance reason as in `Schema.stratRestrict_DEdge_eq`. -/
-theorem Schema.stratRestrict_DClosed {S : Schema E} (hDClosed : S.DClosed) (strat : Stratification S)
+theorem Schema.stratRestrict_DClosed {S : Schema E} (hDClosed : S.DClosed)
+    (strat : Stratification S)
     (i : ℕ) : (S.stratRestrict strat.strat i).DClosed := by
   intro z hz z' hedge
   rw [Schema.stratRestrict_YX_eq_stratum] at hz ⊢

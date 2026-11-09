@@ -141,7 +141,8 @@ negative dependencies of each label of `S'`. The abstract-label case (the
 second bullet of `Schema.CorrectTyping`) goes from `τ` to `τ'` in the same
 way as the plain case. It applies `stratMono` to `S'.shapeDef x` (the
 descendant that is the witness), not to `S'.shapeDef L`. -/
-theorem maxTypingAgreeing_correct {S' : Schema E} (hAcyclic : S'.ExtAcyclic) (hWFExtra : S'.WellFormedExtra)
+theorem maxTypingAgreeing_correct {S' : Schema E} (hAcyclic : S'.ExtAcyclic)
+    (hWFExtra : S'.WellFormedExtra)
     (hNEF : S'.NotIsExtendsFree) (hDClosed : S'.DClosedOn (S'.Y ∪ S'.X)) {G : Graph}
     {Lo : Finset Label} {fixed : Typing} (hfixed_sub : fixed ⊆ S'.univTyping G)
     (hfixed_correct : S'.CorrectTyping G fixed)

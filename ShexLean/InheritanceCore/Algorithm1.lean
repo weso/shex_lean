@@ -159,7 +159,8 @@ pairs with labels in `Lo`. Then it stays correct with
 new pairs to check. `Satisfies_restrictLabels_agree` and
 `Schema.restrictLabels_desc_eq` show that the existing checks do not
 change. -/
-theorem correctTyping_restrictLabels_lift {S : Schema E} (hAcyclic : S.ExtAcyclic) {G : Graph} {Lo Ls' : Finset Label} {T : Typing}
+theorem correctTyping_restrictLabels_lift {S : Schema E} (hAcyclic : S.ExtAcyclic) {G : Graph}
+    {Lo Ls' : Finset Label} {T : Typing}
     (hLoLs' : Lo ⊆ Ls') (hLoClosed : S.DClosedOn Lo) (hLs'Closed : S.DClosedOn Ls')
     (hTsub : T ⊆ (S.restrictLabels Lo).univTyping G)
     (hTcorrect : (S.restrictLabels Lo).CorrectTyping G T) :
@@ -264,7 +265,8 @@ theorem refine1_correct {S : Schema E} (hAcyclic : S.ExtAcyclic)
 `maxTypingAgreeing_correct`) gives the condition to keep a pair in the
 filter. Also, `maxTypingAgreeing` starts below `bigStart`. Thus, it stays
 below each iterate, and also below `refine1`. -/
-theorem maxTypingAgreeing_subset_refine1 {S : Schema E} (hAcyclic : S.ExtAcyclic) (hWFExtra : S.WellFormedExtra) (hNEF : S.NotIsExtendsFree)
+theorem maxTypingAgreeing_subset_refine1 {S : Schema E} (hAcyclic : S.ExtAcyclic)
+    (hWFExtra : S.WellFormedExtra) (hNEF : S.NotIsExtendsFree)
     {G : Graph} {Ls' Lo : Finset Label} {T : Typing} (hLoLs' : Lo ⊆ Ls')
     (hLoClosed : S.DClosedOn Lo) (hLs'Closed : S.DClosedOn Ls') (hLs'YX : Ls' ⊆ S.Y ∪ S.X)
     (hTsub : T ⊆ (S.restrictLabels Lo).univTyping G)
