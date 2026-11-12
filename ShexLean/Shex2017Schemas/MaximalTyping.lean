@@ -22,10 +22,25 @@ finite number of finite sets. This union is also a subset of
 
 We make it with `Finset.sup` over the `Finset` of the correct typings in
 the subsets of `Nodes(G) × L`. There is a finite number of these subsets.
-We use classical choice to decide `CorrTyping`. In general, `CorrTyping`
-is not decidable. (For example, `TExpr.rep` has an existential over
-`List (Finset Triple)`.) Lemma 1 is only a statement of existence, so
-classical choice is satisfactory here.
+We use classical choice to decide `CorrTyping`. `CorrTyping` is
+decidable with no classical axioms. Some cases of `Satisfies` and
+`Matches` have existentials over infinite types (for example, `TExpr.rep`
+has an existential over `List (Finset Triple)`). But
+`ShexLean/Shex2017Schemas/Decidable.lean` proves that each of these
+cases is equivalent to a bounded search, in `satisfies_decidable`.
+`CorrTyping` quantifies only over the elements of a finite typing.
+
+We do not use these instances here, for these reasons:
+
+* Lemma 1 is only a statement of existence. Thus, classical choice is
+  satisfactory, and no part of the code runs `Schema.maximalTyping`.
+* The search is over all the subsets of `Nodes(G) × L`. Thus, a
+  computation is exponential in the size of the graph. The validation
+  algorithms of the paper are `Algorithm1` and `Algorithm2`, not this
+  definition.
+* Each proof about `Schema.maximalTyping` must use the same `Decidable`
+  instance as the definition. With `Classical.decPred`, each proof gets
+  this instance with one `have`.
 -/
 
 namespace ShexLean

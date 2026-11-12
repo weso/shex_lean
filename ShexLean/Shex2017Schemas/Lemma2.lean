@@ -16,19 +16,19 @@ gives a full proof that does not use the sketch:
 - `maxAgree_swap`: let two batches each depend only on a common base, and
   not on each other. Then you can reveal them in the two orders and get the
   same result. The proof uses Fusion two times.
-- `remMin` / `cont1`: a canonical process. It starts from `∅`. At each
+- `remMin` / `canonicalTyping`: a canonical process. It starts from `∅`. At each
   step, it reveals the remaining batch with the smallest `str` value. It
   continues until all the labels are settled. (The process uses one fixed
   valid stratification. This stratification only makes each step
   well-defined.)
-- `cont1_indep`: the final answer of `cont1` does not change if the first
+- `canonicalTyping_indep`: the final answer of `canonicalTyping` does not change if the first
   step reveals a different valid batch. The proof is by strong induction
   on the number of remaining labels. It uses Swap to compare the next step
-  of `cont1` with the other step.
-- `cont1_chain` / `cont1_eq_MTyping`: apply `cont1_indep` along the
+  of `canonicalTyping` with the other step.
+- `canonicalTyping_chain` / `canonicalTyping_eq_MTyping`: apply `canonicalTyping_indep` along the
   checkpoints of a valid stratification. This shows that
-  `cont1 S _ G ∅ ∅ = MTyping G S str'` for that stratification. Thus,
-  `str1` and `str2` both give the same `cont1` value. This gives `lemma2`.
+  `canonicalTyping S _ G ∅ ∅ = MTyping G S str'` for that stratification. Thus,
+  `str1` and `str2` both give the same `canonicalTyping` value. This gives `lemma2`.
 -/
 
 namespace ShexLean
@@ -251,7 +251,7 @@ We use a different method:
 1. We define one canonical process. At each step, it reveals a valid next
    batch. This batch does not depend on `str1` or `str2`.
 2. We show that the final result does not depend on the valid batch that
-   each step selects (`cont1_indep` below, with `maxAgree_swap`).
+   each step selects (`canonicalTyping_indep` below, with `maxAgree_swap`).
 3. We follow the process through the checkpoints of `str1`. Each such step
    is a valid batch. Thus, the final value is equal to `MTyping str1`.
 4. We do step 3 again for `str2`.
@@ -313,12 +313,12 @@ theorem remMin_pos {S : Schema} (str : Strat S) (hClosed : S.Closed)
 
 /-- Reveal the `remMin` batch of `str` `n` times, or until no labels
 remain. `n` is fuel. It does not have to be a tight bound. -/
-noncomputable def cont1Fuel (S : Schema) (str : Strat S) (G : Graph) :
+noncomputable def canonicalTypingFuel (S : Schema) (str : Strat S) (G : Graph) :
     ℕ → Finset Label → Typing → Typing
   | 0, _, T => T
   | (n + 1), Fixed, T =>
       if (S.labels \ Fixed).Nonempty then
-        cont1Fuel S str G n (Fixed ∪ remMin S str.str Fixed)
+        canonicalTypingFuel S str G n (Fixed ∪ remMin S str.str Fixed)
           (maxAgree (S.restrictLabels (Fixed ∪ remMin S str.str Fixed)) G
             Fixed T)
       else T
@@ -341,17 +341,17 @@ private theorem remMin_card_lt (S : Schema) (str : Label → ℕ)
     simp only [Finset.mem_sdiff, Finset.mem_union] at this
     exact this.2 (Or.inr hL₀)
 
-private theorem cont1Fuel_of_not_nonempty (S : Schema) (str : Strat S) (G : Graph)
+private theorem canonicalTypingFuel_of_not_nonempty (S : Schema) (str : Strat S) (G : Graph)
     {Fixed : Finset Label} (h : ¬ (S.labels \ Fixed).Nonempty) (T : Typing) :
-    ∀ n, cont1Fuel S str G n Fixed T = T
+    ∀ n, canonicalTypingFuel S str G n Fixed T = T
   | 0 => rfl
-  | (n + 1) => by simp only [cont1Fuel, ite_eq_right h]
+  | (n + 1) => by simp only [canonicalTypingFuel, ite_eq_right h]
 
 /-- When the fuel is sufficient to use all the remaining labels, more fuel
 does not change the result. -/
-theorem cont1Fuel_stable (S : Schema) (str : Strat S) (G : Graph) :
+theorem canonicalTypingFuel_stable (S : Schema) (str : Strat S) (G : Graph) :
     ∀ Fixed : Finset Label, ∀ T : Typing, ∀ n n' : ℕ, (S.labels \ Fixed).card ≤ n →
-      (S.labels \ Fixed).card ≤ n' → cont1Fuel S str G n Fixed T = cont1Fuel S str G n' Fixed T := by
+      (S.labels \ Fixed).card ≤ n' → canonicalTypingFuel S str G n Fixed T = canonicalTypingFuel S str G n' Fixed T := by
   intro Fixed
   induction hcard : (S.labels \ Fixed).card using Nat.strong_induction_on generalizing Fixed with
   | _ card ih =>
@@ -360,45 +360,45 @@ theorem cont1Fuel_stable (S : Schema) (str : Strat S) (G : Graph) :
     · have hcardpos : 0 < card := hcard ▸ Finset.card_pos.mpr hne
       obtain ⟨m, rfl⟩ : ∃ m, n = m + 1 := ⟨n - 1, by omega⟩
       obtain ⟨m', rfl⟩ : ∃ m', n' = m' + 1 := ⟨n' - 1, by omega⟩
-      simp only [cont1Fuel, ite_eq_left hne]
+      simp only [canonicalTypingFuel, ite_eq_left hne]
       have hcard' : (S.labels \ (Fixed ∪ remMin S str.str Fixed)).card < card :=
         hcard ▸ remMin_card_lt S str.str hne
       exact ih _ hcard' _ rfl
         (maxAgree (S.restrictLabels (Fixed ∪ remMin S str.str Fixed)) G Fixed T)
         m m' (by omega) (by omega)
-    · rw [cont1Fuel_of_not_nonempty S str G hne T n, cont1Fuel_of_not_nonempty S str G hne T n']
+    · rw [canonicalTypingFuel_of_not_nonempty S str G hne T n, canonicalTypingFuel_of_not_nonempty S str G hne T n']
 
-/-- `cont1 S str G Fixed T`: continue the `remMin` process from
+/-- `canonicalTyping S str G Fixed T`: continue the `remMin` process from
 `(Fixed, T)` until it gets to `S.labels`. At each step, `str` selects the
-batch. `cont1_indep` below shows that each valid first step gives the same
+batch. `canonicalTyping_indep` below shows that each valid first step gives the same
 final answer. Thus, this specific choice of `str` has no effect on the
 result. -/
-noncomputable def cont1 (S : Schema) (str : Strat S) (G : Graph)
+noncomputable def canonicalTyping (S : Schema) (str : Strat S) (G : Graph)
     (Fixed : Finset Label) (T : Typing) : Typing :=
-  cont1Fuel S str G S.labels.card Fixed T
+  canonicalTypingFuel S str G S.labels.card Fixed T
 
-theorem cont1_eq_fuel (S : Schema) (str : Strat S) (G : Graph)
+theorem canonicalTyping_eq_fuel (S : Schema) (str : Strat S) (G : Graph)
     (Fixed : Finset Label) (T : Typing) (n : ℕ) (hn : (S.labels \ Fixed).card ≤ n) :
-    cont1 S str G Fixed T = cont1Fuel S str G n Fixed T :=
-  cont1Fuel_stable S str G Fixed T S.labels.card n (Finset.card_le_card (Finset.sdiff_subset)) hn
+    canonicalTyping S str G Fixed T = canonicalTypingFuel S str G n Fixed T :=
+  canonicalTypingFuel_stable S str G Fixed T S.labels.card n (Finset.card_le_card (Finset.sdiff_subset)) hn
 
-theorem cont1_done (S : Schema) (str : Strat S) (G : Graph)
+theorem canonicalTyping_done (S : Schema) (str : Strat S) (G : Graph)
     {Fixed : Finset Label} (h : ¬ (S.labels \ Fixed).Nonempty) (T : Typing) :
-    cont1 S str G Fixed T = T := by
+    canonicalTyping S str G Fixed T = T := by
   have hcardzero : (S.labels \ Fixed).card = 0 := by
     rw [Finset.card_eq_zero, ← Finset.not_nonempty_iff_eq_empty]; exact h
-  rw [cont1_eq_fuel S str G Fixed T 1 (by omega)]
-  simp only [cont1Fuel, ite_eq_right h]
+  rw [canonicalTyping_eq_fuel S str G Fixed T 1 (by omega)]
+  simp only [canonicalTypingFuel, ite_eq_right h]
 
-theorem cont1_step (S : Schema) (str : Strat S) (G : Graph)
+theorem canonicalTyping_step (S : Schema) (str : Strat S) (G : Graph)
     {Fixed : Finset Label} (h : (S.labels \ Fixed).Nonempty) (T : Typing) :
-    cont1 S str G Fixed T = cont1 S str G (Fixed ∪ remMin S str.str Fixed)
+    canonicalTyping S str G Fixed T = canonicalTyping S str G (Fixed ∪ remMin S str.str Fixed)
       (maxAgree (S.restrictLabels (Fixed ∪ remMin S str.str Fixed)) G Fixed T) := by
   obtain ⟨m, hm⟩ : ∃ m, (S.labels \ Fixed).card = m + 1 :=
     ⟨(S.labels \ Fixed).card - 1, by have := Finset.card_pos.mpr h; omega⟩
-  rw [cont1_eq_fuel S str G Fixed T (m + 1) (le_of_eq hm)]
-  simp only [cont1Fuel, ite_eq_left h]
-  refine (cont1_eq_fuel S str G _ _ m ?_).symm
+  rw [canonicalTyping_eq_fuel S str G Fixed T (m + 1) (le_of_eq hm)]
+  simp only [canonicalTypingFuel, ite_eq_left h]
+  refine (canonicalTyping_eq_fuel S str G _ _ m ?_).symm
   have := remMin_card_lt S str.str h
   omega
 
@@ -407,8 +407,8 @@ negatively only on the common base `Ls0`, and positively only on `Ls0` and
 on itself. (Neither batch needs the other.) Then you can reveal them in
 the two orders and get the same result. With `maxAgree_fusion`, the two
 sides both become the one-step construction over `Ls0 ∪ A ∪ B`.
-`cont1_indep` below uses this lemma to show that the first step of
-`cont1` has no effect on the result. -/
+`canonicalTyping_indep` below uses this lemma to show that the first step of
+`canonicalTyping` has no effect on the result. -/
 theorem maxAgree_swap {S : Schema} {G : Graph} {Ls0 A B : Finset Label}
     {T : Typing}
     (hLs0self : ∀ L ∈ Ls0, (S.shapeDef L).posDeps ∪ (S.shapeDef L).negDeps ⊆ Ls0)
@@ -458,12 +458,12 @@ theorem maxAgree_swap {S : Schema} {G : Graph} {Ls0 A B : Finset Label}
     hTsub hTcorrect
   rw [hLHS, hRHS]
 
-/-- Start `cont1` from a self-contained `(Fixed, T)`. Its final answer does
+/-- Start `canonicalTyping` from a self-contained `(Fixed, T)`. Its final answer does
 not change if we first reveal a different valid batch `C`. (`C` is not
 necessarily the choice of `remMin`, and is not necessarily disjoint from
-`Fixed`.) Thus, `cont1` does not depend on the valid batch that its `str`
+`Fixed`.) Thus, `canonicalTyping` does not depend on the valid batch that its `str`
 selects at each step. -/
-theorem cont1_indep (S : Schema) (str : Strat S) (hClosed : S.Closed) (G : Graph) :
+theorem canonicalTyping_indep (S : Schema) (str : Strat S) (hClosed : S.Closed) (G : Graph) :
     ∀ Fixed : Finset Label, ∀ T : Typing,
       (∀ L ∈ Fixed, (S.shapeDef L).posDeps ∪ (S.shapeDef L).negDeps ⊆ Fixed) →
       T ⊆ (S.restrictLabels Fixed).univTyping G →
@@ -471,8 +471,8 @@ theorem cont1_indep (S : Schema) (str : Strat S) (hClosed : S.Closed) (G : Graph
       ∀ C : Finset Label, C ⊆ S.labels →
         (∀ L ∈ C, (S.shapeDef L).negDeps ⊆ Fixed) →
         (∀ L ∈ C, (S.shapeDef L).posDeps ⊆ Fixed ∪ C) →
-        cont1 S str G Fixed T =
-          cont1 S str G (Fixed ∪ C) (maxAgree (S.restrictLabels (Fixed ∪ C)) G Fixed T) := by
+        canonicalTyping S str G Fixed T =
+          canonicalTyping S str G (Fixed ∪ C) (maxAgree (S.restrictLabels (Fixed ∪ C)) G Fixed T) := by
   intro Fixed
   induction hcard : (S.labels \ Fixed).card using Nat.strong_induction_on generalizing Fixed with
   | _ card ih =>
@@ -559,38 +559,38 @@ theorem cont1_indep (S : Schema) (str : Strat S) (hClosed : S.Closed) (G : Graph
         have hstep2 := ih _ hcardC (Fixed ∪ C) rfl T'' hFCself hT''sub hT''correct
           A₁ hA₁sub (fun L hL => (hA₁neg L hL).trans Finset.subset_union_left)
           (fun L hL => (hA₁pos L hL).trans (Finset.union_subset_union_left Finset.subset_union_left))
-        -- Combine with `cont1_step` and `maxAgree_swap`.
+        -- Combine with `canonicalTyping_step` and `maxAgree_swap`.
         have hswap := maxAgree_swap (S := S) (G := G) (Ls0 := Fixed) (A := A₁) (B := C)
           hFixedSelf hA₁neg hA₁pos hCneg hCpos hTsub hTcorrect
         have hcomm : Fixed ∪ A₁ ∪ C = Fixed ∪ C ∪ A₁ := by
           apply Finset.ext; intro x; simp only [Finset.mem_union]; tauto
-        rw [cont1_step S str G hne T]
-        calc cont1 S str G (Fixed ∪ A₁) (maxAgree (S.restrictLabels (Fixed ∪ A₁)) G Fixed T)
-            = cont1 S str G ((Fixed ∪ A₁) ∪ C)
+        rw [canonicalTyping_step S str G hne T]
+        calc canonicalTyping S str G (Fixed ∪ A₁) (maxAgree (S.restrictLabels (Fixed ∪ A₁)) G Fixed T)
+            = canonicalTyping S str G ((Fixed ∪ A₁) ∪ C)
                 (maxAgree (S.restrictLabels ((Fixed ∪ A₁) ∪ C)) G (Fixed ∪ A₁)
                   (maxAgree (S.restrictLabels (Fixed ∪ A₁)) G Fixed T)) := hstep1
-          _ = cont1 S str G ((Fixed ∪ A₁) ∪ C)
+          _ = canonicalTyping S str G ((Fixed ∪ A₁) ∪ C)
                 (maxAgree (S.restrictLabels ((Fixed ∪ A₁) ∪ C)) G (Fixed ∪ C) T'') := by
                 rw [hswap]
-          _ = cont1 S str G (Fixed ∪ C) T'' := hcomm ▸ hstep2.symm
+          _ = canonicalTyping S str G (Fixed ∪ C) T'' := hcomm ▸ hstep2.symm
       · -- No labels remain: `Fixed ⊇ S.labels`. Thus, `C ⊆ Fixed`, which contradicts `hCnew`.
         exfalso
         obtain ⟨L₀, hL₀⟩ := hCnew
         obtain ⟨hL₀C, hL₀nFixed⟩ := Finset.mem_sdiff.mp hL₀
         exact hne ⟨L₀, Finset.mem_sdiff.mpr ⟨hCsub hL₀C, hL₀nFixed⟩⟩
 
-/-- Apply `cont1_indep` along the checkpoints of `str'`. `cont1` uses a
+/-- Apply `canonicalTyping_indep` along the checkpoints of `str'`. `canonicalTyping` uses a
 fixed `str0` internally. It agrees with `str'` at each checkpoint of
 `str'`, for each `str0`. -/
-theorem cont1_chain (S : Schema) (str0 : Strat S) (hClosed : S.Closed) (G : Graph)
+theorem canonicalTyping_chain (S : Schema) (str0 : Strat S) (hClosed : S.Closed) (G : Graph)
     (str' : Strat S) :
     ∀ i ≤ str'.k,
-      cont1 S str0 G ∅ ∅ = cont1 S str0 G (S.stratum str'.str i)
+      canonicalTyping S str0 G ∅ ∅ = canonicalTyping S str0 G (S.stratum str'.str i)
         (typ S str'.str G i)
   | 0, _ => by simp [Schema.stratum_zero, typ]
   | (i + 1), hi1 => by
       have hi : i ≤ str'.k := by omega
-      have hIH := cont1_chain S str0 hClosed G str' i hi
+      have hIH := canonicalTyping_chain S str0 hClosed G str' i hi
       have hT' := typ_correct S str' hClosed G i
       have hself : ∀ L ∈ S.stratum str'.str i,
           (S.shapeDef L).posDeps ∪ (S.shapeDef L).negDeps ⊆ S.stratum str'.str i :=
@@ -611,18 +611,18 @@ theorem cont1_chain (S : Schema) (str0 : Strat S) (hClosed : S.Closed) (G : Grap
         have hL' : L ∈ S.stratum str'.str (i + 1) := hUnion ▸ Finset.mem_union_right _ hL
         exact Finset.subset_union_left.trans
           (Schema.stratum_self_contained S str' hClosed (i + 1) L hL')
-      have hindep := cont1_indep S str0 hClosed G (S.stratum str'.str i)
+      have hindep := canonicalTyping_indep S str0 hClosed G (S.stratum str'.str i)
         (typ S str'.str G i) hself hT'.1 hT'.2 C hCsub hCneg hCpos
       rw [hIH, hindep, hUnion]
       congr 1
 
-/-- `cont1 S str0 G ∅ ∅` is equal to `MTyping` for each valid
+/-- `canonicalTyping S str0 G ∅ ∅` is equal to `MTyping` for each valid
 stratification. Thus, it is equal for `str1` and also for `str2`. -/
-theorem cont1_eq_MTyping (S : Schema) (str0 : Strat S) (hClosed : S.Closed) (G : Graph)
-    (str' : Strat S) : cont1 S str0 G ∅ ∅ = MTyping G S str' := by
-  have h := cont1_chain S str0 hClosed G str' str'.k (le_refl _)
+theorem canonicalTyping_eq_MTyping (S : Schema) (str0 : Strat S) (hClosed : S.Closed) (G : Graph)
+    (str' : Strat S) : canonicalTyping S str0 G ∅ ∅ = MTyping G S str' := by
+  have h := canonicalTyping_chain S str0 hClosed G str' str'.k (le_refl _)
   rw [h]
-  apply cont1_done
+  apply canonicalTyping_done
   rw [Finset.not_nonempty_iff_eq_empty, Finset.sdiff_eq_empty_iff_subset]
   intro L hL
   simp only [Schema.stratum, Finset.mem_filter]
@@ -630,11 +630,11 @@ theorem cont1_eq_MTyping (S : Schema) (str0 : Strat S) (hClosed : S.Closed) (G :
 
 /-- Lemma 2. `Typing(G, S, str)` (Definition 4) does not depend on the
 stratification of `S` that you select. The two sides are equal to
-`cont1 S str1 G ∅ ∅`. This is a canonical process that always reveals
+`canonicalTyping S str1 G ∅ ∅`. This is a canonical process that always reveals
 each "ready" label (`remMin`). It does not depend on the valid
-stratification that justifies each step (`cont1_indep`). -/
+stratification that justifies each step (`canonicalTyping_indep`). -/
 theorem lemma2 (S : Schema) (hClosed : S.Closed) (str1 str2 : Strat S) (G : Graph) :
     MTyping G S str1 = MTyping G S str2 := by
-  rw [← cont1_eq_MTyping S str1 hClosed G str1, ← cont1_eq_MTyping S str1 hClosed G str2]
+  rw [← canonicalTyping_eq_MTyping S str1 hClosed G str1, ← canonicalTyping_eq_MTyping S str1 hClosed G str2]
 
 end ShexLean
