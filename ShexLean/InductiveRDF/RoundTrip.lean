@@ -1,12 +1,12 @@
 import ShexLean.InductiveRDF.Graph
 
 /-!
-`ofGraph` and `toGraph` (`ShexLean.InductiveRDF.Graph`) are inverses:
-`toGraph (ofGraph G) = G` for each `G`.
+`ofGraph` and `toGraph` (`ShexLean.InductiveRDF.Graph`)
+are inverses: `toGraph (ofGraph G) = G` for each `G`.
 
 This fact is the reason why `TGraph` is an *alternative representation*
-of RDF graphs, and not only data with a different structure. Each triple
-of `G` is in the `pred` list or the `succ` list of exactly one context.
+of RDF graphs, and not only data with a different structure.
+Each triple of `G` is in the `pred` list or the `succ` list of exactly one context.
 Thus, decomposition and reassembly lose no data.
 -/
 
@@ -20,8 +20,8 @@ private theorem filterMap_some_map {α β} (l : List α) (h : α → β) :
   | nil => rfl
   | cons a l ih => simp [ih]
 
-/-- Membership in the `pred` part of the triples of one context, written
-as a condition on `G` only. -/
+/-- Membership in the `pred` part of the triples of
+one context, written as a condition on `G` only. -/
 theorem mem_context_pred_triples (n : Resource) (later : Finset Resource) (G : Graph) (t : Triple) :
     t ∈ (buildContext n later G).pred.filterMap
           (fun (src, lbl) => match lbl with
@@ -54,14 +54,15 @@ theorem mem_context_pred_triples (n : Resource) (later : Finset Resource) (G : G
     show (⟨t.subj, t.pred, n⟩ : Triple) = t
     rw [← htobj]
 
-/-- Membership in the `succ` part of the triples of one context, written
-as a condition on `G` only.
+/-- Membership in the `succ` part of the triples of
+one context, written as a condition on `G` only.
 
-If `t` is a member, `n.toSubject?` is always `some _`, because `n` must be
-equal to the `Subject` of a real triple (`toSubject_eq_some_iff`). But
-the statement must still use the `Option`. We know only that `n` is an
-`RDFNode`. It can be a literal. For a literal, `succ` is always `[]`, and
-the two sides below are `False`. -/
+If `t` is a member, `n.toSubject?` is always `some _`, because `n` must
+be equal to the `Subject` of a real triple (`toSubject_eq_some_iff`).
+But the statement must still use the `Option`.
+We know only that `n` is an `RDFNode`.
+It can be a literal.
+For a literal, `succ` is always `[]`, and the two sides below are `False`. -/
 theorem mem_context_succ_triples (n : Resource) (later : Finset Resource) (G : Graph) (t : Triple) :
     t ∈ (buildContext n later G).succ.filterMap
           (fun (lbl, tgt) => match n.toSubject?, lbl with
@@ -108,9 +109,9 @@ theorem mem_context_succ_triples (n : Resource) (later : Finset Resource) (G : G
       have hns0 : ns0 = t.subj := Subject.toNode_inj (hnsn.trans htsubj.symm)
       rw [hns0]
 
-/-- Membership in the triples of one context, written as a condition on
-`G` only. The context of `n` (relative to `later`) records `t` if and only
-if one of these conditions is true:
+/-- Membership in the triples of one context, written as a condition on `G` only.
+The context of `n` (relative to `later`) records
+`t` if and only if one of these conditions is true:
 
 * `t` is an edge *into* `n` from a node in `later`.
 * `t` is an edge *out of* `n` to a node in `later`.
@@ -130,13 +131,14 @@ theorem mem_context_toTriples (n : Resource) (later : Finset Resource) (G : Grap
     · exact Or.inl ((mem_context_pred_triples n later G t).mpr h)
     · exact Or.inr ((mem_context_succ_triples n later G t).mpr h)
 
-/-- The invariant of `buildFrom`. Decompose the nodes of `G` in the order
-`ns` (with `ns.Nodup`), and then reassemble them. The result is exactly
-the set of triples of `G` that have their two endpoints in `ns`.
+/-- The invariant of `buildFrom`.
+Decompose the nodes of `G` in the order `ns` (with `ns.Nodup`), and then reassemble them.
+The result is exactly the set of triples of `G` that have their two endpoints in `ns`.
 
-`ofGraph` uses `ns := G.nodes.toList`. With this `ns`, the result is all
-the triples of `G`, because the subject and the object of a triple are
-always in `Graph.nodes`. Refer to `toGraph_ofGraph` below. -/
+`ofGraph` uses `ns := G.nodes.toList`.
+With this `ns`, the result is all the triples of `G`, because the
+subject and the object of a triple are always in `Graph.nodes`.
+Refer to `toGraph_ofGraph` below. -/
 theorem mem_buildFrom_toTriples (ns : List Resource) (hnd : ns.Nodup) (G : Graph) (t : Triple) :
     t ∈ (buildFrom ns G).toTriples ↔
       t ∈ G ∧ (t.subj : RDFNode) ∈ ns.toFinset ∧ t.obj ∈ ns.toFinset := by
@@ -177,9 +179,10 @@ private theorem triple_endpoints_mem_nodes (G : Graph) {t : Triple} (ht : t ∈ 
   ⟨Finset.mem_union_left _ (Finset.mem_image_of_mem _ ht),
    Finset.mem_union_right _ (Finset.mem_image_of_mem _ ht)⟩
 
-/-- **Round trip of `ofGraph` and `toGraph`.** Decompose `G` into an
-inductive triple graph, and then reassemble it. The result is exactly
-`G`. The representation loses no data. -/
+/-- **Round trip of `ofGraph` and `toGraph`.**
+Decompose `G` into an inductive triple graph, and then reassemble it.
+The result is exactly `G`.
+The representation loses no data. -/
 theorem toGraph_ofGraph (G : Graph) : toGraph (ofGraph G) = G := by
   ext t
   show t ∈ (buildFrom G.nodes.toList G).toTriples.toFinset ↔ t ∈ G

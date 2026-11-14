@@ -7,8 +7,8 @@ import Example
 Example 6 from the 2025 paper "Shape Expressions with Inheritance" (§4.2,
 Def. 5): three small schemas `S1`, `S2` and `S3`, and the facts about
 their dependency relations (`dep`, `dep-shape-neg`, `dep-extra-neg` and
-`dep-extends`) that Example 7 (`Example7_well_defined.lean`) needs. These
-are regression checks on the definitions of the dependency graph.
+`dep-extends`) that Example 7 (`Example7_well_defined.lean`) needs.
+These are regression checks on the definitions of the dependency graph.
 -/
 
 namespace ShexLean.Inheritance
@@ -18,11 +18,11 @@ open ShexLean.InheritanceCore hiding Schema
 /-- `S1 = (Y1,∅,def,∅)` (Example 6): `y1 → ⟨p@y2⟩ and ⟨q@y3⟩`,
 `y2 → ⟨q@y1⟩`, `y3 → extra{r} ⟨p@y1⟩`.
 
-`shapeDef` is an explicit `if` chain, not `|` pattern matching (as in the
-other definitions of this file). The proof of `S1_wellDefined` does a case
-split on any label, not only on the three named labels. With the `if`
-chain, `simp` can resolve each branch directly. Refer to
-`ShexLean/Shex2025Inheritance/Proposition1.lean` for this method. -/
+`shapeDef` is an explicit `if` chain, not `|` pattern
+matching (as in the other definitions of this file).
+The proof of `S1_wellDefined` does a case split on any label, not only on the three named labels.
+With the `if` chain, `simp` can resolve each branch directly.
+Refer to `ShexLean/Shex2025Inheritance/Proposition1.lean` for this method. -/
 def S1 : Schema where
   Y := {"y1", "y2", "y3"}
   X := ∅
@@ -51,8 +51,8 @@ def S2 : Schema where
     | _ => .constraint (fun _ => False)
 
 /-- `S3 = (Y3,X3,def,∅)` (Example 6): `x1 → extends _ ⟨p@y7⟩`,
-`x2 → extends x1 ⟨p@y8⟩`, `y7 → not ⟨q@x2⟩`, `y8 → c` (a node constraint
-of your choice). -/
+`x2 → extends x1 ⟨p@y8⟩`, `y7 → not ⟨q@x2⟩`, `y8 → c` (a node
+constraint of your choice). -/
 def S3 : Schema where
   Y := {"y7", "y8"}
   X := {"x1", "x2"}
@@ -66,11 +66,11 @@ def S3 : Schema where
     | "y8" => .constraint (fun _ => True)
     | _ => .constraint (fun _ => False)
 
-/-! The 13 dependency-relation facts that Example 6 lists (the table of the
-paper, page 10). This file checks each of them separately. The
-well-definedness results of `Example7_well_defined.lean`
-(`S1_wellDefined`, `S2_not_wellDefined` and `S3_not_wellDefined`) need
-only some of them as intermediate steps. -/
+/-! The 13 dependency-relation facts that Example 6 lists (the table of the paper, page 10).
+This file checks each of them separately.
+The well-definedness results of `Example7_well_defined.lean`
+(`S1_wellDefined`, `S2_not_wellDefined` and `S3_not_wellDefined`)
+need only some of them as intermediate steps. -/
 
 theorem dep_S1_y1_y2 : S1.dep "y1" "y2" := by
   show "y2" ∈ ((S1.shapeDef "y1").depsAux false).refs; decide
@@ -103,12 +103,12 @@ theorem depExtends_S3_x2_x1 : S3.depExtends "x2" "x1" := by
   show S3.extEdge "x2" "x1" ∨ S3.extEdge "x1" "x2"
   left; show "x1" ∈ (S3.shapeDef "x2").extendsTargets; decide
 
-/-- The result of `renderDecide` for
-`S.dep z z'`. `Schema.dep` unfolds to a plain `Finset` or `List`
-membership check (`ShapeExpr.depsAux`, structural on the syntax tree, with
-no `Classical` and no fuel). Thus, `unfold` and then `infer_instance` are
-sufficient to get the `Decidable` instance. This is not true for
-`Satisfies*`. -/
+/-- The result of `renderDecide` for `S.dep z z'`.
+`Schema.dep` unfolds to a plain `Finset` or `List`
+membership check (`ShapeExpr.depsAux`, structural on
+the syntax tree, with no `Classical` and no fuel).
+Thus, `unfold` and then `infer_instance` are sufficient to get the `Decidable` instance.
+This is not true for `Satisfies*`. -/
 def renderDepG (S : Schema) (z z' : Label) : String :=
   renderDecide (show Decidable (S.dep z z') by unfold Schema.dep; infer_instance)
 
@@ -128,8 +128,8 @@ namespace Examples
 open ShexLean.Inheritance (S1 S2 S3 renderDepG renderDepShapeNeg renderDepExtraNeg
   renderDepExtends)
 
-/-- The three schemas `S1`, `S2` and `S3` of Example 6, and their
-dependency facts. Each `dep*` claim in `typingText` is a `renderDecide`
+/-- The three schemas `S1`, `S2` and `S3` of Example 6, and their dependency facts.
+Each `dep*` claim in `typingText` is a `renderDecide`
 computation on the real `S1`, `S2` and `S3`. -/
 def inheritance2025DependencyGraph : Example where
   name := "inheritance2025-example6-dependency-graph"

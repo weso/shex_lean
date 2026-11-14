@@ -4,10 +4,11 @@ import ShexLean.Shex2017Schemas.Render
 import Example
 
 /-!
-Example 2 from Boneva, Labra Gayo, Prud'hommeaux (2017): the recursive
-schema `<IssueSh>`/`<Str>`. We use it as a regression check. It shows that
-`RDF.lean`, `Typing.lean`, `Syntax.lean` and `Semantics.lean` work
-together correctly.
+Example 2 from Boneva, Labra Gayo, Prud'hommeaux
+(2017): the recursive schema `<IssueSh>`/`<Str>`.
+We use it as a regression check.
+It shows that `RDF.lean`, `Typing.lean`, `Syntax.lean`
+and `Semantics.lean` work together correctly.
 
 ```
 <IssueSh> → is:reportedBy @<Str> ; is:relatedTo @<IssueSh> [0;*]
@@ -21,14 +22,15 @@ together correctly.
 > `typing_1 = {(<i1>, <IssueSh>), (<i2>, <IssueSh>), ("Ren", <Str>), ("Bob", <Str>)}`
 > [...] `typing_1` [is] correct.
 
-`<Str>` must accept each `xsd:string` literal. But here, a `ValueDescr` is
-an explicit finite `Finset`. Thus, we replace it with the two literals that
-occur in `G₂`. This is sufficient to do the argument of the paper again.
+`<Str>` must accept each `xsd:string` literal.
+But here, a `ValueDescr` is an explicit finite `Finset`.
+Thus, we replace it with the two literals that occur in `G₂`.
+This is sufficient to do the argument of the paper again.
 
-The correctness of `typing_1` is a claim of Example 3. (Example 2 only
-gives `S₁` and `G₂`.) We prove it here, near its schema and graph, because
-the other three typings of Example 3 (`Example3_typings.lean`) use all
-the definitions in this file.
+The correctness of `typing_1` is a claim of Example 3.
+(Example 2 only gives `S₁` and `G₂`.)
+We prove it here, near its schema and graph, because the other three typings
+of Example 3 (`Example3_typings.lean`) use all the definitions in this file.
 -/
 
 namespace ShexLean.Examples
@@ -61,8 +63,8 @@ def issueShDef : ShExpr :=
     (.tPattern {reportedBy} Str)
     (.rep (.tPattern {relatedTo} IssueSh) 0 none))
 
-/-- `<Str> → xsd:string`. The two string literals of `G₂` replace
-`xsd:string`. -/
+/-- `<Str> → xsd:string`.
+The two string literals of `G₂` replace `xsd:string`. -/
 def strDef : ShExpr :=
   .valueDescr {.lit (.str "Ren"), .lit (.str "Bob")}
 
@@ -73,8 +75,8 @@ def S₁ : Schema where
     | "IssueSh" => issueShDef
     | _ => strDef
 
-/-- `typing_1` from Example 3: the maximal typing of `G₂` by `S₁`. The
-paper says that it is correct. -/
+/-- `typing_1` from Example 3: the maximal typing of `G₂` by `S₁`.
+The paper says that it is correct. -/
 def typing1 : Typing :=
   {((i1 : RDFNode), IssueSh), ((i2 : RDFNode), IssueSh), (ren, Str), (bob, Str)}
 
@@ -98,8 +100,8 @@ theorem satisfies_issueSh_i2 : Satisfies G₂ typing1 i2 issueShDef := by
     (Matches.tPattern_of G₂ typing1 i2 reportedBy bob) ?_
   exact Matches.rep_single_of G₂ typing1 {t4} (Matches.tPattern_of G₂ typing1 i2 relatedTo i1)
 
-/-- `typing1` is a correct typing of `G₂` by `S₁` (Definition 2). A `⊢`
-derivation supports each node-type association in it. -/
+/-- `typing1` is a correct typing of `G₂` by `S₁` (Definition 2).
+A `⊢` derivation supports each node-type association in it. -/
 theorem typing1_correct : S₁.CorrTyping G₂ typing1 := by
   intro n L hmem
   simp only [typing1, Finset.mem_insert, Finset.mem_singleton, Prod.mk.injEq] at hmem
@@ -115,11 +117,11 @@ namespace Examples
 
 open ShexLean.Examples (S₁ G₂ typing1)
 
-/-- The `<IssueSh>`/`<Str>` example of Example 2. `ShexLean.Schema.render`
-and `Graph.render` generate `schemaText` and `graphText` from the real
-values `S₁` and `G₂`. `typingText` contains a correctness result for
-`typing_1` that a `Decidable` instance computes. It is not a "(correct)"
-that a person typed by hand. -/
+/-- The `<IssueSh>`/`<Str>` example of Example 2.
+`ShexLean.Schema.render` and `Graph.render` generate
+`schemaText` and `graphText` from the real values `S₁` and `G₂`.
+`typingText` contains a correctness result for `typing_1` that a `Decidable` instance computes.
+It is not a "(correct)" that a person typed by hand. -/
 def issueTracker : Example where
   name := "schemas2017-example2-issue-tracker"
   summary := "Recursive <IssueSh> schema, two issues reporting on each other."

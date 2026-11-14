@@ -4,13 +4,13 @@ import ShexLean.Shex2017Schemas.Render
 import Example
 
 /-!
-Example 4 from Boneva, Labra Gayo, Prud'hommeaux (2017). It shows two
-facts:
+Example 4 from Boneva, Labra Gayo, Prud'hommeaux (2017).
+It shows two facts:
 
 * When a schema has negation and recursion together, correct typings
   (Definition 2) are not sufficient to give a sound semantics.
-* The schema below is *not* with stratified negation (Definition 3,
-  `ShexLean.Strat`). The paper says this directly after Ex. 4.
+* The schema below is *not* with stratified negation (Definition 3, `ShexLean.Strat`).
+  The paper says this directly after Ex. 4.
 
 ```
 <L1> → NOT(ex:p @<L2>)      <n1> ex:p <n2> .
@@ -63,9 +63,9 @@ def typing6 : Typing := {((n2 : RDFNode), L2)}
 private theorem neigh_n1 : neigh G₂ n1 = {t1} := by decide
 private theorem neigh_n2 : neigh G₂ n2 = {t2} := by decide
 
-/-- `t₅` is a correct typing of `G₂` by `S₂` (Definition 2). `<n1>`
-satisfies `<L1>`. The only way to fail is to have a `<L2>` neighbour
-through `ex:p`, and `t₅` does not give this. -/
+/-- `t₅` is a correct typing of `G₂` by `S₂` (Definition 2).
+`<n1>` satisfies `<L1>`.
+The only way to fail is to have a `<L2>` neighbour through `ex:p`, and `t₅` does not give this. -/
 theorem typing5_correct :
     ∀ n L, (n, L) ∈ typing5 → Satisfies G₂ typing5 n (S₂.shapeDef L) := by
   intro n L hmem
@@ -79,8 +79,8 @@ theorem typing5_correct :
   injection ht with hsubj hpred hobj
   exact absurd (hobj ▸ htyp) (by decide)
 
-/-- `t₆` is a correct typing of `G₂` by `S₂` (Definition 2). The proof is
-symmetric to `typing5_correct`. -/
+/-- `t₆` is a correct typing of `G₂` by `S₂` (Definition 2).
+The proof is symmetric to `typing5_correct`. -/
 theorem typing6_correct :
     ∀ n L, (n, L) ∈ typing6 → Satisfies G₂ typing6 n (S₂.shapeDef L) := by
   intro n L hmem
@@ -94,9 +94,9 @@ theorem typing6_correct :
   injection ht with hsubj hpred hobj
   exact absurd (hobj ▸ htyp) (by decide)
 
-/-- `S₂` is not with stratified negation (Definition 3). `dep⁻(<L1>, <L2>)`
-and `dep⁻(<L2>, <L1>)` force `str(<L1>) > str(<L2>) > str(<L1>)`. This is
-not possible. -/
+/-- `S₂` is not with stratified negation (Definition 3).
+`dep⁻(<L1>, <L2>)` and `dep⁻(<L2>, <L1>)` force `str(<L1>) > str(<L2>) > str(<L1>)`.
+This is not possible. -/
 theorem S₂_not_stratified : ¬ S₂.StratNeg := by
   rintro ⟨str⟩
   have hdepL1L2 : DepNeg S₂ L1 L2 := by decide
@@ -113,16 +113,16 @@ open Examples.NegationRecursion (S₂ G₂ typing5 typing6 L1 L2)
 open ShexLean (Schema.render Graph.render Typing.render renderDecide corrTyping_decidable
   DepNeg)
 
-/-- Example 4: negation together with recursion. It shows that correct
-typings are not sufficient for a sound semantics, and that `S₂` is not
-with stratified negation.
+/-- Example 4: negation together with recursion.
+It shows that correct typings are not sufficient for a sound
+semantics, and that `S₂` is not with stratified negation.
 
-* `schemaText`, `graphText` and the two correctness results are generated
-  from the real values `S₂`, `G₂`, `typing5` and `typing6`.
+* `schemaText`, `graphText` and the two correctness results are
+  generated from the real values `S₂`, `G₂`, `typing5` and `typing6`.
 * The two `DepNeg` edges are also computed (`DepNeg` *is* `Decidable`).
-* `S₂.StratNeg` (`Nonempty (Strat S₂)`) is an existential over
-  stratification *functions*. It is not decidable. Thus, for this claim,
-  the text only gives the name of the theorem that proves it. -/
+* `S₂.StratNeg` (`Nonempty (Strat S₂)`) is an existential over stratification *functions*.
+  It is not decidable.
+  Thus, for this claim, the text only gives the name of the theorem that proves it. -/
 def negationRecursion : Example where
   name := "schemas2017-example4-negation-recursion"
   summary := "NOT and mutual recursion: two contradicting typings, not stratified."

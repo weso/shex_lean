@@ -3,10 +3,10 @@ import ShexLean.Shex2017Schemas.Lemma2
 set_option maxHeartbeats 1000000
 
 /-!
-§4.2: Algorithm 2 (`prove`), and the proof that it is correct
-(Proposition 2). The algorithm decides `(n, L) ∈ Typing(G, S, str)`. It
-does not construct the full typing. It visits recursively only the part
-of the dependency graph that it can reach from `(n, L)`.
+§4.2: Algorithm 2 (`prove`), and the proof that it is correct (Proposition 2).
+The algorithm decides `(n, L) ∈ Typing(G, S, str)`.
+It does not construct the full typing.
+It visits recursively only the part of the dependency graph that it can reach from `(n, L)`.
 
 ```
 Input: n: node in G, L: label in L, Hyp: a stack over Nodes(G) × L
@@ -21,19 +21,18 @@ Output: true if n has label L, false otherwise
 8  return result;
 ```
 
-Here, `dep(n, L)` is the set of node-type associations `(n', L')` with
-these properties:
+Here, `dep(n, L)` is the set of node-type associations `(n', L')` with these properties:
 
 * `n'` is a neighbor of `n`.
-* `L'` is a shape reference in `def(L)`. Thus,
-  `L' ∈ posDeps(def(L)) ∪ negDeps(def(L))`.
+* `L'` is a shape reference in `def(L)`.
+  Thus, `L' ∈ posDeps(def(L)) ∪ negDeps(def(L))`.
 
 This file first makes `Satisfies.agree` and `Matches.agree`
-(`ShexLean/Shex2017Schemas/Proposition1.lean`) stronger, to a local form
-for neighbors. At the node `n`, `⊢` and `⊨` depend on `t` only through the
-restriction of `t` to `dep(n, L)`. This set contains only the graph
-neighbors of `n`, not all the nodes. Because of this, `prove` can keep
-`Dep` and `Hyp`, and not a full typing.
+(`ShexLean/Shex2017Schemas/Proposition1.lean`) stronger, to
+a local form for neighbors.
+At the node `n`, `⊢` and `⊨` depend on `t` only through the restriction of `t` to `dep(n, L)`.
+This set contains only the graph neighbors of `n`, not all the nodes.
+Because of this, `prove` can keep `Dep` and `Hyp`, and not a full typing.
 -/
 
 namespace ShexLean
@@ -47,9 +46,9 @@ theorem objsOf_mono {N N' : Finset Triple} (h : N ⊆ N') : objsOf N ⊆ objsOf 
 theorem mem_objsOf_singleton {t : Triple} : t.obj ∈ objsOf ({t} : Finset Triple) := by
   simp [objsOf]
 
-/-- Each piece of a `DisjointUnionList` decomposition is a subset of the
-full set. The proofs need this fact for Rule te-repet. The node-type
-associations of a sub-expression `Ni` must still be in `objsOf N`. -/
+/-- Each piece of a `DisjointUnionList` decomposition is a subset of the full set.
+The proofs need this fact for Rule te-repet.
+The node-type associations of a sub-expression `Ni` must still be in `objsOf N`. -/
 theorem subset_of_mem_disjointUnionList {N : Finset Triple} {Ns : List (Finset Triple)}
     (h : DisjointUnionList N Ns) {Ni : Finset Triple} (hNi : Ni ∈ Ns) : Ni ⊆ N := by
   rw [h.2]
@@ -62,14 +61,15 @@ theorem subset_of_mem_disjointUnionList {N : Finset Triple} {Ns : List (Finset T
       · exact Finset.subset_union_left
       · exact (ih hNi').trans Finset.subset_union_right
 
-/-- Local agreement for `⊨`. Let `t` and `t'` agree on each `(n', L)`
-where `n'` is the object of a triple in `N` and `E` refers to `L`. Then
-`⊨` for `N` and `E` agrees between `t` and `t'`.
+/-- Local agreement for `⊨`.
+Let `t` and `t'` agree on each `(n', L)` where `n'` is
+the object of a triple in `N` and `E` refers to `L`.
+Then `⊨` for `N` and `E` agrees between `t` and `t'`.
 
-`N` and `E` are ordinary parameters, and the proof uses a `match` in tactic
-mode. The reason is that the equation compiler fails on this clause list.
-In this list, a plain argument (`N`) and an argument whose type contains
-`N` (`hagree`) come before the recursion argument. -/
+`N` and `E` are ordinary parameters, and the proof uses a `match` in tactic mode.
+The reason is that the equation compiler fails on this clause list.
+In this list, a plain argument (`N`) and an argument whose type
+contains `N` (`hagree`) come before the recursion argument. -/
 theorem Matches.agreeLocal {G : Graph} {t t' : Typing} (N : Finset Triple)
     (E : TExpr)
     (hagree : ∀ n' L, n' ∈ objsOf N → L ∈ E.posDeps ∪ E.negDeps →
@@ -124,13 +124,14 @@ theorem Matches.agreeLocal {G : Graph} {t t' : Typing} (N : Finset Triple)
         exact (Matches.agreeLocal (G := G) Ni E
           (fun n' L hn' hL => hagree n' L (objsOf_mono hsub hn') hL)).mpr (hall Ni hNi)
 
-/-- Local agreement for `⊢`. Let `t` and `t'` agree on each `(n', L)`
-where `n'` is a graph neighbor of `n` and `S` refers to `L`. Then `⊢` for
-`n` and `S` agrees between `t` and `t'`.
+/-- Local agreement for `⊢`.
+Let `t` and `t'` agree on each `(n', L)` where `n'`
+is a graph neighbor of `n` and `S` refers to `L`.
+Then `⊢` for `n` and `S` agrees between `t` and `t'`.
 
-This lemma is finer than `Satisfies.agree`, which needs agreement at all
-the nodes, not only at the neighbors of `n`. Because of this lemma,
-Algorithm 2 looks only at `dep(n, L)`. -/
+This lemma is finer than `Satisfies.agree`, which needs
+agreement at all the nodes, not only at the neighbors of `n`.
+Because of this lemma, Algorithm 2 looks only at `dep(n, L)`. -/
 theorem Satisfies.agreeLocal {G : Graph} {t t' : Typing} (n : RDFNode) (S : ShExpr)
     (hagree : ∀ n' L, n' ∈ objsOf (neigh G n) → L ∈ S.posDeps ∪ S.negDeps →
       ((n', L) ∈ t ↔ (n', L) ∈ t')) :
@@ -166,11 +167,12 @@ theorem Finset.mem_product_mono_right {α β : Type*} [DecidableEq α] [Decidabl
     p ∈ Ns ×ˢ B :=
   Finset.mem_product_mono (Finset.Subset.refl Ns) hAB hp
 
-/-- Local, mixed (`⊆` and exact) monotonicity for `⊨`. If `t ⊆ t'`, then
-`⊨` for `E` goes from `t` to `t'`, if they agree exactly on the negative
-dependencies of `E`. The two conditions apply only to `objsOf N`. This
-lemma combines `Matches.stratMono` (`Proposition1.lean`) with the local
-property of `Matches.agreeLocal` above. -/
+/-- Local, mixed (`⊆` and exact) monotonicity for `⊨`.
+If `t ⊆ t'`, then `⊨` for `E` goes from `t` to `t'`, if
+they agree exactly on the negative dependencies of `E`.
+The two conditions apply only to `objsOf N`.
+This lemma combines `Matches.stratMono` (`Proposition1.lean`)
+with the local property of `Matches.agreeLocal` above. -/
 theorem Matches.stratMonoLocal {G : Graph} {t t' : Typing} (N : Finset Triple)
     (E : TExpr)
     (hsub : ∀ p ∈ objsOf N ×ˢ E.posDeps, p ∈ t → p ∈ t')
@@ -220,9 +222,10 @@ theorem Matches.stratMonoLocal {G : Graph} {t t' : Typing} (N : Finset Triple)
           (Finset.Subset.refl _) hp))
       exact h1 (hall Ni hNi)
 
-/-- Local, mixed monotonicity for `⊢`. This is the same as
-`Satisfies.stratMono` (`Proposition1.lean`), but the agreement must be true
-only on the real graph neighbors of `n`, not on all the nodes. -/
+/-- Local, mixed monotonicity for `⊢`.
+This is the same as `Satisfies.stratMono`
+(`Proposition1.lean`), but the agreement must be true only
+on the real graph neighbors of `n`, not on all the nodes. -/
 theorem Satisfies.stratMonoLocal {G : Graph} {t t' : Typing} (n : RDFNode)
     (S : ShExpr)
     (hsub : ∀ p ∈ objsOf (neigh G n) ×ˢ S.posDeps, p ∈ t → p ∈ t')
@@ -257,9 +260,8 @@ theorem Satisfies.stratMonoLocal {G : Graph} {t t' : Typing} (n : RDFNode)
       have h := Satisfies.agreeLocal (G := G) n S hagree'
       exact fun hc hcs => hc (h.mpr hcs)
 
-/-- `dep(n, L)`: the node-type associations `(n', L')` where `n'` is a
-graph neighbor of `n` and `def(L)` refers to `L'` (positively or
-negatively). -/
+/-- `dep(n, L)`: the node-type associations `(n', L')` where `n'` is a graph
+neighbor of `n` and `def(L)` refers to `L'` (positively or negatively). -/
 def depSet (S : Schema) (G : Graph) (n : RDFNode) (L : Label) : Finset Assoc :=
   objsOf (neigh G n) ×ˢ ((S.shapeDef L).posDeps ∪ (S.shapeDef L).negDeps)
 
@@ -268,9 +270,8 @@ theorem mem_depSet {S : Schema} {G : Graph} {n : RDFNode} {L : Label} {p : Assoc
       p.1 ∈ objsOf (neigh G n) ∧ p.2 ∈ (S.shapeDef L).posDeps ∪ (S.shapeDef L).negDeps :=
   Finset.mem_product
 
-/-- The local agreement fact that Algorithm 2 uses. At `n`, `⊢` for
-`def(L)` depends on `t` only through the restriction of `t` to
-`depSet S G n L`. -/
+/-- The local agreement fact that Algorithm 2 uses.
+At `n`, `⊢` for `def(L)` depends on `t` only through the restriction of `t` to `depSet S G n L`. -/
 theorem Satisfies.agree_depSet {S : Schema} {G : Graph} {n : RDFNode} {L : Label}
     {t t' : Typing}
     (hagree : ∀ p ∈ depSet S G n L, (p ∈ t ↔ p ∈ t')) :
@@ -278,9 +279,9 @@ theorem Satisfies.agree_depSet {S : Schema} {G : Graph} {n : RDFNode} {L : Label
   Satisfies.agreeLocal (G := G) n (S.shapeDef L)
     (fun n' L' hn' hL' => hagree (n', L') (mem_depSet.mpr ⟨hn', hL'⟩))
 
-/-- The mixed (`⊆` and exact) version of `Satisfies.agree_depSet`. At `n`,
-`⊢` for `def(L)` goes from `t` to a superset `t'`, if they agree exactly
-on the part of `depSet S G n L` with *negative* references. -/
+/-- The mixed (`⊆` and exact) version of `Satisfies.agree_depSet`.
+At `n`, `⊢` for `def(L)` goes from `t` to a superset `t'`, if they agree
+exactly on the part of `depSet S G n L` with *negative* references. -/
 theorem Satisfies.stratMono_depSet {S : Schema} {G : Graph} {n : RDFNode} {L : Label}
     {t t' : Typing}
     (hsub : ∀ p ∈ objsOf (neigh G n) ×ˢ (S.shapeDef L).posDeps, p ∈ t → p ∈ t')
@@ -297,8 +298,9 @@ theorem objsOf_neigh_subset_nodes (G : Graph) (n : RDFNode) : objsOf (neigh G n)
   exact Or.inr (Finset.mem_image.mpr ⟨t, htG, rfl⟩)
 
 /-- `depSet S G n L` stays in `G.nodes ×ˢ S.stratum str.str (str.str L)`.
-The neighbors of `n` are graph nodes. The references of `def(L)` are in
-the stratum checkpoint of `L` (`Schema.stratum_self_contained`). -/
+The neighbors of `n` are graph nodes.
+The references of `def(L)` are in the stratum
+checkpoint of `L` (`Schema.stratum_self_contained`). -/
 theorem depSet_subset_stratum {S : Schema} (str : Strat S) (hClosed : S.Closed)
     {G : Graph} {n : RDFNode} {L : Label} (hL : L ∈ S.labels) :
     depSet S G n L ⊆ G.nodes ×ˢ S.stratum str.str (str.str L) := by
@@ -309,27 +311,28 @@ theorem depSet_subset_stratum {S : Schema} (str : Strat S) (hClosed : S.Closed)
     (by simp only [Schema.stratum, Finset.mem_filter]; exact ⟨hL, le_refl _⟩) hp2
 
 /-!
-Algorithm 2. `proveAux S G U n L Hyp` is `prove(n, L, Hyp)` of the paper,
-with these changes:
+Algorithm 2.
+`proveAux S G U n L Hyp` is `prove(n, L, Hyp)` of the paper, with these changes:
 
-* `Hyp` is a `Finset`. Only membership is important. The paper uses the
-  stack with LIFO push and pop of a set. Thus, no data is lost.
+* `Hyp` is a `Finset`.
+  Only membership is important.
+  The paper uses the stack with LIFO push and pop of a set.
+  Thus, no data is lost.
 * `⊢` is decided with classical logic (`Classical.propDecidable`).
-  `Satisfies` is decidable with no classical axioms (`satisfies_decidable`
-  in `ShexLean/Shex2017Schemas/Decidable.lean`). But the proofs about
-  `proveAux` must use the same `Decidable` instance as the definition. The
-  classical instance makes this simple. (`refineStep` in
-  `ShexLean/Shex2017Schemas/Algorithm1.lean` has the same property.)
+  `Satisfies` is decidable with no classical axioms
+  (`satisfies_decidable` in `ShexLean/Shex2017Schemas/Decidable.lean`).
+  But the proofs about `proveAux` must use the same `Decidable` instance as the definition.
+  The classical instance makes this simple.
+  (`refineStep` in `ShexLean/Shex2017Schemas/Algorithm1.lean` has the same property.)
 
-`U` is a fixed finite superset of each `(n, L)` pair that the recursion
-can reach. The termination measure is the part of `U` that is not yet in
-`Hyp`.
+`U` is a fixed finite superset of each `(n, L)` pair that the recursion can reach.
+The termination measure is the part of `U` that is not yet in `Hyp`.
 -/
 
-/-- `dep(n, L)` intersected with the fixed universe `U`. This makes sure
-that each recursive call stays in `U`, for each `U`. Thus, the termination
-proof does not have to show again, at each step, that `depSet` stays in
-`U` because of closedness. -/
+/-- `dep(n, L)` intersected with the fixed universe `U`.
+This makes sure that each recursive call stays in `U`, for each `U`.
+Thus, the termination proof does not have to show again, at
+each step, that `depSet` stays in `U` because of closedness. -/
 noncomputable def proveAux (S : Schema) (G : Graph) (U : Finset Assoc) :
     RDFNode → Label → Finset Assoc → Bool
   | n, L, Hyp =>
@@ -356,11 +359,10 @@ noncomputable def proveAux (S : Schema) (G : Graph) (U : Finset Assoc) :
     )
 
 /-- `prove(n, L, [])`: Algorithm 2, run from an empty hypothesis stack.
-The universe `G.nodes ×ˢ S.labels` is exactly the universe of `MTyping`
-(`Schema.univTyping`).
+The universe `G.nodes ×ˢ S.labels` is exactly the universe of `MTyping` (`Schema.univTyping`).
 
-If `n ∉ G.nodes`, the base case "outside `U`" of `proveAux` returns
-`false`. This agrees with `(n, L) ∉ MTyping`, which is always true for
+If `n ∉ G.nodes`, the base case "outside `U`" of `proveAux` returns `false`.
+This agrees with `(n, L) ∉ MTyping`, which is always true for
 `n ∉ G.nodes`, because each correct typing is `⊆ G.nodes ×ˢ S.labels`.
 Thus, a node `n` from outside the graph needs no special case. -/
 noncomputable def prove (S : Schema) (G : Graph) (n : RDFNode) (L : Label) : Bool :=
@@ -368,16 +370,15 @@ noncomputable def prove (S : Schema) (G : Graph) (n : RDFNode) (L : Label) : Boo
 
 /-- `Dep`, with a name: the node-type associations that `proveAux` (lines
 3–5, 9–11) confirms when it processes `(n, L)`, after it pushes `Hyp`.
-With the name, later statements do not have to repeat this filter
-expression. If they repeat it, some `simp` or `rw` calls time out during
-elaboration. -/
+With the name, later statements do not have to repeat this filter expression.
+If they repeat it, some `simp` or `rw` calls time out during elaboration. -/
 noncomputable def proveDep (S : Schema) (G : Graph) (U : Finset Assoc) (n : RDFNode)
     (L : Label) (Hyp : Finset Assoc) : Finset Assoc :=
   ((depSet S G n L ∩ U) \ insert (n, L) Hyp).filter
     (fun p => proveAux S G U p.1 p.2 (insert (n, L) Hyp) = true)
 
-/-- One unfolding step of `proveAux`, in the base case. A pair that is
-already trusted gives `true` immediately. -/
+/-- One unfolding step of `proveAux`, in the base case.
+A pair that is already trusted gives `true` immediately. -/
 theorem proveAux_of_mem {S : Schema} {G : Graph} {U : Finset Assoc} {n : RDFNode}
     {L : Label} {Hyp : Finset Assoc} (h : (n, L) ∈ Hyp) :
     proveAux S G U n L Hyp = true := by
@@ -385,12 +386,11 @@ theorem proveAux_of_mem {S : Schema} {G : Graph} {U : Finset Assoc} {n : RDFNode
 
 /-- One unfolding step of `proveAux`, in the recursive case.
 
-The proof uses the auto-generated `proveAux.eq_1` and `simp`, not
-`unfold`. The reason is that `unfold` also unfolds the nested `proveAux`
-in the filter of `Dep`. This adds a second, syntactically different
-`Classical.propDecidable` instance, and later tactics cannot see through
-it. `rw` with the one-step equation lemma changes only the outermost
-occurrence. -/
+The proof uses the auto-generated `proveAux.eq_1` and `simp`, not `unfold`.
+The reason is that `unfold` also unfolds the nested `proveAux` in the filter of `Dep`.
+This adds a second, syntactically different `Classical.propDecidable`
+instance, and later tactics cannot see through it.
+`rw` with the one-step equation lemma changes only the outermost occurrence. -/
 theorem proveAux_unfold {S : Schema} {G : Graph} {U : Finset Assoc} {n : RDFNode}
     {L : Label} {Hyp : Finset Assoc} (h1 : (n, L) ∉ Hyp) (h2 : (n, L) ∈ U) :
     proveAux S G U n L Hyp = true ↔
@@ -398,13 +398,12 @@ theorem proveAux_unfold {S : Schema} {G : Graph} {U : Finset Assoc} {n : RDFNode
   rw [proveAux.eq_1]
   simp only [h1, h2, ite_eq_right, not_false_eq_true, not_true_eq_false, decide_eq_true_eq, proveDep]
 
-/-- The set of node-type associations that `proveAux` commits to when it
-computes `proveAux S G U n L Hyp`. This set is `{(n, L)}` and, transitively,
-each descendant that `Dep` confirms.
+/-- The set of node-type associations that `proveAux`
+commits to when it computes `proveAux S G U n L Hyp`.
+This set is `{(n, L)}` and, transitively, each descendant that `Dep` confirms.
 
-This definition follows the recursive structure and the termination
-measure of `proveAux`. The soundness part of Proposition 2 below uses it
-to make a witness typing. -/
+This definition follows the recursive structure and the termination measure of `proveAux`.
+The soundness part of Proposition 2 below uses it to make a witness typing. -/
 noncomputable def provSupp (S : Schema) (G : Graph) (U : Finset Assoc) :
     RDFNode → Label → Finset Assoc → Finset Assoc
   | n, L, Hyp =>
@@ -427,8 +426,8 @@ noncomputable def provSupp (S : Schema) (G : Graph) (U : Finset Assoc) :
       exact Finset.card_erase_lt_of_mem hmem
     )
 
-/-- One unfolding step of `provSupp` (recursive case). It agrees with
-`proveAux_unfold`. -/
+/-- One unfolding step of `provSupp` (recursive case).
+It agrees with `proveAux_unfold`. -/
 theorem provSupp_unfold {S : Schema} {G : Graph} {U : Finset Assoc} {n : RDFNode}
     {L : Label} {Hyp : Finset Assoc} (h1 : (n, L) ∉ Hyp) (h2 : (n, L) ∈ U) :
     provSupp S G U n L Hyp =
@@ -468,11 +467,12 @@ theorem provSupp_subset_of_mem_dep {S : Schema} {G : Graph} {U : Finset Assoc}
     (Finset.subset_biUnion_of_mem (fun p => provSupp S G U p.1 p.2 (insert (n, L) Hyp)) hp)
     Finset.subset_union_right
 
-/-- Each pair that `proveAux` or `provSupp` visits when it processes
-`(n, L)` has a stratum `≤ str.str L`. The labels of `depSet` are never
-above the stratum of the current label (`Schema.stratum_self_contained`).
-This bound stays true at each recursion depth. The proof uses only the
-structure, and does not need `outerIH`. -/
+/-- Each pair that `proveAux` or `provSupp` visits when
+it processes `(n, L)` has a stratum `≤ str.str L`.
+The labels of `depSet` are never above the stratum of
+the current label (`Schema.stratum_self_contained`).
+This bound stays true at each recursion depth.
+The proof uses only the structure, and does not need `outerIH`. -/
 theorem provSupp_stratum_le (S : Schema) (str : Strat S) (hClosed : S.Closed)
     (G : Graph) (U : Finset Assoc) :
     ∀ k : ℕ, ∀ Hyp : Finset Assoc, (U \ Hyp).card ≤ k →
@@ -519,18 +519,17 @@ theorem provSupp_stratum_le (S : Schema) (str : Strat S) (hClosed : S.Closed)
       simp at hq
 
 /-!
-Proposition 2: `prove` is correct. The proof sketch of Proposition 2 in
-the paper covers only termination, not correctness.
+Proposition 2: `prove` is correct.
+The proof sketch of Proposition 2 in the paper covers only termination, not correctness.
 
-`prove` is an algorithm of coinductive style. It trusts an ancestor on the
-call stack, and does not derive it again. Thus, to relate it to `MTyping`,
-the proof must make the stratification explicit, although `proveAux` never
-uses `str`.
+`prove` is an algorithm of coinductive style.
+It trusts an ancestor on the call stack, and does not derive it again.
+Thus, to relate it to `MTyping`, the proof must make the
+stratification explicit, although `proveAux` never uses `str`.
 -/
 
-/-- `typ j`, restricted to the labels of an earlier stratum (`i ≤ j`), is
-exactly `typ i`. The `typing_i` of Definition 4 never changes on the
-labels that an earlier step fixed. -/
+/-- `typ j`, restricted to the labels of an earlier stratum (`i ≤ j`), is exactly `typ i`.
+The `typing_i` of Definition 4 never changes on the labels that an earlier step fixed. -/
 theorem typ_restrictTo_stable (S : Schema) (str : Strat S)
     (hClosed : S.Closed) (G : Graph) {i j : ℕ} (hij : i ≤ j) :
     (typ S str.str G j).restrictTo (S.stratum str.str i) =
@@ -583,14 +582,14 @@ theorem typ_restrictTo_stable (S : Schema) (str : Strat S)
             rw [step]
         _ = typ S str.str G i := ih
 
-/-- The statement to prove at stratum `i`. Let `Hyp` be a set whose part at
-stratum `≤ i` is already known to be correct. Then `proveAux` (with this
-`Hyp`, on each `L` at exactly stratum `i`) decides `MTyping` membership
-correctly.
+/-- The statement to prove at stratum `i`.
+Let `Hyp` be a set whose part at stratum `≤ i` is already known to be correct.
+Then `proveAux` (with this `Hyp`, on each `L` at exactly
+stratum `i`) decides `MTyping` membership correctly.
 
-This statement is a named `Prop`. Thus, `completeness_step` and
-`soundness_step` below can each take "this is already true at each smaller
-stratum" as an explicit hypothesis. -/
+This statement is a named `Prop`.
+Thus, `completeness_step` and `soundness_step` below can each take "this
+is already true at each smaller stratum" as an explicit hypothesis. -/
 def MainProp (S : Schema) (str : Strat S) (G : Graph) (U : Finset Assoc)
     (i : ℕ) : Prop :=
   ∀ Hyp : Finset Assoc,
@@ -598,18 +597,17 @@ def MainProp (S : Schema) (str : Strat S) (G : Graph) (U : Finset Assoc)
     ∀ n L, str.str L = i → L ∈ S.labels →
       (proveAux S G U n L Hyp = true ↔ (n, L) ∈ typ S str.str G i)
 
-/-- Completeness, at a fixed stratum `i`: if `(n, L) ∈ typ i`, then
-`proveAux` confirms it.
+/-- Completeness, at a fixed stratum `i`: if `(n, L) ∈ typ i`, then `proveAux` confirms it.
 
-The proof is by induction on the well-founded measure only. There is no
-circularity. The recursive step gets `(n, L) ∈ typ i`, so to add `(n, L)`
-to `Hyp` needs no more justification.
+The proof is by induction on the well-founded measure only.
+There is no circularity.
+The recursive step gets `(n, L) ∈ typ i`, so to
+add `(n, L)` to `Hyp` needs no more justification.
 
-The proof uses `outerIH` only for negative dependencies (which are at a
-strictly lower stratum). There, the part of `Hyp` at stratum `< i` is
-always empty, because each pair pushed onto `Hyp` during stratum `i` is
-at stratum `≥ i`. Thus, it satisfies the hypothesis of `MainProp` at that
-lower stratum trivially. -/
+The proof uses `outerIH` only for negative dependencies (which are at a strictly lower stratum).
+There, the part of `Hyp` at stratum `< i` is always empty, because
+each pair pushed onto `Hyp` during stratum `i` is at stratum `≥ i`.
+Thus, it satisfies the hypothesis of `MainProp` at that lower stratum trivially. -/
 theorem completeness_step (S : Schema) (str : Strat S) (hClosed : S.Closed) (G : Graph)
     (U : Finset Assoc) (hU : G.nodes ×ˢ S.labels ⊆ U) (i : ℕ)
     (outerIH : ∀ j < i, MainProp S str G U j) :
@@ -636,10 +634,10 @@ theorem completeness_step (S : Schema) (str : Strat S) (hClosed : S.Closed) (G :
         exact Finset.mem_product.mpr ⟨(Finset.mem_product.mp h').1, hLlabels⟩
       have hSat : Satisfies G (typ S str.str G i) n (S.shapeDef L) :=
         (typ_correct S str hClosed G i).2 n L hmem
-      -- If a dependency target of L is already in `typ i`, `proveAux` confirms it:
-      -- for targets in the same stratum, with `innerIH` (the measure decreases),
-      -- for targets in a strictly lower stratum, with `outerIH` (stability moves
-      -- the invariant of `hHyp` down to that stratum).
+      -- If a dependency target of L is already in `typ i`, `proveAux` confirms
+      -- it: for targets in the same stratum, with `innerIH` (the measure
+      -- decreases), for targets in a strictly lower stratum, with `outerIH`
+      -- (stability moves the invariant of `hHyp` down to that stratum).
       have hrec : ∀ n' L', L' ∈ (S.shapeDef L).posDeps ∪ (S.shapeDef L).negDeps →
           n' ∈ objsOf (neigh G n) → (n', L') ∈ typ S str.str G i →
           proveAux S G U n' L' (insert (n, L) Hyp) = true := by
@@ -744,27 +742,27 @@ theorem completeness_step (S : Schema) (str : Strat S) (hClosed : S.Closed) (G :
   exact fun Hyp hHyp n L hLi hLlabels hmem =>
     key (U \ Hyp).card Hyp le_rfl hHyp n L hLi hLlabels hmem
 
-/-- Soundness, at a fixed stratum `i`: if `proveAux` confirms `(n, L)`,
-then `(n, L) ∈ typ i`. This direction is more difficult.
+/-- Soundness, at a fixed stratum `i`: if `proveAux` confirms `(n, L)`, then `(n, L) ∈ typ i`.
+This direction is more difficult.
 
-`proveAux` is an algorithm of coinductive style. It trusts an ancestor
-that is already on the call stack, so that it can accept positive cycles.
-To relate it to `MTyping`, which is a greatest fixed point, the proof needs
-an explicit witness. The witness is
-`T := typ i ∪ (the support of the full computation, restricted to the same
-stratum)`. The proof shows these facts:
+`proveAux` is an algorithm of coinductive style.
+It trusts an ancestor that is already on the call stack, so that it can accept positive cycles.
+To relate it to `MTyping`, which is a greatest fixed point, the proof needs an explicit witness.
+The witness is
+`T := typ i ∪ (the support of the full computation, restricted to the same stratum)`.
+The proof shows these facts:
 
 * `T` is a correct typing that agrees.
 * Thus, `T ⊆ typ i`, from `subset_maxAgree`.
 * `(n, L)` is in the support.
 
-A dependency chain of a descendant can go back to `(n, L)` (a positive
-cycle). To prevent circularity, the proof fixes `T` one time, from the
-outermost call. Then it passes `T` through the recursion with no change.
-(These are the arguments `T`, `hSTsubT` and `hTneg` of `key`, closed
-before the well-founded induction on `k` starts.) Thus, an element that
-is in progress is in `T` directly by hypothesis. Its `Satisfies` fact
-does not have to be proved first. -/
+A dependency chain of a descendant can go back to `(n, L)` (a positive cycle).
+To prevent circularity, the proof fixes `T` one time, from the outermost call.
+Then it passes `T` through the recursion with no change.
+(These are the arguments `T`, `hSTsubT` and `hTneg` of `key`,
+closed before the well-founded induction on `k` starts.)
+Thus, an element that is in progress is in `T` directly by hypothesis.
+Its `Satisfies` fact does not have to be proved first. -/
 theorem soundness_step (S : Schema) (str : Strat S) (hClosed : S.Closed) (G : Graph)
     (U : Finset Assoc) (hU : U = G.nodes ×ˢ S.labels) (i : ℕ)
     (outerIH : ∀ j < i, MainProp S str G U j) :
@@ -789,10 +787,10 @@ theorem soundness_step (S : Schema) (str : Strat S) (hClosed : S.Closed) (G : Gr
       have hnLT : (n, L) ∈ T :=
         hWisubT (Finset.mem_filter.mpr ⟨mem_provSupp_self hinHyp hinU, hLi⟩)
       have hLstratum : L ∈ S.stratum str.str i := Finset.mem_filter.mpr ⟨hLlabels, hLi.le⟩
-      -- If a dependency target of L is confirmed `true`, it is in `T`. It is
-      -- already known (`hHyp` or `hnLT`), or newly confirmed in the same stratum
-      -- (membership in `T` with `hWisubT`), or in a strictly lower stratum
-      -- (`outerIH`, stability and `hTneg`, as in `completeness_step`).
+      -- If a dependency target of L is confirmed `true`, it is in `T`.
+      -- It is already known (`hHyp` or `hnLT`), or newly confirmed in the same
+      -- stratum (membership in `T` with `hWisubT`), or in a strictly lower
+      -- stratum (`outerIH`, stability and `hTneg`, as in `completeness_step`).
       have hrecT : ∀ n' L', L' ∈ (S.shapeDef L).posDeps ∪ (S.shapeDef L).negDeps →
           n' ∈ objsOf (neigh G n) → proveAux S G U n' L' (insert (n, L) Hyp) = true →
           (n', L') ∈ T := by
@@ -1032,9 +1030,9 @@ theorem soundness_step (S : Schema) (str : Strat S) (hClosed : S.Closed) (G : Gr
     simp [hinHyp, hinU] at htrue
 
 /-- Combines `completeness_step` and `soundness_step` at each stratum.
-Thus, `MainProp` is true everywhere. At stratum `i`, `proveAux` decides
-`typ i` membership correctly, for each `Hyp` whose part at stratum `≤ i`
-is already known to be correct. -/
+Thus, `MainProp` is true everywhere.
+At stratum `i`, `proveAux` decides `typ i` membership correctly, for
+each `Hyp` whose part at stratum `≤ i` is already known to be correct. -/
 theorem mainThm (S : Schema) (str : Strat S) (hClosed : S.Closed) (G : Graph)
     (U : Finset Assoc) (hU : U = G.nodes ×ˢ S.labels) :
     ∀ i : ℕ, MainProp S str G U i := by
@@ -1046,9 +1044,9 @@ theorem mainThm (S : Schema) (str : Strat S) (hClosed : S.Closed) (G : Graph)
       completeness_step S str hClosed G U (le_of_eq hU.symm) i outerIH Hyp hHyp n L hLi
         hLlabels⟩
 
-/-- Proposition 2 (§4.2): Algorithm 2 (`prove`) decides
-`Typing(G, S, str)` (Definition 4). The proof sketch of the paper covers
-only termination. This file proves correctness. -/
+/-- Proposition 2 (§4.2): Algorithm 2 (`prove`) decides `Typing(G, S, str)` (Definition 4).
+The proof sketch of the paper covers only termination.
+This file proves correctness. -/
 theorem prove_correct (S : Schema) (str : Strat S) (hClosed : S.Closed) (G : Graph)
     (n : RDFNode) (L : Label) (hLlabels : L ∈ S.labels) :
     prove S G n L = true ↔ (n, L) ∈ MTyping G S str := by

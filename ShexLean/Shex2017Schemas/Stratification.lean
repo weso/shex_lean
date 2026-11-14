@@ -2,8 +2,8 @@ import ShexLean.Shex2017Schemas.Syntax
 import Mathlib.Data.Finset.Basic
 
 /-!
-The dependency graph and Definition 3 ("schema with stratified negation")
-of §3.2 in Boneva, Labra Gayo, Prud'hommeaux (2017).
+The dependency graph and Definition 3 ("schema with stratified
+negation") of §3.2 in Boneva, Labra Gayo, Prud'hommeaux (2017).
 
 > We now define ... stratified negation. The dependency graph of `S` is a
 > graph whose set of nodes is `L`, and that has two kinds of edges labelled
@@ -28,9 +28,11 @@ namespace ShexLean
 
 mutual
 
-/-- The shape labels that `S` refers to through a `TriplePattern`. The result has two parts:
+/-- The shape labels that `S` refers to through a `TriplePattern`.
+The result has two parts:
 
-* `.1`, the positive dependencies: the labels with no `NOT` on the path from `S` to the `TriplePattern`.
+* `.1`, the positive dependencies: the labels with no
+  `NOT` on the path from `S` to the `TriplePattern`.
 * `.2`, the negative dependencies: the labels with one or more `NOT` on that path.
 
 `underNot` tells if the recursion already went below a `NOT` before it got to `S`. -/
@@ -45,8 +47,9 @@ mutual
       let d1 := ShExpr.depsAux underNot S1
       let d2 := ShExpr.depsAux underNot S2
       (d1.1 ∪ d2.1, d1.2 ∪ d2.2)
-  -- Below a `NOT`, each reference further down is also below a `NOT`. Thus,
-  -- `underNot` is always set to `true`. It does not change between values.
+  -- Below a `NOT`, each reference further down is also below a `NOT`.
+  -- Thus, `underNot` is always set to `true`.
+  -- It does not change between values.
   | .not S        => ShExpr.depsAux true S
 
 /-- The same as `ShExpr.depsAux`, for a triple expression. -/
@@ -65,16 +68,20 @@ mutual
 
 end
 
-/-- The shape labels that `S` refers to through a `TriplePattern`, with no `NOT` on the path from `S`. -/
+/-- The shape labels that `S` refers to through a
+`TriplePattern`, with no `NOT` on the path from `S`. -/
 abbrev ShExpr.posDeps (S : ShExpr) : Finset Label := (ShExpr.depsAux false S).1
 
-/-- The shape labels that `S` refers to through a `TriplePattern`, with one or more `NOT` on the path from `S`. -/
+/-- The shape labels that `S` refers to through a
+`TriplePattern`, with one or more `NOT` on the path from `S`. -/
 abbrev ShExpr.negDeps (S : ShExpr) : Finset Label := (ShExpr.depsAux false S).2
 
-/-- The shape labels that `E` refers to through a `TriplePattern`, with no `NOT` on the path from `E`. -/
+/-- The shape labels that `E` refers to through a
+`TriplePattern`, with no `NOT` on the path from `E`. -/
 abbrev TExpr.posDeps (E : TExpr) : Finset Label := (TExpr.depsAux false E).1
 
-/-- The shape labels that `E` refers to through a `TriplePattern`, with one or more `NOT` on the path from `E`. -/
+/-- The shape labels that `E` refers to through a
+`TriplePattern`, with one or more `NOT` on the path from `E`. -/
 abbrev TExpr.negDeps (E : TExpr) : Finset Label := (TExpr.depsAux false E).2
 
 /-- `dep⁺(L1, L2)`: `L2` occurs in `def(L1)`, but never below a `NOT`. -/
@@ -83,9 +90,9 @@ abbrev DepPos (S : Schema) (L1 L2 : Label) : Prop := L2 ∈ (S.shapeDef L1).posD
 /-- `dep⁻(L1, L2)`: `L2` occurs in `def(L1)` below a `NOT`. -/
 abbrev DepNeg (S : Schema) (L1 L2 : Label) : Prop := L2 ∈ (S.shapeDef L1).negDeps
 
-/-- Definition 3 (schema with stratified negation): a stratification of
-`S` into `[1; k]`. A negative dependency makes the stratum strictly
-smaller. A positive dependency never makes the stratum larger. -/
+/-- Definition 3 (schema with stratified negation): a stratification of `S` into `[1; k]`.
+A negative dependency makes the stratum strictly smaller.
+A positive dependency never makes the stratum larger. -/
 structure Strat (S : Schema) where
   /-- The number of strata. -/
   k : ℕ
@@ -93,28 +100,28 @@ structure Strat (S : Schema) where
   str : Label → ℕ
   /-- `str` maps each label of `S` into `[1; k]`. -/
   mem_range : ∀ L ∈ S.labels, 1 ≤ str L ∧ str L ≤ k
-  /-- If `dep⁻(L1, L2)`, then `str(L1) > str(L2)`. This applies only when
-  `L1 ∈ S.labels`, as in the paper: "the dependency graph of `S` is a
-  graph whose set of nodes is `L`" (§3.2). The `dep⁻` and `dep⁺` edges
-  are only between declared labels. -/
+  /-- If `dep⁻(L1, L2)`, then `str(L1) > str(L2)`.
+  This applies only when `L1 ∈ S.labels`, as in the paper: "the
+  dependency graph of `S` is a graph whose set of nodes is `L`" (§3.2).
+  The `dep⁻` and `dep⁺` edges are only between declared labels. -/
   neg_strict : ∀ L1 ∈ S.labels, ∀ L2, DepNeg S L1 L2 → str L2 < str L1
-  /-- If `dep⁺(L1, L2)`, then `str(L1) ≥ str(L2)`. This applies only when
-  `L1 ∈ S.labels`, as for `neg_strict`. -/
+  /-- If `dep⁺(L1, L2)`, then `str(L1) ≥ str(L2)`.
+  This applies only when `L1 ∈ S.labels`, as for `neg_strict`. -/
   pos_le : ∀ L1 ∈ S.labels, ∀ L2, DepPos S L1 L2 → str L2 ≤ str L1
 
 /-- `S` is a schema with stratified negation if it has a stratification (Definition 3). -/
 def Schema.StratNeg (S : Schema) : Prop := Nonempty (Strat S)
 
 /-!
-Two facts that connect `depsAux true` to `posDeps` and `negDeps`
-(`depsAux false`). The proofs use `depsAux true` directly below a `NOT`.
+Two facts that connect `depsAux true` to `posDeps` and `negDeps` (`depsAux false`).
+The proofs use `depsAux true` directly below a `NOT`.
 `posDeps` and `negDeps` are the top-level view.
 
-When the recursion goes below a `NOT`, the positive and the negative
-dependencies go into one negative set.
-`ShexLean/Shex2017Schemas/Proposition1.lean` needs these facts. With
-them, it can do recursion below many nested `NOT`s, and it does not have
-to prove this fact again each time.
+When the recursion goes below a `NOT`, the positive and
+the negative dependencies go into one negative set.
+`ShexLean/Shex2017Schemas/Proposition1.lean` needs these facts.
+With them, it can do recursion below many nested `NOT`s,
+and it does not have to prove this fact again each time.
 -/
 
 mutual
@@ -155,13 +162,13 @@ theorem TExpr.depsAux_true : ∀ (E : TExpr),
 
 end
 
-/-- Below a `NOT`, all dependencies go to `negDeps`. Nothing below
-`.not S` is a positive dependency. -/
+/-- Below a `NOT`, all dependencies go to `negDeps`.
+Nothing below `.not S` is a positive dependency. -/
 theorem ShExpr.not_posDeps (S : ShExpr) : (ShExpr.not S).posDeps = ∅ := by
   simp only [ShExpr.posDeps, ShExpr.depsAux, ShExpr.depsAux_true S]
 
-/-- Below a `NOT`, the positive and the negative dependencies of `S` go
-together into the negative dependencies of `.not S`. -/
+/-- Below a `NOT`, the positive and the negative dependencies
+of `S` go together into the negative dependencies of `.not S`. -/
 theorem ShExpr.not_negDeps (S : ShExpr) :
     (ShExpr.not S).negDeps = S.posDeps ∪ S.negDeps := by
   simp only [ShExpr.negDeps, ShExpr.depsAux, ShExpr.depsAux_true S]
@@ -170,10 +177,10 @@ theorem ShExpr.not_negDeps (S : ShExpr) :
 dependencies are the union of the dependencies of the two operands.
 `depsAux` processes these four constructors in the same way.
 
-These lemmas have names, so that the `agree` and `stratMono` proofs of
-`Proposition1.lean` can restrict `hagree` or `hle` to a sub-expression with
-`rw` or `Finset.subset_union_left`. Without these lemmas, each call site
-must unfold `depsAux` again. -/
+These lemmas have names, so that the `agree` and `stratMono`
+proofs of `Proposition1.lean` can restrict `hagree` or `hle`
+to a sub-expression with `rw` or `Finset.subset_union_left`.
+Without these lemmas, each call site must unfold `depsAux` again. -/
 
 theorem ShExpr.and_posDeps (S1 S2 : ShExpr) : (S1.and S2).posDeps = S1.posDeps ∪ S2.posDeps := rfl
 theorem ShExpr.and_negDeps (S1 S2 : ShExpr) : (S1.and S2).negDeps = S1.negDeps ∪ S2.negDeps := rfl
@@ -188,11 +195,10 @@ theorem TExpr.eachOf_posDeps (E1 E2 : TExpr) :
 theorem TExpr.eachOf_negDeps (E1 E2 : TExpr) :
     (E1.eachOf E2).negDeps = E1.negDeps ∪ E2.negDeps := rfl
 
-/-! Two forms derived from the lemmas above. `Proposition1.lean` needs
-exactly these forms at each binary constructor:
+/-! Two forms derived from the lemmas above.
+`Proposition1.lean` needs exactly these forms at each binary constructor:
 
-* `agree` restricts `hagree` from a full set `posDeps ∪ negDeps` to the
-  set of one operand.
+* `agree` restricts `hagree` from a full set `posDeps ∪ negDeps` to the set of one operand.
 * `stratMono` restricts `hle : _.negDeps ⊆ Lo` in the same way. -/
 
 theorem ShExpr.and_deps_subset_left (S1 S2 : ShExpr) :

@@ -3,24 +3,24 @@ import ShexLean.Shex2017Schemas.Render
 import Example
 
 /-!
-Example 7 from Boneva, Labra Gayo, Prud'hommeaux (2017) (§4.2): the full
-execution trace of `prove(ex:n1, <L1>, [])` (Algorithm 2) on `G₃` and `S₃`
-from Example 6 (`Example6_prove_motivation.lean`).
+Example 7 from Boneva, Labra Gayo, Prud'hommeaux (2017) (§4.2): the
+full execution trace of `prove(ex:n1, <L1>, [])` (Algorithm 2) on
+`G₃` and `S₃` from Example 6 (`Example6_prove_motivation.lean`).
 
-* The recursive calls `prove(ex:n2,<L2>,_)` and `prove(ex:n3,<L3>,_)`
-  return `true`.
-* The recursive calls `prove(ex:n2,<Str>,_)`, `prove(4,<L2>,_)` and
-  `prove(4,<Str>,_)` return `false`.
+* The recursive calls `prove(ex:n2,<L2>,_)` and `prove(ex:n3,<L3>,_)` return `true`.
+* The recursive calls `prove(ex:n2,<Str>,_)`,
+  `prove(4,<L2>,_)` and `prove(4,<Str>,_)` return `false`.
 
-`Algorithm2.lean` formalizes `prove` and proves Proposition 2. But that
-`prove` decides `⊢` with classical logic. Thus, it does not run. The
-declarative semantics `⊢` and `⊨` (Fig. 2) are decidable
-(`ShexLean.Shex2017Schemas.Decidable`). The trace of Example 7 is only
-about the result of the declarative semantics for each call.
+`Algorithm2.lean` formalizes `prove` and proves Proposition 2.
+But that `prove` decides `⊢` with classical logic.
+Thus, it does not run.
+The declarative semantics `⊢` and `⊨` (Fig. 2) are
+decidable (`ShexLean.Shex2017Schemas.Decidable`).
+The trace of Example 7 is only about the result of the declarative semantics for each call.
 
-This file gives the three `false` results of the trace as theorems. The
-`Example` below computes all six results, also the `true` results, with
-`renderDecide`. Nobody copied them from the paper by hand.
+This file gives the three `false` results of the trace as theorems.
+The `Example` below computes all six results, also the `true` results, with `renderDecide`.
+Nobody copied them from the paper by hand.
 -/
 
 namespace Examples.ProveAlgorithmExample
@@ -30,15 +30,15 @@ open Examples.StratificationExample (S₃)
 
 /-! ### The negative facts of the trace of Example 7
 
-These are the recursive calls of `prove(ex:n1, <L1>, [])` that return
-`false`:
+These are the recursive calls of `prove(ex:n1, <L1>, [])` that return `false`:
 
-* `ex:n2` never has the type `<Str>`. It is an IRI, and the value set of
-  `<Str>` contains only a placeholder string literal. (Refer to the module
-  docstring of `StratificationExample`.)
-* `4` has neither shape. It is not the placeholder string literal. Also,
-  it is a literal, so it has no outgoing triples. Thus, it can never match
-  the neighbourhood description `ex:c @<L3>` of `<L2>`. -/
+* `ex:n2` never has the type `<Str>`.
+  It is an IRI, and the value set of `<Str>` contains only a placeholder string literal.
+  (Refer to the module docstring of `StratificationExample`.)
+* `4` has neither shape.
+  It is not the placeholder string literal.
+  Also, it is a literal, so it has no outgoing triples.
+  Thus, it can never match the neighbourhood description `ex:c @<L3>` of `<L2>`. -/
 
 theorem n2_not_Str : ¬ Satisfies G₃ t n2 (S₃.shapeDef Str) := by
   rw [shapeDef_Str]
@@ -67,13 +67,12 @@ open Examples.StratificationExample (S₃)
 open ShexLean (Schema.render Graph.render renderDecide satisfies_decidable)
 
 /-- Each line of the trace below is `renderDecide (satisfies_decidable …)`.
-This is a `Decidable` computation of `Satisfies` at the node and the shape
-of each call. It is not a value copied from the paper. -/
+This is a `Decidable` computation of `Satisfies` at the node and the shape of each call.
+It is not a value copied from the paper. -/
 private def sat (n : ShexLean.RDFNode) (L : ShexLean.Label) : String :=
   renderDecide (satisfies_decidable G₃ t n (S₃.shapeDef L))
 
-/-- Example 7: the execution trace of `prove(ex:n1, <L1>, [])` on `G₃` and
-`S₃`. -/
+/-- Example 7: the execution trace of `prove(ex:n1, <L1>, [])` on `G₃` and `S₃`. -/
 def proveAlgorithmTrace : Example where
   name := "schemas2017-example7-trace"
   summary := "Execution trace of prove(ex:n1,<L1>,[]) (Algorithm 2) on G₃/S₃."

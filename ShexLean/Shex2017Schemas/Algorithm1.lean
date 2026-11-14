@@ -2,8 +2,8 @@ import ShexLean.Common.FixedPoint
 import ShexLean.Shex2017Schemas.Lemma2
 
 /-!
-§4.1: Algorithm 1 (`refine`), and the proof that it is correct. The
-algorithm computes `Typing(G, S, str)` (Definition 4).
+§4.1: Algorithm 1 (`refine`), and the proof that it is correct.
+The algorithm computes `Typing(G, S, str)` (Definition 4).
 
 ```
 Input: G: a graph, S = (L, def): a schema, str a stratification for S
@@ -28,28 +28,28 @@ Output: Typing(G, S, str)
 
 Each iteration `i` of the outer loop computes a greatest fixed point:
 
-1. Start from the largest possible typing for `S_i`. This typing contains
-   all the pairs that are already fixed for `S_{i-1}`, and all the
-   possible pairs for the new labels.
+1. Start from the largest possible typing for `S_i`.
+   This typing contains all the pairs that are already fixed for
+   `S_{i-1}`, and all the possible pairs for the new labels.
 2. Remove each pair that does not satisfy `⊢` at that time.
 3. Do step 2 again until no more pairs go out.
 
 This file does these steps:
 
-* It formalizes the computation of one stratum (`refineStep` and
-  `refine1`).
-* It proves that this computation is equal to `maxAgree`. (`maxAgree` is
-  the construction of one stratum in Definition 4.)
-* It connects the result for all `k` strata. The final result is
-  `Algorithm1 G S str = MTyping G S str`.
+* It formalizes the computation of one stratum (`refineStep` and `refine1`).
+* It proves that this computation is equal to `maxAgree`.
+  (`maxAgree` is the construction of one stratum in Definition 4.)
+* It connects the result for all `k` strata.
+  The final result is `Algorithm1 G S str = MTyping G S str`.
 -/
 
 namespace ShexLean
 
-/-- The initial guess for the stratum `S'`, relative to the result
-`(Lo, T)` of the previous stratum. On `Lo`, it keeps the pairs of `T`
-exactly. For the other labels of `S'`, it adds all the possible node-type
-associations. These are lines 3–5 of `refine`. -/
+/-- The initial guess for the stratum `S'`, relative
+to the result `(Lo, T)` of the previous stratum.
+On `Lo`, it keeps the pairs of `T` exactly.
+For the other labels of `S'`, it adds all the possible node-type associations.
+These are lines 3–5 of `refine`. -/
 def bigStart (S' : Schema) (G : Graph) (Lo : Finset Label) (T : Typing) : Typing :=
   (S'.univTyping G).filter (fun p => p.2 ∈ Lo → p ∈ T)
 
@@ -66,11 +66,11 @@ theorem bigStart_restrictTo {S' : Schema} {G : Graph} {Lo : Finset Label} {T : T
   · rintro ⟨⟨-, h⟩, hL⟩; exact ⟨h hL, hL⟩
   · rintro ⟨h, hL⟩; exact ⟨⟨hTsub h, fun _ => h⟩, hL⟩
 
-/-- One refinement pass: remove each node-type association that has a
-label outside `Lo` and does not satisfy `⊢` at that time. These are lines
-9–12 of `refine` (one full pass of the loop body). The `while changing` of
-the paper does this pass again until nothing changes. Thus, it iterates
-the pass to a fixed point. -/
+/-- One refinement pass: remove each node-type association that
+has a label outside `Lo` and does not satisfy `⊢` at that time.
+These are lines 9–12 of `refine` (one full pass of the loop body).
+The `while changing` of the paper does this pass again until nothing changes.
+Thus, it iterates the pass to a fixed point. -/
 noncomputable def refineStep (S' : Schema) (G : Graph) (Lo : Finset Label)
     (current : Typing) : Typing :=
   haveI := Classical.decPred (fun p : Assoc => p.2 ∈ Lo ∨ Satisfies G current p.1 (S'.shapeDef p.2))
@@ -97,9 +97,9 @@ theorem refineStep_restrictTo {S' : Schema} {G : Graph} {Lo : Finset Label} {cur
   · rintro ⟨⟨hmem, -⟩, hL⟩; exact ⟨hmem, hL⟩
   · rintro ⟨hmem, hL⟩; exact ⟨⟨hmem, Or.inl hL⟩, hL⟩
 
-/-- The computation of one stratum in `refine`. Start from `bigStart`, and
-iterate `refineStep` to a fixed point. `Finset.card` iterations are always
-sufficient (`Finset.decreasing_iterate_fixed`). -/
+/-- The computation of one stratum in `refine`.
+Start from `bigStart`, and iterate `refineStep` to a fixed point.
+`Finset.card` iterations are always sufficient (`Finset.decreasing_iterate_fixed`). -/
 noncomputable def refine1 (S' : Schema) (G : Graph) (Lo : Finset Label) (T : Typing) : Typing :=
   (refineStep S' G Lo)^[(bigStart S' G Lo T).card] (bigStart S' G Lo T)
 
@@ -133,17 +133,16 @@ theorem refine1_restrictTo {S' : Schema} {G : Graph} {Lo : Finset Label} {T : Ty
 
 /-!
 The core lemma: `refine1` computes the same result as `maxAgree`.
-(`Proposition1.lean` and `Lemma2.lean` make the same object with
-`maxAgree`, as the union of all correct typings, not with iterative
-refinement.)
+(`Proposition1.lean` and `Lemma2.lean` make the same object with `maxAgree`,
+as the union of all correct typings, not with iterative refinement.)
 -/
 
 /-- `refine1 S' G Lo T` is correct for `S'`:
 
-* On `Lo`, it gets the correctness of `T` (with `Satisfies.agree`), because
-  `Lo` is self-contained.
-* Outside `Lo`, the correctness follows directly, because `refine1` is a
-  fixed point of `refineStep`. -/
+* On `Lo`, it gets the correctness of `T` (with
+  `Satisfies.agree`), because `Lo` is self-contained.
+* Outside `Lo`, the correctness follows directly,
+  because `refine1` is a fixed point of `refineStep`. -/
 theorem refine1_correct {S : Schema} {G : Graph} {Ls' Lo : Finset Label} {T : Typing}
     (hLoLs' : Lo ⊆ Ls') (hLoself : ∀ L ∈ Lo, (S.shapeDef L).posDeps ∪ (S.shapeDef L).negDeps ⊆ Lo)
     (hTsub : T ⊆ (S.restrictLabels Lo).univTyping G)
@@ -169,10 +168,10 @@ theorem refine1_correct {S : Schema} {G : Graph} {Ls' Lo : Finset Label} {T : Ty
     rcases mem_refineStep.mp hmem with ⟨-, hcase⟩
     exact hcase.resolve_left hL
 
-/-- `maxAgree` is also a fixed point of `refineStep`. Its correctness gives
-the "keep" side of the filter directly. Also, `maxAgree` starts below
-`bigStart`. Thus, it stays below each iterate, and also below
-`refine1`. -/
+/-- `maxAgree` is also a fixed point of `refineStep`.
+Its correctness gives the "keep" side of the filter directly.
+Also, `maxAgree` starts below `bigStart`.
+Thus, it stays below each iterate, and also below `refine1`. -/
 theorem maxAgree_subset_refine1 {S : Schema} {G : Graph} {Ls' Lo : Finset Label}
     {T : Typing} (hLoLs' : Lo ⊆ Ls')
     (hTsub : T ⊆ (S.restrictLabels Lo).univTyping G)
@@ -237,8 +236,7 @@ theorem maxAgree_subset_refine1 {S : Schema} {G : Graph} {Ls' Lo : Finset Label}
           exact hMcorrect p.1 p.2 hp
   exact hind (bigStart (S.restrictLabels Ls') G Lo T).card
 
-/-- The core lemma for one stratum: `refine1` computes exactly
-`maxAgree`. -/
+/-- The core lemma for one stratum: `refine1` computes exactly `maxAgree`. -/
 theorem refine1_eq_maxAgree {S : Schema} {G : Graph} {Ls' Lo : Finset Label}
     {T : Typing} (hLoLs' : Lo ⊆ Ls')
     (hLoself : ∀ L ∈ Lo, (S.shapeDef L).posDeps ∪ (S.shapeDef L).negDeps ⊆ Lo)
@@ -254,19 +252,20 @@ theorem refine1_eq_maxAgree {S : Schema} {G : Graph} {Ls' Lo : Finset Label}
   · exact maxAgree_subset_refine1 hLoLs' hTsub hTcorrect hLsneg
 
 /-!
-Connection across the strata. `refineAlg` follows the recursion of `typ`
-exactly. It uses `refine1` (the real procedure) in place of `maxAgree`
-(the declarative description "union of correct typings"). The core lemma
-above shows that the two are equal at each step. Thus, they are equal at
-all steps, and also at `str.k`.
+Connection across the strata.
+`refineAlg` follows the recursion of `typ` exactly.
+It uses `refine1` (the real procedure) in place of `maxAgree`
+(the declarative description "union of correct typings").
+The core lemma above shows that the two are equal at each step.
+Thus, they are equal at all steps, and also at `str.k`.
 -/
 
 /-- The recursion over the strata that Algorithm 1 does:
 
 * `refineAlg S str G 0 := ∅`.
-* Each next stratum starts from `bigStart` (lines 3–5 of `refine`) and
-  refines down to a fixed point (lines 6–12). The result of the previous
-  stratum is the "frozen" part of the initial guess. -/
+* Each next stratum starts from `bigStart` (lines 3–5 of
+  `refine`) and refines down to a fixed point (lines 6–12).
+  The result of the previous stratum is the "frozen" part of the initial guess. -/
 noncomputable def refineAlg (S : Schema) (str : Label → ℕ) (G : Graph) : ℕ → Typing
   | 0 => ∅
   | i + 1 => refine1 (S.stratRestrict str (i + 1)) G (S.stratum str i) (refineAlg S str G i)
@@ -275,25 +274,25 @@ noncomputable def refineAlg (S : Schema) (str : Label → ℕ) (G : Graph) : ℕ
 noncomputable def Algorithm1 (G : Graph) (S : Schema) (str : Strat S) : Typing :=
   refineAlg S str.str G str.k
 
-/-- `S.stratRestrict str i` and `S.restrictLabels (S.stratum str i)` make
-the same schema (the same `labels` and the same `shapeDef`). Thus, the
-core lemma `refine1_eq_maxAgree` applies directly to `stratRestrict`,
-although its statement uses the more general `restrictLabels`. -/
+/-- `S.stratRestrict str i` and `S.restrictLabels (S.stratum str i)`
+make the same schema (the same `labels` and the same `shapeDef`).
+Thus, the core lemma `refine1_eq_maxAgree`
+applies directly to `stratRestrict`, although its
+statement uses the more general `restrictLabels`. -/
 theorem Schema.stratRestrict_eq_restrictLabels (S : Schema) (str : Label → ℕ) (i : ℕ) :
     S.stratRestrict str i = S.restrictLabels (S.stratum str i) := rfl
 
-/-- The recursion of Algorithm 1 over the strata computes exactly the same
-result as `typ` (the declarative construction of Definition 4), at each
-stratum.
+/-- The recursion of Algorithm 1 over the strata computes
+exactly the same result as `typ` (the declarative
+construction of Definition 4), at each stratum.
 
-The proof applies the core lemma (`refine1_eq_maxAgree`) to each stratum of
-`S`. The hypotheses for each step come from these results:
+The proof applies the core lemma (`refine1_eq_maxAgree`) to each stratum of `S`.
+The hypotheses for each step come from these results:
 
 * `Schema.stratum_mono` (`Lo ⊆ Ls'`).
 * `Schema.stratum_self_contained` (`hLoself`).
 * `typ_correct` (`hTsub` and `hTcorrect`).
-* `neg_strict` of the stratification (`hLsneg`, as in the inductive step
-  of `typ_correct`). -/
+* `neg_strict` of the stratification (`hLsneg`, as in the inductive step of `typ_correct`). -/
 theorem refineAlg_eq_typ (S : Schema) (str : Strat S) (hClosed : S.Closed)
     (G : Graph) : ∀ i : ℕ, refineAlg S str.str G i = typ S str.str G i
   | 0 => rfl
@@ -325,9 +324,10 @@ theorem refineAlg_eq_typ (S : Schema) (str : Strat S) (hClosed : S.Closed)
       rw [ih, Schema.stratRestrict_eq_restrictLabels]
       exact refine1_eq_maxAgree hLoLs' hLoself hTsub hTcorrect hLsneg
 
-/-- Algorithm 1 is correct. The refinement procedure, run for all the
-`str.k` strata, computes exactly `Typing(G, S, str)` (Definition 4). §4.1
-of the paper says this. -/
+/-- Algorithm 1 is correct.
+The refinement procedure, run for all the `str.k` strata,
+computes exactly `Typing(G, S, str)` (Definition 4).
+§4.1 of the paper says this. -/
 theorem algorithm1_correct (G : Graph) (S : Schema) (str : Strat S)
     (hClosed : S.Closed) : Algorithm1 G S str = MTyping G S str :=
   refineAlg_eq_typ S str hClosed G str.k

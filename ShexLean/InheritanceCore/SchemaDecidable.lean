@@ -2,13 +2,13 @@ import ShexLean.Common.FixedPoint
 import ShexLean.InheritanceCore.Schema
 
 /-!
-The ancestor sets `Schema.anc` and `Schema.ancSet` of rule 18, made
-computable. They use `Classical.decPred`, because reachability over a
-general relation is not decidable. With `Schema.XClosed` (the edges of
-`H_S` stay in `X`, as Definition 3 assumes), `ancReach` and `ancSetReach`
-compute the same sets by a fixed-point iteration. The `Decidable.lean`
-files of `ShexLean/Shex2025Inheritance/` and
-`ShexLean/Shex2026InheritanceDisjunction/` use them.
+The ancestor sets `Schema.anc` and `Schema.ancSet` of rule 18, made computable.
+They use `Classical.decPred`, because reachability over a general relation is not decidable.
+With `Schema.XClosed` (the edges of `H_S` stay in `X`,
+as Definition 3 assumes), `ancReach` and `ancSetReach`
+compute the same sets by a fixed-point iteration.
+The `Decidable.lean` files of `ShexLean/Shex2025Inheritance/`
+and `ShexLean/Shex2026InheritanceDisjunction/` use them.
 -/
 
 namespace ShexLean.InheritanceCore
@@ -17,15 +17,14 @@ variable {E : Type} [ShapeSyntax E]
 
 /-! ### `Schema.anc` and `ancSet`, made computable -/
 
-/-- The assumption of the paper for Definition 3: the edges of `H_S` never
-go out of `X`. Thus, `H_S` is a graph on the vertex set `X`. It is not a
-larger graph that is filtered after. -/
+/-- The assumption of the paper for Definition 3: the edges of `H_S` never go out of `X`.
+Thus, `H_S` is a graph on the vertex set `X`.
+It is not a larger graph that is filtered after. -/
 def Schema.XClosed (S : Schema E) : Prop :=
   ∀ x ∈ S.X, ShapeSyntax.extendsTargets (S.shapeDef x) ⊆ S.X
 
 /-- One step of the closure of the ancestor set: add each `X` vertex that
-is not yet in the current set and that one more `extEdge` step can
-reach. -/
+is not yet in the current set and that one more `extEdge` step can reach. -/
 private def ancStep (S : Schema E) (t : Finset Label) : Finset Label :=
   t ∪ S.X.filter (fun y' => ∃ y ∈ t, S.extEdge y y')
 
@@ -58,22 +57,21 @@ private theorem start_subset_iterate {S : Schema E} {x : Label}
       rw [Function.iterate_succ_apply']
       exact ih.trans (subset_ancStep _ (iterate_subset_X hx n))
 
-/-- The computable ancestor set: iterate `ancStep` from `{x}` until it is
-stable. This occurs in `(S.X \ {x}).card` steps or fewer
-(`Finset.increasing_iterate_fixed`). -/
+/-- The computable ancestor set: iterate `ancStep` from `{x}` until it is stable.
+This occurs in `(S.X \ {x}).card` steps or fewer (`Finset.increasing_iterate_fixed`). -/
 def ancReach (S : Schema E) (x : Label) : Finset Label :=
   (ancStep S)^[(S.X \ {x}).card] {x}
 
-/-- Each `extEdge` step out of a point of `S.X` that is reachable from `x`
-stays in `S.X`. (This is the result of `XClosed`, applied along a path.) -/
+/-- Each `extEdge` step out of a point of `S.X` that is reachable from `x` stays in `S.X`.
+(This is the result of `XClosed`, applied along a path.) -/
 private theorem reflTransGen_mem_X {S : Schema E} (hXC : S.XClosed) {x : Label} (hx : x ∈ S.X)
     {x' : Label} (h : Relation.ReflTransGen S.extEdge x x') : x' ∈ S.X := by
   induction h with
   | refl => exact hx
   | tail _ hbc ih => exact hXC _ ih hbc
 
-/-- The forward direction: each point that the iteration reaches is really
-reachable with `extEdge`. -/
+/-- The forward direction: each point that the
+iteration reaches is really reachable with `extEdge`. -/
 private theorem reflTransGen_of_mem_iterate {S : Schema E} {x : Label} :
     ∀ n (x' : Label), x' ∈ (ancStep S)^[n] {x} → Relation.ReflTransGen S.extEdge x x' := by
   intro n
@@ -89,9 +87,10 @@ private theorem reflTransGen_of_mem_iterate {S : Schema E} {x : Label} :
       · exact ih x' hx'
       · exact Relation.ReflTransGen.tail (ih y hy) hedge
 
-/-- The reverse direction: with `XClosed`, each point that is reachable
-with `extEdge` is in `ancReach`. (`ancReach` is exactly the fixed point of
-`ancStep` from `{x}`, by `Finset.increasing_iterate_fixed`.) -/
+/-- The reverse direction: with `XClosed`, each point
+that is reachable with `extEdge` is in `ancReach`.
+(`ancReach` is exactly the fixed point of `ancStep`
+from `{x}`, by `Finset.increasing_iterate_fixed`.) -/
 private theorem mem_ancReach_of_reflTransGen {S : Schema E} (hXC : S.XClosed) {x : Label}
     (hx : x ∈ S.X) {x' : Label} (h : Relation.ReflTransGen S.extEdge x x') :
     x' ∈ ancReach S x := by
@@ -107,8 +106,8 @@ private theorem mem_ancReach_of_reflTransGen {S : Schema E} (hXC : S.XClosed) {x
       rw [← hFPfix]
       exact mem_ancStep_iff.mpr (Or.inr ⟨hXC b hbX hbc, b, ih, hbc⟩)
 
-/-- `ancReach` is exactly `Schema.anc`, with the natural closure
-hypothesis that Definition 3 already assumes. -/
+/-- `ancReach` is exactly `Schema.anc`, with the natural
+closure hypothesis that Definition 3 already assumes. -/
 theorem ancReach_eq_anc {S : Schema E} (hXC : S.XClosed) {x : Label} (hx : x ∈ S.X) :
     ancReach S x = S.anc x := by
   ext x'
@@ -132,8 +131,8 @@ theorem ancSetReach_eq_ancSet {S : Schema E} (hXC : S.XClosed) {xs : Finset Labe
   exact ancReach_eq_anc hXC (hxs hx)
 
 /-- The ancestors of a point in `ancSetReach S xs` stay in this set.
-Because of this, it is sound to use `Mx` only at points of
-`ancSetReach S xs` in the `restr(x)` clause of rule 18
+Because of this, it is sound to use `Mx` only at points
+of `ancSetReach S xs` in the `restr(x)` clause of rule 18
 (`(S.anc x).biUnion Mx`, where `x` is in the same set). -/
 theorem ancReach_subset_ancSetReach {S : Schema E} (hXC : S.XClosed) {xs : Finset Label}
     (hxs : xs ⊆ S.X) {x : Label} (hx : x ∈ ancSetReach S xs) :
@@ -154,8 +153,8 @@ theorem ancReach_subset_ancSetReach {S : Schema E} (hXC : S.XClosed) {xs : Finse
   simp only [Schema.anc, Finset.mem_filter]
   exact ⟨hxX', hrtg0.trans hrtg1⟩
 
-/-- Each point of `ancSetReach S xs` is also in `S.X`. (It is a union of
-images of `S.anc`, and `S.anc _ ⊆ S.X` always, by construction.) -/
+/-- Each point of `ancSetReach S xs` is also in `S.X`.
+(It is a union of images of `S.anc`, and `S.anc _ ⊆ S.X` always, by construction.) -/
 theorem ancSetReach_subset_X {S : Schema E} (hXC : S.XClosed) {xs : Finset Label}
     (hxs : xs ⊆ S.X) : ancSetReach S xs ⊆ S.X := by
   intro x hx

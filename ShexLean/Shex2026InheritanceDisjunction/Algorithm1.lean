@@ -2,19 +2,20 @@ import ShexLean.Shex2026InheritanceDisjunction.Proposition1
 import ShexLean.InheritanceCore.Algorithm1
 
 /-!
-§5: the validation and refinement algorithm (`refine`) for the 2026 exploration,
-and the proof that it is correct. The algorithm and the proof are generic.
-They are in `ShexLean/InheritanceCore/Algorithm1.lean`, and apply to this
-development through the instance of `InheritanceSemantics` in
-`Proposition1.lean`.
+§5: the validation and refinement algorithm (`refine`) for
+the 2026 exploration, and the proof that it is correct.
+The algorithm and the proof are generic.
+They are in `ShexLean/InheritanceCore/Algorithm1.lean`,
+and apply to this development through the instance of
+`InheritanceSemantics` in `Proposition1.lean`.
 -/
 
 namespace ShexLean.InheritanceDisjunction
 
 open ShexLean.InheritanceCore hiding Schema
 
-/-- **Algorithm 1 is correct.** It computes exactly `τ_max(S,σ,G)`
-(Definition 8). -/
+/-- **Algorithm 1 is correct.**
+It computes exactly `τ_max(S,σ,G)` (Definition 8). -/
 theorem algorithm1_correct (G : Graph) (S : Schema) (strat : Stratification S)
     (hAcyclic : S.ExtAcyclic) (hWFExtra : S.WellFormedExtra)
     (hNEF : S.NotIsExtendsFree) (hDClosed : S.DClosed) :

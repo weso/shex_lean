@@ -1,8 +1,8 @@
 import Proof
 
 /-!
-The list of proofs that the `shex_lean` executable can `list` and `run`,
-together with the worked examples (`Examples.Registry`).
+The list of proofs that the `shex_lean` executable can `list` and
+`run`, together with the worked examples (`Examples.Registry`).
 
 Each name starts with a prefix that identifies the paper:
 
@@ -15,8 +15,7 @@ Each summary is one line.
 
 namespace Examples
 
-/-- All the proofs that the `list` and `run` commands of the executable
-can use. -/
+/-- All the proofs that the `list` and `run` commands of the executable can use. -/
 def proofs : List ProofItem :=
   [ { name := "schemas2017-lemma1"
       summary := "A schema with no negation has a maximal correct typing (§3.3)."

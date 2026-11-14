@@ -17,24 +17,23 @@ def bigFuel1 : ℕ := 4
 
  ShEx:
 
-:x2 { :p ["v2"] }
-:x1 extends @:x2 { :p [ "v1" ] }
+:x2 { :p ["v2"] } :x1 extends @:x2 { :p [ "v1" ] }
 
 Data:
 
 :ok1 :p "v1"; :p "v2" .
 
-`x2` must also have the `.extends` form. (The second bullet of
-Definition 2: each label in `X` needs `def(x) = extends X h [and u]`.) The
-reason is that `x2` comes after the `extends` of `x1`, and rule 18 of
-Table 3 reads `ext-te(x2)` from `(S.shapeDef "x2").extTe`. This has a
-meaning only for that form.
+`x2` must also have the `.extends` form.
+(The second bullet of Definition 2: each label in `X` needs `def(x) = extends X h [and u]`.)
+The reason is that `x2` comes after the `extends` of `x1`, and rule
+18 of Table 3 reads `ext-te(x2)` from `(S.shapeDef "x2").extTe`.
+This has a meaning only for that form.
 
-`x2` is a leaf of the hierarchy (`extends ∅`, with nothing more to
-inherit). Its constraint is only `p @c2`. We removed the
-`{p xsd:string} AND {p ["v2"]}` of the original draft, because `c2` (the
-literal `"v2"`) already implies `cStr` (any string). Thus, the
-conjunction was redundant. -/
+`x2` is a leaf of the hierarchy (`extends ∅`, with nothing more to inherit).
+Its constraint is only `p @c2`.
+We removed the `{p xsd:string} AND {p ["v2"]}` of the original draft,
+because `c2` (the literal `"v2"`) already implies `cStr` (any string).
+Thus, the conjunction was redundant. -/
 
 def cStr : NodeConstraint
   | .lit (.str _) => True
@@ -85,8 +84,9 @@ def τ : Typing :=
     ((b: RDFNode), "x1")
   }
 
-/-- `a, τ ⊨ def(x1)`. `def(x1) = extends x2 ⟨p @c1⟩`. Thus,
-`anc({x2}) = {x2}` (`x2` is a leaf, `extends ∅`), and
+/-- `a, τ ⊨ def(x1)`.
+`def(x1) = extends x2 ⟨p @c1⟩`.
+Thus, `anc({x2}) = {x2}` (`x2` is a leaf, `extends ∅`), and
 `neigh_G(a) = {(a,p,v1), (a,p,v2)}` splits into two parts:
 
 * `M' = {(a,p,v1)}`, which satisfies the `⟨p @c1⟩` of `x1`.
@@ -138,13 +138,14 @@ theorem a_satisfies_x1 :
     simp [ShapeExpr.restrOf] at hu
 
 
-/-- `b, τ ⊭ def(x1)`. `neigh_G(b) = {(b,p,v1), (b,p,v3)}`.
+/-- `b, τ ⊭ def(x1)`.
+`neigh_G(b) = {(b,p,v1), (b,p,v3)}`.
 
-The `v1` triple is the only triple with the type `c1`. Thus, the
-`⟨p @c1⟩` of `x1` (`extra := none`) can take only this triple. This
-forces the `v3` triple into `Mx "x2"`, which must satisfy
-`ext-te(x2) = p @c2` (rule 18). But `v3` also does not have the type `c2`
-in `τ` (it has no type). Thus, no partition of `neigh_G(b)` works. -/
+The `v1` triple is the only triple with the type `c1`.
+Thus, the `⟨p @c1⟩` of `x1` (`extra := none`) can take only this triple.
+This forces the `v3` triple into `Mx "x2"`, which must satisfy `ext-te(x2) = p @c2` (rule 18).
+But `v3` also does not have the type `c2` in `τ` (it has no type).
+Thus, no partition of `neigh_G(b)` works. -/
 theorem b_doesnt_satisfy_x1 :
     ¬ SatisfiesFuel bigFuel1 S G τ b (S.shapeDef "x1") := by
   have hx1shape : S.shapeDef "x1" = .extends {"x2"} ⟨false, none, .tc "p" "c1"⟩ := rfl

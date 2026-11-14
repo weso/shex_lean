@@ -9,31 +9,33 @@ Lemma 1 (§4.2) of the 2025 paper "Shape Expressions with Inheritance":
 > every schema `S = (Y, X, def, A)`, graph `G`, node `n` of `G`, typing `τ`
 > of `G` by `S`, and label `z ∈ Y ∪ X`.
 
-`Semantics.lean` avoids the termination problem with an explicit argument
-`Fuel : ℕ` in `SatisfiesMFuel`. The fuel counts the depth of nested
-`restr(x)` evaluations in rule 18. At the lowest layer, each `restr(x)` is
-`False`. Thus, the Lean function is total by construction, but it is not
-yet the real relation of the paper (which does not depend on fuel).
+`Semantics.lean` avoids the termination problem with
+an explicit argument `Fuel : ℕ` in `SatisfiesMFuel`.
+The fuel counts the depth of nested `restr(x)` evaluations in rule 18.
+At the lowest layer, each `restr(x)` is `False`.
+Thus, the Lean function is total by construction, but it is not yet
+the real relation of the paper (which does not depend on fuel).
 
-This file shows that, for a well-defined schema, the result stops
-depending on `Fuel` when `Fuel` is sufficiently large. Thus, the
-approximation bounded by fuel becomes equal to the real relation.
+This file shows that, for a well-defined schema, the result
+stops depending on `Fuel` when `Fuel` is sufficiently large.
+Thus, the approximation bounded by fuel becomes equal to the real relation.
 
-The termination argument of the paper (the proof sketch of Lemma 1) is one
-sentence: the tree of recursive calls is finite "due to the acyclic nature
-of the extension hierarchy". A precise proof needs two items:
+The termination argument of the paper (the proof sketch of
+Lemma 1) is one sentence: the tree of recursive calls is
+finite "due to the acyclic nature of the extension hierarchy".
+A precise proof needs two items:
 
-* A rank function on labels that is a witness of the acyclicity of `H_S`
-  (`Schema.extRank` below).
-* A proof that `extRank` bounds the depth of nested `restr(x)` evaluations
-  (`Schema.RankOk` and `Schema.rankOk_any`).
+* A rank function on labels that is a witness of
+  the acyclicity of `H_S` (`Schema.extRank` below).
+* A proof that `extRank` bounds the depth of nested `restr(x)`
+  evaluations (`Schema.RankOk` and `Schema.rankOk_any`).
 
-The proof has the same generality as Lemma 1 of the paper. It assumes only
-`ExtAcyclic` (Definition 6). (`WellFormedX` is not necessary: for a label
-that is not well-formed, `ext-te(x)` and `restr(x)` are junk values that
-do not recurse.) It puts no restriction on the locations of `extends`
-nodes. An `extends` node can also be inside a restriction `u`
-(`extends X h and u`).
+The proof has the same generality as Lemma 1 of the paper.
+It assumes only `ExtAcyclic` (Definition 6).
+(`WellFormedX` is not necessary: for a label that is not well-formed,
+`ext-te(x)` and `restr(x)` are junk values that do not recurse.)
+It puts no restriction on the locations of `extends` nodes.
+An `extends` node can also be inside a restriction `u` (`extends X h and u`).
 -/
 
 namespace ShexLean.Inheritance
@@ -42,8 +44,7 @@ open ShexLean.InheritanceCore hiding Schema
 
 /-! ### The base case: `NoExtends` shapes need no schema lookups -/
 
-/-- `s` contains no `.extends` node at any location (also not nested in
-`or`, `and` or `not`). -/
+/-- `s` contains no `.extends` node at any location (also not nested in `or`, `and` or `not`). -/
 def ShapeExpr.NoExtends : ShapeExpr → Prop
   | .constraint _ => True
   | .ofShape _ => True
@@ -54,24 +55,25 @@ def ShapeExpr.NoExtends : ShapeExpr → Prop
 
 /-! ### The rank witness
 
-`Schema.RankOk S r s` says that `r` layers of `SatisfiesMAt` are
-sufficient for `s`. It is made in the same way as `SatisfiesMFuel`:
+`Schema.RankOk S r s` says that `r` layers of `SatisfiesMAt` are sufficient for `s`.
+It is made in the same way as `SatisfiesMFuel`:
 
-* `RankOkAt S lowerOk s` checks one layer. For each `.extends` node of
-  `s`, the restriction `restr(x)` of each ancestor `x` must satisfy
-  `lowerOk`.
+* `RankOkAt S lowerOk s` checks one layer.
+  For each `.extends` node of `s`, the restriction
+  `restr(x)` of each ancestor `x` must satisfy `lowerOk`.
 * `RankOk S 0 := RankOkAt S (fun _ => False)`: no `restr(x)` is reachable.
 * `RankOk S (r+1) := RankOkAt S (RankOk S r)`.
 
-`Schema.rankOk_shapeDef` is the acyclicity argument. For `x ∈ S.X`,
-`RankOk S (extRank x) (S.shapeDef x)` is true, by strong induction on
-`extRank x`. The reason is that each extends target reachable from the
-definition of `x` has a strictly smaller rank (`extRank_lt_of_extEdge`).
+`Schema.rankOk_shapeDef` is the acyclicity argument.
+For `x ∈ S.X`, `RankOk S (extRank x) (S.shapeDef x)` is true, by strong induction on `extRank x`.
+The reason is that each extends target reachable from the definition
+of `x` has a strictly smaller rank (`extRank_lt_of_extEdge`).
 
-`Schema.rankOk_any` extends this result to each `ShapeExpr`, with one
-global rank bound, `S.X.sup S.extRank + 1`. -/
+`Schema.rankOk_any` extends this result to each `ShapeExpr`,
+with one global rank bound, `S.X.sup S.extRank + 1`. -/
 
-/-- One layer of the rank witness. Refer to the section docstring. -/
+/-- One layer of the rank witness.
+Refer to the section docstring. -/
 def Schema.RankOkAt (S : Schema) (lowerOk : ShapeExpr → Prop) : ShapeExpr → Prop
   | .constraint _ => True
   | .ofShape _ => True
@@ -106,8 +108,8 @@ theorem Schema.RankOkAt.mono_pred (S : Schema) {P Q : ShapeExpr → Prop} (hPQ :
   | and s1 s2 ih1 ih2 => intro hs; exact ⟨ih1 hs.1, ih2 hs.2⟩
   | not s ih => intro hs; exact ih hs
 
-/-- `RankOk` is monotone. If a rank is sufficient for `s`, each higher
-rank is also sufficient. -/
+/-- `RankOk` is monotone.
+If a rank is sufficient for `s`, each higher rank is also sufficient. -/
 theorem Schema.RankOk.mono {S : Schema} : ∀ r s, Schema.RankOk S r s → Schema.RankOk S (r + 1) s := by
   intro r
   induction r with
@@ -120,8 +122,8 @@ theorem Schema.RankOk.mono_le {S : Schema} {r r' : ℕ} (h : r ≤ r') :
   | refl => intro s hs; exact hs
   | step _ ih => intro s hs; exact Schema.RankOk.mono _ s (ih s hs)
 
-/-- From the `RankOk` of the definition of `x` (`extends xs h [and u]`),
-get the `RankOk` of its restriction `u`. -/
+/-- From the `RankOk` of the definition of `x`
+(`extends xs h [and u]`), get the `RankOk` of its restriction `u`. -/
 theorem Schema.RankOk_restrOf {S : Schema} {x : Label} (hx : x ∈ S.X)
     {u : ShapeExpr} (hu : (S.shapeDef x).restrOf = some u)
     (hRank : Schema.RankOk S (S.extRank x) (S.shapeDef x)) :
@@ -132,14 +134,13 @@ theorem Schema.RankOk_restrOf {S : Schema} {x : Label} (hx : x ∈ S.X)
   rw [hm] at hRank ⊢
   exact hRank.2
 
-/-- Let `e` be a `ShapeExpr` whose direct `.extends` targets are all real
-edges of `H_S` out of `x`. Let each `x' ∈ S.X` with a strictly smaller
-rank already have `RankOk` of its definition. Then `e` is `RankOkAt` at
-rank `m := extRank x - 1`.
+/-- Let `e` be a `ShapeExpr` whose direct `.extends`
+targets are all real edges of `H_S` out of `x`.
+Let each `x' ∈ S.X` with a strictly smaller rank already have `RankOk` of its definition.
+Then `e` is `RankOkAt` at rank `m := extRank x - 1`.
 
-With `e := S.shapeDef x`, this closes the induction in
-`rankOk_shapeDef`. The statement is for a general `e`, because the
-restriction `u` of `x` needs the same fact. -/
+With `e := S.shapeDef x`, this closes the induction in `rankOk_shapeDef`.
+The statement is for a general `e`, because the restriction `u` of `x` needs the same fact. -/
 theorem Schema.RankOkAt_of_edges {S : Schema} (hAcyclic : S.ExtAcyclic)
     {x : Label} (hx : x ∈ S.X)
     (IH : ∀ x' ∈ S.X, S.extRank x' < S.extRank x → Schema.RankOk S (S.extRank x') (S.shapeDef x'))
@@ -175,11 +176,11 @@ theorem Schema.RankOkAt_of_edges {S : Schema} (hAcyclic : S.ExtAcyclic)
       intro hst
       exact ih (fun z hz => hst z (by simpa [ShapeExpr.extendsTargets] using hz))
 
-/-- For `x ∈ S.X`, the definition of `x` is `RankOk` at exactly the rank
-of `x`. The proof is by strong induction on `extRank x`, with
-`RankOkAt_of_edges`. This is the precise form of the termination argument
-of Lemma 1. `ExtAcyclic` alone is sufficient. There is no other
-restriction on the locations of `extends` nodes. -/
+/-- For `x ∈ S.X`, the definition of `x` is `RankOk` at exactly the rank of `x`.
+The proof is by strong induction on `extRank x`, with `RankOkAt_of_edges`.
+This is the precise form of the termination argument of Lemma 1.
+`ExtAcyclic` alone is sufficient.
+There is no other restriction on the locations of `extends` nodes. -/
 theorem Schema.rankOk_shapeDef {S : Schema} (hAcyclic : S.ExtAcyclic) :
     ∀ x ∈ S.X, Schema.RankOk S (S.extRank x) (S.shapeDef x) := by
   have key : ∀ n x, x ∈ S.X → S.extRank x = n → Schema.RankOk S (S.extRank x) (S.shapeDef x) := by
@@ -200,8 +201,8 @@ theorem Schema.rankOk_shapeDef {S : Schema} (hAcyclic : S.ExtAcyclic) :
   exact key (S.extRank x) x hx rfl
 
 /-- Extends `rankOk_shapeDef` from one `x ∈ S.X` to each `ShapeExpr`
-(also to `S.shapeDef z` for a simple label `z` that is not in `S.X`). The
-global bound `S.X.sup S.extRank + 1` is always sufficient. -/
+(also to `S.shapeDef z` for a simple label `z` that is not in `S.X`).
+The global bound `S.X.sup S.extRank + 1` is always sufficient. -/
 theorem Schema.rankOk_any {S : Schema} (hAcyclic : S.ExtAcyclic) :
     ∀ e : ShapeExpr, Schema.RankOk S (S.X.sup S.extRank + 1) e := by
   intro e
@@ -226,9 +227,9 @@ theorem Schema.rankOk_fuelBound {S : Schema} (hAcyclic : S.ExtAcyclic) {r : ℕ}
 
 /-! ### The stabilization argument -/
 
-/-- One layer of Table 3 depends on `evalRestr` only through its values on the
-restrictions that the rank witness covers. The proof is a plain
-structural induction. -/
+/-- One layer of Table 3 depends on `evalRestr` only through
+its values on the restrictions that the rank witness covers.
+The proof is a plain structural induction. -/
 theorem SatisfiesMAt_congr_evalRestr {S : Schema} {τ : Typing}
     {evalRestr1 evalRestr2 : Finset Triple → ShapeExpr → Prop} {P : ShapeExpr → Prop}
     (hr : ∀ u, P u → ∀ M, evalRestr1 M u ↔ evalRestr2 M u) :
@@ -246,9 +247,10 @@ theorem SatisfiesMAt_congr_evalRestr {S : Schema} {τ : Typing}
   | and s1 s2 ih1 ih2 => intro hRank M; exact and_congr (ih1 hRank.1 M) (ih2 hRank.2 M)
   | not s ih => intro hRank M; exact not_congr (ih hRank M)
 
-/-- `SatisfiesMFuel` is stable above a sufficient rank: if `RankOk S r s`,
-each fuel `r' ≥ r` gives the same result. The proof is an induction on
-`r`. Each step is `SatisfiesMAt_congr_evalRestr`. -/
+/-- `SatisfiesMFuel` is stable above a sufficient rank: if
+`RankOk S r s`, each fuel `r' ≥ r` gives the same result.
+The proof is an induction on `r`.
+Each step is `SatisfiesMAt_congr_evalRestr`. -/
 theorem stableM {S : Schema} {τ : Typing} :
     ∀ r s, Schema.RankOk S r s → ∀ r', r ≤ r' → ∀ M,
       SatisfiesMFuel r S τ M s ↔ SatisfiesMFuel r' S τ M s := by
@@ -264,9 +266,10 @@ theorem stableM {S : Schema} {τ : Typing} :
       obtain ⟨r', rfl⟩ : ∃ k, r' = k + 1 := ⟨r' - 1, by omega⟩
       exact SatisfiesMAt_congr_evalRestr (fun u hu M => ih u hu r' (by omega) M) s hs M
 
-/-- Table 2 is structural. Thus, if two Table-3 evaluators agree on the
-leaves (`.ofShape` and `.extends`) that satisfy a predicate `Q`, and `Q`
-goes down through `or`, `and` and `not`, the two results agree. -/
+/-- Table 2 is structural.
+Thus, if two Table-3 evaluators agree on the leaves (`.ofShape`
+and `.extends`) that satisfy a predicate `Q`, and `Q` goes down
+through `or`, `and` and `not`, the two results agree. -/
 theorem SatisfiesAt_congr {G : Graph} {satM1 satM2 : Finset Triple → ShapeExpr → Prop}
     {n : RDFNode} (Q : ShapeExpr → Prop)
     (hor : ∀ {a b}, Q (.or a b) → Q a ∧ Q b) (hand : ∀ {a b}, Q (.and a b) → Q a ∧ Q b)
@@ -291,28 +294,30 @@ theorem stableFuel {S : Schema} (hAcyclic : S.ExtAcyclic) {r r' : ℕ}
 
 /-! ### Packaging: the real `Satisfies`, and Lemma 1 -/
 
-/-- The real `n, τ ⊨_S s` (with no `Fuel` parameter). It evaluates at the
-fuel `S.fuelBound`, which is sufficient. By `stableFuel`, each larger fuel
-gives the same result. `lemma1` below records this. -/
+/-- The real `n, τ ⊨_S s` (with no `Fuel` parameter).
+It evaluates at the fuel `S.fuelBound`, which is sufficient.
+By `stableFuel`, each larger fuel gives the same result.
+`lemma1` below records this. -/
 noncomputable def Satisfies (S : Schema) (G : Graph) (τ : Typing) (n : RDFNode)
     (s : ShapeExpr) : Prop :=
   SatisfiesFuel S.fuelBound S G τ n s
 
-/-- Lemma 1. Let `S` be a schema that satisfies `ExtAcyclic`. (This is the
-hypothesis of the paper. There is no restriction on the locations of
-`extends` nodes.) Then the evaluation of `n, τ ⊨_S def(z)` terminates.
-Each sufficiently large `Fuel` gives the same answer as `Satisfies`, for
-each node `n`, typing `τ` and label `z`. -/
+/-- Lemma 1.
+Let `S` be a schema that satisfies `ExtAcyclic`.
+(This is the hypothesis of the paper.
+There is no restriction on the locations of `extends` nodes.)
+Then the evaluation of `n, τ ⊨_S def(z)` terminates.
+Each sufficiently large `Fuel` gives the same answer as
+`Satisfies`, for each node `n`, typing `τ` and label `z`. -/
 theorem lemma1 {S : Schema} (hAcyclic : S.ExtAcyclic)
     (G : Graph) (τ : Typing) (n : RDFNode) (z : Label) (fuel : ℕ)
     (hfuel : S.fuelBound ≤ fuel) :
     SatisfiesFuel fuel S G τ n (S.shapeDef z) ↔ Satisfies S G τ n (S.shapeDef z) :=
   (stableFuel hAcyclic le_rfl hfuel G τ n (S.shapeDef z)).symm
 
-/-- `Satisfies` at the computable fuel `S.X.card + 1`
-(`Schema.fuelBound_le_card`). The decision procedures of `Decidable.lean`
-decide `SatisfiesFuel` at an explicit fuel. With this lemma, they decide
-`Satisfies`. -/
+/-- `Satisfies` at the computable fuel `S.X.card + 1` (`Schema.fuelBound_le_card`).
+The decision procedures of `Decidable.lean` decide `SatisfiesFuel` at an explicit fuel.
+With this lemma, they decide `Satisfies`. -/
 theorem satisfies_iff_satisfiesFuel_card {S : Schema} (hAcyclic : S.ExtAcyclic)
     (G : Graph) (τ : Typing) (n : RDFNode) (s : ShapeExpr) :
     Satisfies S G τ n s ↔ SatisfiesFuel (S.X.card + 1) S G τ n s :=

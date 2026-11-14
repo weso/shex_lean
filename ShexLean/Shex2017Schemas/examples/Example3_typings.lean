@@ -3,21 +3,20 @@ import ShexLean.Shex2017Schemas.Render
 import Example
 
 /-!
-Example 3 from Boneva, Labra Gayo, Prud'hommeaux (2017): the four typings
-of `G₂` by `S₁` from Example 2 (`ShexLean.Examples`,
-`Example2_issue_tracker.lean`), and which of them are correct
-(Definition 2).
+Example 3 from Boneva, Labra Gayo, Prud'hommeaux (2017): the four typings of
+`G₂` by `S₁` from Example 2 (`ShexLean.Examples`,
+`Example2_issue_tracker.lean`), and which of them are correct (Definition 2).
 
-Example 3 gives four typings of `G₂` by `S₁`, and tells which typings are
-correct:
+Example 3 gives four typings of `G₂` by `S₁`, and tells which typings are correct:
 
-* `typing_1` is correct. (This is the claim of Example 2. We prove it in
-  that file, because the other typings of Example 3 use all of its
-  definitions.)
-* `typing_2` is correct. The paper says this explicitly: "typing_1 and
-  typing_2 are correct".
-* `typing_3` is not correct. It gives the type `<IssueSh>` to `<i1>` and
-  `<i2>`, but it does not give the type `<Str>` to `"Ren"` and `"Bob"`.
+* `typing_1` is correct.
+  (This is the claim of Example 2.
+  We prove it in that file, because the other typings of Example 3 use all of its definitions.)
+* `typing_2` is correct.
+  The paper says this explicitly: "typing_1 and typing_2 are correct".
+* `typing_3` is not correct.
+  It gives the type `<IssueSh>` to `<i1>` and `<i2>`, but
+  it does not give the type `<Str>` to `"Ren"` and `"Bob"`.
   The definition of `<IssueSh>` needs this.
 * `typing_4` is correct.
 -/
@@ -26,11 +25,11 @@ namespace ShexLean.Examples
 
 open ShexLean
 
-/-- `typing_2` from Example 3: only the two string literals have a
-type. -/
+/-- `typing_2` from Example 3: only the two string literals have a type. -/
 def typing2 : Typing := {(ren, Str), (bob, Str)}
 
-/-- `typing_2` is correct. It gives only `<Str>`, and the satisfaction of
+/-- `typing_2` is correct.
+It gives only `<Str>`, and the satisfaction of
 `strDef` (`se-value-descr1`) does not depend on `t`. -/
 theorem typing2_correct : S₁.CorrTyping G₂ typing2 := by
   intro n L hmem
@@ -39,15 +38,15 @@ theorem typing2_correct : S₁.CorrTyping G₂ typing2 := by
   · exact satisfies_str ren (Or.inl rfl)
   · exact satisfies_str bob (Or.inr rfl)
 
-/-- `typing_3` from Example 3: `<i1>` and `<i2>` have the type
-`<IssueSh>`, but no string literal has the type `<Str>`. -/
+/-- `typing_3` from Example 3: `<i1>` and `<i2>` have the
+type `<IssueSh>`, but no string literal has the type `<Str>`. -/
 def typing3 : Typing := {((i1 : RDFNode), IssueSh), ((i2 : RDFNode), IssueSh)}
 
 /-- `typing_3` is *not* correct (the counterexample of Example 3).
-`(<i1>, <IssueSh>) ∈ typing_3`. But `<i1>` has only one `is:reportedBy`
-neighbour, `"Ren"`, and `"Ren"` does not have the type `<Str>` in
-`typing_3`. Thus, the `is:reportedBy @<Str>` part of the each-of in
-`issueShDef` can never match. -/
+`(<i1>, <IssueSh>) ∈ typing_3`.
+But `<i1>` has only one `is:reportedBy` neighbour, `"Ren"`,
+and `"Ren"` does not have the type `<Str>` in `typing_3`.
+Thus, the `is:reportedBy @<Str>` part of the each-of in `issueShDef` can never match. -/
 theorem typing3_not_correct : ¬ S₁.CorrTyping G₂ typing3 := by
   intro hcorrect
   have hsat : Satisfies G₂ typing3 i1 issueShDef :=
@@ -76,8 +75,8 @@ theorem typing3_not_correct : ¬ S₁.CorrTyping G₂ typing3 := by
     rw [hpredEq2] at hpredEq
     exact absurd hpredEq (by decide)
 
-/-- `typing_4` from Example 3: the empty typing. It is trivially
-correct. -/
+/-- `typing_4` from Example 3: the empty typing.
+It is trivially correct. -/
 def typing4 : Typing := ∅
 
 theorem typing4_correct : S₁.CorrTyping G₂ typing4 := by
@@ -91,11 +90,10 @@ namespace Examples
 open ShexLean.Examples (S₁ G₂ typing1 typing2 typing3 typing4)
 open ShexLean (Schema.render Graph.render Typing.render renderDecide corrTyping_decidable)
 
-/-- The four typings of `G₂` by `S₁` from Example 3, and their
-correctness. `schemaText` and `graphText` are generated from `S₁` and
-`G₂`. Each of the four correctness results in `typingText` is a
-`Decidable` computation. They are not a "(correct)" or a "(not correct)"
-that a person typed by hand. -/
+/-- The four typings of `G₂` by `S₁` from Example 3, and their correctness.
+`schemaText` and `graphText` are generated from `S₁` and `G₂`.
+Each of the four correctness results in `typingText` is a `Decidable` computation.
+They are not a "(correct)" or a "(not correct)" that a person typed by hand. -/
 def exampleTypings : Example where
   name := "schemas2017-example3-typings"
   summary := "Four typings of G₂ by S₁ from Ex. 2, and which are correct (Def. 2)."

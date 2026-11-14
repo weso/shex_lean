@@ -21,9 +21,9 @@ The list of examples that the `shex_lean` executable can `list` and `run`.
 
 namespace Examples
 
-/-- All the examples that the `list` and `run` commands of the executable
-can use. The order is by paper, and then by example number. Thus, the
-`list` output uses the same numbers as the papers. -/
+/-- All the examples that the `list` and `run` commands of the executable can use.
+The order is by paper, and then by example number.
+Thus, the `list` output uses the same numbers as the papers. -/
 def all : List Example :=
   [introduction, issueTracker, exampleTypings, negationRecursion, stratificationExample,
     proveAlgorithmMotivation, proveAlgorithmTrace,

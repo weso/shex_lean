@@ -5,12 +5,12 @@ import Mathlib.Tactic.FinCases
 import Example
 
 /-!
-Example 1 from the 2025 paper "Shape Expressions with Inheritance" (§3,
-Def. 2): the full motivating schema `S₁` of §2. This is the
-multiple-inheritance chain of `ColouredCircle`: `Coord`, `Attribute`,
-`Colour`, the abstract `Figure`, `Circle`, `Radius`, `ColouredFigure` and
-`ColouredCircle` (Fig. 1). It is applied to the graph of Fig. 2 (nodes
-`f1`, `f2`, `a1`, `a2`, `a3`, `c1` and `c2`).
+Example 1 from the 2025 paper "Shape Expressions with
+Inheritance" (§3, Def. 2): the full motivating schema `S₁` of §2.
+This is the multiple-inheritance chain of `ColouredCircle`:
+`Coord`, `Attribute`, `Colour`, the abstract `Figure`, `Circle`,
+`Radius`, `ColouredFigure` and `ColouredCircle` (Fig. 1).
+It is applied to the graph of Fig. 2 (nodes `f1`, `f2`, `a1`, `a2`, `a3`, `c1` and `c2`).
 
 This file proves the main claims of the paper:
 
@@ -19,18 +19,17 @@ This file proves the main claims of the paper:
 * `a2` satisfies `Colour`.
 * `a1` and `a3` satisfy `Radius`.
 * `f2` is a `Circle`.
-* The multiple-inheritance case: `f1` is a `ColouredCircle`. (The `H_S`
-  of Fig. 3 gives `anc({Circle,ColouredFigure}) = {Circle, Figure,
-  ColouredFigure}`. `Figure` is counted one time, although it comes
-  through the two parents.)
+* The multiple-inheritance case: `f1` is a `ColouredCircle`.
+  (The `H_S` of Fig. 3 gives `anc({Circle,ColouredFigure}) = {Circle, Figure, ColouredFigure}`.
+  `Figure` is counted one time, although it comes through the two parents.)
 
-This file proves the ancestor facts of the extension hierarchy `H_{S1}`
-(`hancCircle`, `hancColouredFigure` and `hancSetCircleColouredFigure`;
-the subject of Example 2, Fig. 3). They are not in `Example2_...lean`,
-because `f1_satisfies_ColouredCircle` (the main claim of this file) needs
+This file proves the ancestor facts of the extension hierarchy
+`H_{S1}` (`hancCircle`, `hancColouredFigure` and
+`hancSetCircleColouredFigure`; the subject of Example 2, Fig. 3).
+They are not in `Example2_...lean`, because
+`f1_satisfies_ColouredCircle` (the main claim of this file) needs
 `hancSetCircleColouredFigure` to state its rule-18 partition.
-`Example2_extension_hierarchy.lean` imports this file and only shows the
-same facts again.
+`Example2_extension_hierarchy.lean` imports this file and only shows the same facts again.
 -/
 
 namespace ShexLean.Inheritance
@@ -40,8 +39,7 @@ open ShexLean.InheritanceCore hiding Schema
 /-- A fuel bound that is sufficient for all the proofs in this file. -/
 def bigFuel1 : ℕ := 10
 
-/-- `T_float`, approximated as "any integer literal", because `Literal`
-has no float constructor. -/
+/-- `T_float`, approximated as "any integer literal", because `Literal` has no float constructor. -/
 def cFloat : NodeConstraint
   | .lit (.int _) => True
   | _ => False
@@ -64,12 +62,12 @@ def cRadiusLit : NodeConstraint
 /-- The schema of Fig. 1:
 
 * `Coord` is a `Y` label (a plain shape, with no `extends`).
-* `Attribute`, `Colour`, `Figure`, `Circle`, `Radius`, `ColouredFigure`
-  and `ColouredCircle` are `X` labels.
+* `Attribute`, `Colour`, `Figure`, `Circle`, `Radius`,
+  `ColouredFigure` and `ColouredCircle` are `X` labels.
 * `Figure` is `abstract` (`A = {Figure}`).
 
-`A` has no role in the fuel-bounded `Satisfies*` relations. Only the
-correct-typing definition (Definition 4, `Schema.CorrectTyping`) uses it.
+`A` has no role in the fuel-bounded `Satisfies*` relations.
+Only the correct-typing definition (Definition 4, `Schema.CorrectTyping`) uses it.
 This file does not use that definition. -/
 def S_fig1 : Schema where
   Y := {"Coord", "T_str", "T_any", "T_float", "T_colour", "T_radius"}
@@ -107,14 +105,15 @@ def c2 : Subject := .iri "c2"
 def f1 : Subject := .iri "f1"
 def f2 : Subject := .iri "f2"
 
-/-- The graph of Fig. 2. The coordinates and the `value`s are approximated
-as integer literals: `10.1` of `a1` ↦ `10`, `7.2` of `a3` ↦ `7`,
-`(2.0, 4.0)` of `c1` ↦ `(2, 4)`, and `(0.2, -2.3)` of `c2` ↦ `(0, -2)`.
+/-- The graph of Fig. 2.
+The coordinates and the `value`s are approximated as integer
+literals: `10.1` of `a1` ↦ `10`, `7.2` of `a3` ↦ `7`, `(2.0, 4.0)`
+of `c1` ↦ `(2, 4)`, and `(0.2, -2.3)` of `c2` ↦ `(0, -2)`.
 
-`f1` has two `attr` triples (to `a1`, the `Radius`, and to `a2`, the
-`Colour`) and one `coord` triple. These are the three parts that the
-rule-18 partition of `ColouredCircle` over
-`{Circle, Figure, ColouredFigure}` needs. -/
+`f1` has two `attr` triples (to `a1`, the `Radius`,
+and to `a2`, the `Colour`) and one `coord` triple.
+These are the three parts that the rule-18 partition of
+`ColouredCircle` over `{Circle, Figure, ColouredFigure}` needs. -/
 def G_fig1 : Graph :=
   { ⟨a1, "name", .lit (.str "radius")⟩, ⟨a1, "value", .lit (.int 10)⟩,
     ⟨a2, "scope", .lit (.str "fill")⟩, ⟨a2, "name", .lit (.str "colour")⟩,
@@ -125,16 +124,16 @@ def G_fig1 : Graph :=
     ⟨f1, "attr", a1⟩, ⟨f1, "attr", a2⟩, ⟨f1, "coord", c1⟩,
     ⟨f2, "attr", a3⟩, ⟨f2, "coord", c2⟩ }
 
-/-- A typing that is the witness of each `p @z` lookup that the claims
-below need. The `τ.has` lookups are given directly. This file does not
-prove that `τ` is a correct typing (Definition 4, which connects `τ` to
-the truth values of the node constraints).
+/-- A typing that is the witness of each `p @z` lookup that the claims below need.
+The `τ.has` lookups are given directly.
+This file does not prove that `τ` is a correct typing (Definition
+4, which connects `τ` to the truth values of the node constraints).
 
-It contains the literal triple-constraint types of the nodes (`T_str`,
-`T_any`, `T_float`, `T_"colour"` and `T_"radius"`). It also contains, for
-`a1`, `a2`, `a3`, `c1` and `c2`, the shape-reference types (`Radius`,
-`Colour` and `Coord`) that the `attr` and `coord` triple constraints of
-`f1` and `f2` look up. -/
+It contains the literal triple-constraint types of the nodes
+(`T_str`, `T_any`, `T_float`, `T_"colour"` and `T_"radius"`).
+It also contains, for `a1`, `a2`, `a3`, `c1` and `c2`, the
+shape-reference types (`Radius`, `Colour` and `Coord`) that the
+`attr` and `coord` triple constraints of `f1` and `f2` look up. -/
 def τ_fig1 : Typing :=
   { (RDFNode.lit (.str "radius"), "T_str"), (RDFNode.lit (.str "radius"), "T_radius"),
     (RDFNode.lit (.int 10), "T_any"), (RDFNode.lit (.int 10), "T_float"),
@@ -149,14 +148,14 @@ def τ_fig1 : Typing :=
 
 /-! Helpers for the claims below:
 
-* Reachability in `H_S` for "root" extendable labels (with no outgoing
-  edges) and for extendable labels with a "single parent".
-* Satisfaction facts for rule 17 (`.ofShape`), for the small
-  triple-expression shapes of Fig. 1 (`⟨ε⟩`, a plain `p @z`, and a plain
-  `p1 @z1 ; p2 @z2`).
+* Reachability in `H_S` for "root" extendable labels (with no
+  outgoing edges) and for extendable labels with a "single parent".
+* Satisfaction facts for rule 17 (`.ofShape`), for the
+  small triple-expression shapes of Fig. 1 (`⟨ε⟩`, a
+  plain `p @z`, and a plain `p1 @z1 ; p2 @z2`).
 
-Each helper permits "junk" triples with a different predicate, because no
-shape of Fig. 1 is `closed`. -/
+Each helper permits "junk" triples with a different
+predicate, because no shape of Fig. 1 is `closed`. -/
 
 theorem reach_root {S : Schema} {p : Label} (hparent : ∀ c, ¬ S.extEdge p c) :
     ∀ x', Relation.ReflTransGen S.extEdge p x' → x' = p := by
@@ -190,10 +189,10 @@ theorem anc_one_parent {S : Schema} {x p : Label} (hx : x ∈ S.X) (hp : p ∈ S
     · rw [heq]; exact ⟨hx, Relation.ReflTransGen.refl⟩
     · rw [heq]; exact ⟨hp, Relation.ReflTransGen.single ((hedge p).mpr rfl)⟩
 
-/-- The empty set satisfies the trivial shape `[ε]`, which is not closed
-and has no `extra` (rule 17 of Table 3). We use it at each location where
-the `M'` part of an `extends X ⟨ε⟩` is empty (`Radius` and
-`ColouredCircle`, which both use a plain `⟨ε⟩` as their shape). -/
+/-- The empty set satisfies the trivial shape `[ε]`, which
+is not closed and has no `extra` (rule 17 of Table 3).
+We use it at each location where the `M'` part of an `extends X ⟨ε⟩` is empty
+(`Radius` and `ColouredCircle`, which both use a plain `⟨ε⟩` as their shape). -/
 theorem empty_satisfies_emptyShape {τ : Typing} :
     SatisfiesShape τ (∅ : Finset Triple)
       ⟨false, none, .empty⟩ := by
@@ -205,11 +204,11 @@ theorem empty_satisfies_emptyShape {τ : Typing} :
     unfold Mnotin
     simp [props, TripleExpr.props, TripleExpr.tcs]
 
-/-- `insert t junk, τ ⊨ [false,none]⟨p @z⟩` (rule 17 of Table 3), if `t` is
-the only triple with the predicate `p`, and all the predicates of `junk`
-are different from `p`. We use it for the restriction `name @T_"colour"`
-of `Colour`, applied to the full neighbourhood of `a2` (which also has
-`scope` and `value` triples). -/
+/-- `insert t junk, τ ⊨ [false,none]⟨p @z⟩` (rule 17 of
+Table 3), if `t` is the only triple with the predicate `p`,
+and all the predicates of `junk` are different from `p`.
+We use it for the restriction `name @T_"colour"` of `Colour`, applied to the
+full neighbourhood of `a2` (which also has `scope` and `value` triples). -/
 theorem single_tc_ofShape_junk {τ : Typing}
     {p : IRI} {z : Label} {t : Triple} {junk : Finset Triple}
     (hp : t.pred = p) (hjunk : ∀ t' ∈ junk, t'.pred ≠ p) (hty : τ.has t.obj z) :
@@ -246,12 +245,12 @@ theorem single_tc_ofShape_junk {τ : Typing}
     · exact hnotMe (Finset.mem_singleton_self _)
     · exact (hjunk t'' htj) hpred
 
-/-- `{t1, t2}, τ ⊨ [false,none]⟨p1 @z1 ; p2 @z2⟩` (rule 17 of Table 3), for
-exactly two triples and no junk. This is the version of
-`singleton_tc_ofShape` for two triple constraints. We use it for `Coord`
-of Fig. 1, for `Attribute` (on the nodes `a1` and `a3`, which have no
-other triples), and for the restriction
-`name @T_"radius" ; value @T_float` of `Radius`. -/
+/-- `{t1, t2}, τ ⊨ [false,none]⟨p1 @z1 ; p2 @z2⟩` (rule
+17 of Table 3), for exactly two triples and no junk.
+This is the version of `singleton_tc_ofShape` for two triple constraints.
+We use it for `Coord` of Fig. 1, for `Attribute` (on the nodes
+`a1` and `a3`, which have no other triples), and for the
+restriction `name @T_"radius" ; value @T_float` of `Radius`. -/
 theorem pair_tc_tc_ofShape {τ : Typing}
     {p1 p2 : IRI} {z1 z2 : Label} {t1 t2 : Triple}
     (hp1 : t1.pred = p1) (hp2 : t2.pred = p2) (hne : t1 ≠ t2)
@@ -276,11 +275,11 @@ theorem pair_tc_tc_ofShape {τ : Typing}
     exact hne (hx1.symm.trans hx2)
   · ext x; simp
 
-/-- `insert t1 (insert t2 junk), τ ⊨ [false,none]⟨p1 @z1 ; p2 @z2⟩` (rule 17
-of Table 3). This is the version of `pair_tc_tc_ofShape` that permits
-junk. We use it for `a2 ⊨ Attribute`. (The neighbourhood of `a2` also has
-a `scope` triple, which is not related to the `name` and `value` of
-`Attribute`.) -/
+/-- `insert t1 (insert t2 junk), τ ⊨ [false,none]⟨p1 @z1 ; p2 @z2⟩` (rule 17 of Table 3).
+This is the version of `pair_tc_tc_ofShape` that permits junk.
+We use it for `a2 ⊨ Attribute`.
+(The neighbourhood of `a2` also has a `scope` triple, which
+is not related to the `name` and `value` of `Attribute`.) -/
 theorem pair_tc_tc_ofShape_junk {τ : Typing}
     {p1 p2 : IRI} {z1 z2 : Label} {t1 t2 : Triple} {junk : Finset Triple}
     (hp1 : t1.pred = p1) (hp2 : t2.pred = p2) (hne : t1 ≠ t2)
@@ -336,9 +335,9 @@ theorem pair_tc_tc_ofShape_junk {τ : Typing}
       · exact (hjunk t' htj).1 hp
       · exact (hjunk t' htj).2 hp
 
-/-! The edges of `H_S` (Fig. 3) between the `X` labels below. This is the
-subject of Example 2 (`Example2_extension_hierarchy.lean`), but the
-rule-18 partition of `f1_satisfies_ColouredCircle` needs it here. -/
+/-! The edges of `H_S` (Fig. 3) between the `X` labels below.
+This is the subject of Example 2 (`Example2_extension_hierarchy.lean`),
+but the rule-18 partition of `f1_satisfies_ColouredCircle` needs it here. -/
 
 theorem hAttributeEdge : ∀ c, ¬ S_fig1.extEdge "Attribute" c := by
   have hshape : S_fig1.shapeDef "Attribute" =
@@ -400,8 +399,8 @@ theorem hancSetCircleColouredFigure :
   decide
 
 /-- `c1, τ ⊨ Coord` (the claim of Fig. 2 "node c1 satisfies Coord").
-`Coord` is a `Y` label (a plain shape with no `extends`). Thus, this is a
-rule-17 check on `neigh(c1)`. -/
+`Coord` is a `Y` label (a plain shape with no `extends`).
+Thus, this is a rule-17 check on `neigh(c1)`. -/
 theorem c1_satisfies_Coord :
     SatisfiesFuel bigFuel1 S_fig1 G_fig1 τ_fig1 c1 (S_fig1.shapeDef "Coord") := by
   have hshape : S_fig1.shapeDef "Coord" =
@@ -425,10 +424,9 @@ theorem c2_satisfies_Coord :
   rw [hneigh]
   exact pair_tc_tc_ofShape rfl rfl (by decide) (by decide) (by decide)
 
-/-- `a1, τ ⊨ Attribute` (the claim of Fig. 2 "Nodes a1, a2, a3 satisfy
-`Attribute`", for `a1`). `Attribute` has no `extends` targets. Thus, the
-rule-18 partition is trivial: `M' = M`, and `Mx` is vacuous over
-`anc(∅) = ∅`. -/
+/-- `a1, τ ⊨ Attribute` (the claim of Fig. 2 "Nodes a1, a2, a3 satisfy `Attribute`", for `a1`).
+`Attribute` has no `extends` targets.
+Thus, the rule-18 partition is trivial: `M' = M`, and `Mx` is vacuous over `anc(∅) = ∅`. -/
 theorem a1_satisfies_Attribute :
     SatisfiesFuel bigFuel1 S_fig1 G_fig1 τ_fig1 a1 (S_fig1.shapeDef "Attribute") := by
   have hshape : S_fig1.shapeDef "Attribute" =
@@ -468,8 +466,9 @@ theorem a3_satisfies_Attribute :
   · rw [hanc]; intro x hx; simp at hx
   · rw [hanc]; intro x hx; simp at hx
 
-/-- `a2, τ ⊨ Attribute`. The neighbourhood of `a2` also has a `scope`
-triple (which `Colour` needs, refer to `a2_satisfies_Colour`).
+/-- `a2, τ ⊨ Attribute`.
+The neighbourhood of `a2` also has a `scope` triple
+(which `Colour` needs, refer to `a2_satisfies_Colour`).
 `Attribute` is not `closed`, so it ignores this triple as junk. -/
 theorem a2_satisfies_Attribute :
     SatisfiesFuel bigFuel1 S_fig1 G_fig1 τ_fig1 a2 (S_fig1.shapeDef "Attribute") := by
@@ -498,11 +497,10 @@ theorem a2_satisfies_Attribute :
 `Colour = extends Attribute ⟨scope @T_str⟩ and ⟨name @T_"colour"⟩`.
 
 * The first conjunct splits `neigh(a2)` into `M' = {scope-triple}` (which
-  matches `scope @T_str`) and
-  `Mx(Attribute) = {name-triple, value-triple}` (which matches
-  `ext-te(Attribute) = name @T_str ; value @T_any`).
-* The second conjunct checks `name @T_"colour"` directly against all of
-  `neigh(a2)`. For it, the `scope` and `value` triples are junk. -/
+  matches `scope @T_str`) and `Mx(Attribute) = {name-triple, value-triple}`
+  (which matches `ext-te(Attribute) = name @T_str ; value @T_any`).
+* The second conjunct checks `name @T_"colour"` directly against all of `neigh(a2)`.
+  For it, the `scope` and `value` triples are junk. -/
 theorem a2_satisfies_Colour :
     SatisfiesFuel bigFuel1 S_fig1 G_fig1 τ_fig1 a2 (S_fig1.shapeDef "Colour") := by
   have hshape : S_fig1.shapeDef "Colour" =
@@ -545,12 +543,11 @@ theorem a2_satisfies_Colour :
 /-- `a1, τ ⊨ Radius` (the claim of Fig. 2 "a1, a3 satisfy Radius").
 `Radius = extends Attribute ⟨ε⟩ and ⟨name @T_"radius" ; value @T_float⟩`.
 
-* The first conjunct has `M' = ∅` (`⟨ε⟩` has no constraint when it is not
-  closed) and `Mx(Attribute) = neigh(a1)` (all of it, which matches
-  `ext-te(Attribute)`).
-* The second conjunct checks `name @T_"radius" ; value @T_float` directly
-  against `neigh(a1)`. There is no junk here, because `a1` has exactly
-  these two triples. -/
+* The first conjunct has `M' = ∅` (`⟨ε⟩` has no constraint
+  when it is not closed) and `Mx(Attribute) = neigh(a1)`
+  (all of it, which matches `ext-te(Attribute)`).
+* The second conjunct checks `name @T_"radius" ; value @T_float` directly against `neigh(a1)`.
+  There is no junk here, because `a1` has exactly these two triples. -/
 theorem a1_satisfies_Radius :
     SatisfiesFuel bigFuel1 S_fig1 G_fig1 τ_fig1 a1 (S_fig1.shapeDef "Radius") := by
   have hshape : S_fig1.shapeDef "Radius" =
@@ -621,10 +618,8 @@ theorem a3_satisfies_Radius :
 /-- `f2, τ ⊨ Circle` (the claim of Fig. 2 "f2 is a Circle").
 `Circle = extends Figure ⟨attr @Radius⟩`.
 
-* `M' = {(f2,attr,a3)}` matches `attr @Radius`, through the assertion
-  `(a3, Radius)` of `τ`.
-* `Mx(Figure) = {(f2,coord,c2)}` matches `ext-te(Figure) = coord @Coord`,
-  through `(c2, Coord)`. -/
+* `M' = {(f2,attr,a3)}` matches `attr @Radius`, through the assertion `(a3, Radius)` of `τ`.
+* `Mx(Figure) = {(f2,coord,c2)}` matches `ext-te(Figure) = coord @Coord`, through `(c2, Coord)`. -/
 theorem f2_satisfies_Circle :
     SatisfiesFuel bigFuel1 S_fig1 G_fig1 τ_fig1 f2 (S_fig1.shapeDef "Circle") := by
   have hshape : S_fig1.shapeDef "Circle" =
@@ -649,23 +644,20 @@ theorem f2_satisfies_Circle :
     have hFshape : S_fig1.shapeDef "Figure" = .extends ∅ ⟨false, none, .tc "coord" "Coord"⟩ := rfl
     rw [hFshape] at hu; simp [ShapeExpr.restrOf] at hu
 
-/-- `f1, τ ⊨ ColouredCircle` (the main multiple-inheritance claim of
-Fig. 2 and Fig. 3: "f1 is a ColouredCircle").
+/-- `f1, τ ⊨ ColouredCircle` (the main multiple-inheritance
+claim of Fig. 2 and Fig. 3: "f1 is a ColouredCircle").
 `ColouredCircle = extends Circle, ColouredFigure ⟨ε⟩`.
 
-`M' = ∅` (`⟨ε⟩` has no constraint when it is not closed). The rule-18
-partition is over `anc({Circle,ColouredFigure}) = {Circle, Figure,
-ColouredFigure}`. (Fig. 3: `Figure` comes through the two parents, but
-occurs only one time.) It splits the three triples of `neigh(f1)` one to
-one:
+`M' = ∅` (`⟨ε⟩` has no constraint when it is not closed).
+The rule-18 partition is over `anc({Circle,ColouredFigure}) = {Circle, Figure, ColouredFigure}`.
+(Fig. 3: `Figure` comes through the two parents, but occurs only one time.)
+It splits the three triples of `neigh(f1)` one to one:
 
 * `Mx(Circle) = {(f1,attr,a1)}` (`ext-te(Circle) = attr @Radius`).
 * `Mx(Figure) = {(f1,coord,c1)}` (`ext-te(Figure) = coord @Coord`).
-* `Mx(ColouredFigure) = {(f1,attr,a2)}`
-  (`ext-te(ColouredFigure) = attr @Colour`).
+* `Mx(ColouredFigure) = {(f1,attr,a2)}` (`ext-te(ColouredFigure) = attr @Colour`).
 
-`coord` is used one time, although `Circle` and `ColouredFigure` both go
-through `Figure`. -/
+`coord` is used one time, although `Circle` and `ColouredFigure` both go through `Figure`. -/
 theorem f1_satisfies_ColouredCircle :
     SatisfiesFuel bigFuel1 S_fig1 G_fig1 τ_fig1 f1 (S_fig1.shapeDef "ColouredCircle") := by
   have hshape : S_fig1.shapeDef "ColouredCircle" =
@@ -706,11 +698,11 @@ theorem f1_satisfies_ColouredCircle :
     · rw [hFshape] at hu; simp [ShapeExpr.restrOf] at hu
     · rw [hCFshape] at hu; simp [ShapeExpr.restrOf] at hu
 
-/-! The prerequisites for the decidability of `S_fig1`: `XClosed` and
-`RestrOk` (which `satisfiesFuel_decidable` needs), and an `FOk` witness
-for each top-level shape that a claim below checks. The display text below
-computes each claim with `renderDecide`. It uses the schema, graph and
-typing of the proofs above. -/
+/-! The prerequisites for the decidability of `S_fig1`: `XClosed`
+and `RestrOk` (which `satisfiesFuel_decidable` needs), and an
+`FOk` witness for each top-level shape that a claim below checks.
+The display text below computes each claim with `renderDecide`.
+It uses the schema, graph and typing of the proofs above. -/
 
 theorem S_fig1_XClosed : S_fig1.XClosed := by unfold Schema.XClosed; decide
 
@@ -725,8 +717,8 @@ def radiusFOk : (S_fig1.shapeDef "Radius").FOk S_fig1 := ⟨PLift.up (by decide)
 def circleFOk : (S_fig1.shapeDef "Circle").FOk S_fig1 := PLift.up (by decide)
 def colouredCircleFOk : (S_fig1.shapeDef "ColouredCircle").FOk S_fig1 := PLift.up (by decide)
 
-/-- The result of `renderDecide` for
-`n ⊨ S_fig1.shapeDef L`. There is one line for each main claim below. -/
+/-- The result of `renderDecide` for `n ⊨ S_fig1.shapeDef L`.
+There is one line for each main claim below. -/
 def satFig1 (n : RDFNode) (L : Label) (hOk : (S_fig1.shapeDef L).FOk S_fig1) : String :=
   renderDecide (satisfiesFuel_decidable S_fig1 G_fig1 τ_fig1 S_fig1_XClosed S_fig1_RestrOk
     bigFuel1 n (S_fig1.shapeDef L) hOk)
@@ -741,8 +733,8 @@ open ShexLean (Graph.render renderDecide)
 
 /-- The full `ColouredCircle` schema and graph of Fig. 1 and Fig. 2.
 
-* `schemaText` and `graphText` are generated from the real values `S_fig1`
-  and `G_fig1` (floats are approximated as integer literals).
+* `schemaText` and `graphText` are generated from the real values
+  `S_fig1` and `G_fig1` (floats are approximated as integer literals).
 * Each claim in `typingText` is a `renderDecide` computation of
   `SatisfiesFuel` on the same `S_fig1`, `G_fig1` and `τ_fig1`. -/
 def inheritance2025Figures : Example where

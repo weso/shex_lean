@@ -2,40 +2,41 @@ import ShexLean.Shex2017Schemas.Semantics
 import Mathlib.Data.Finset.Card
 
 /-!
-A bound on the length of the witness list of `.rep`. `Decidable.lean`
-does not give this bound.
+A bound on the length of the witness list of `.rep`.
+`Decidable.lean` does not give this bound.
 
-The existential of `te-repet` (`∃ Ns : List (Finset Triple), …`) goes over
-lists of any length. The existentials of `te-tpattern` and `te-each-of`
-do not do this. But a bound is possible. For a fixed `N`, these two
-statements are equivalent:
+The existential of `te-repet` (`∃ Ns : List (Finset Triple), …`) goes over lists of any length.
+The existentials of `te-tpattern` and `te-each-of` do not do this.
+But a bound is possible.
+For a fixed `N`, these two statements are equivalent:
 
 * `Matches G t N (.rep E min none)` (no upper limit).
 * `Matches G t N (.rep E min (some (N.card + min)))` (with a limit).
 
-The argument is as follows. Each witness list has two types of pieces:
+The argument is as follows.
+Each witness list has two types of pieces:
 
-* Pieces that are not empty. There are `N.card` or fewer of them, because
-  they are pairwise disjoint subsets of `N`.
-* Empty pieces. They are valid only if `Matches G t ∅ E` is true.
+* Pieces that are not empty.
+  There are `N.card` or fewer of them, because they are pairwise disjoint subsets of `N`.
+* Empty pieces.
+  They are valid only if `Matches G t ∅ E` is true.
 
-Take a witness of length `≥ min`. Let `k` be the number of pieces that are
-not empty.
+Take a witness of length `≥ min`.
+Let `k` be the number of pieces that are not empty.
 
-* If `k ≥ min`, remove all the empty pieces. The new length is
-  `k ≤ N.card`.
-* If `k < min`, the witness has `min − k` or more empty pieces. Thus,
-  `Matches G t ∅ E` is true. Add empty pieces until the length is exactly
-  `min`.
+* If `k ≥ min`, remove all the empty pieces.
+  The new length is `k ≤ N.card`.
+* If `k < min`, the witness has `min − k` or more empty pieces.
+  Thus, `Matches G t ∅ E` is true.
+  Add empty pieces until the length is exactly `min`.
 
 In the two cases, there is a witness of length `≤ N.card + min`.
 
-The proof uses `repExact E k` (`E` matched exactly `k` times, as a chain
-of `.eachOf`). It does not change witness lists directly.
-`matches_repExact_iff` changes "a witness list of length `k`" into
-`Matches _ (repExact E k)`. Thus, the existential of `.rep` over lists
-becomes an existential over `ℕ`. Then `matches_rep_bound` gives a bound
-for this existential.
+The proof uses `repExact E k` (`E` matched exactly `k` times, as a chain of `.eachOf`).
+It does not change witness lists directly.
+`matches_repExact_iff` changes "a witness list of length `k`" into `Matches _ (repExact E k)`.
+Thus, the existential of `.rep` over lists becomes an existential over `ℕ`.
+Then `matches_rep_bound` gives a bound for this existential.
 -/
 
 namespace ShexLean
@@ -60,17 +61,17 @@ theorem disjoint_foldr_union_of_forall {a : Finset Triple} {l : List (Finset Tri
       ⟨h b List.mem_cons_self, ih (fun x hx => h x (List.mem_cons_of_mem _ hx))⟩
 
 /-- `E` matched exactly `k` times in sequence: `repExact E 0 = .empty`,
-and `repExact E (k+1) = .eachOf E (repExact E k)`. This is a derived
-`TExpr`, not a new constructor. Its only use is to write the existential
-of `.rep` over witness lists as an existential over `ℕ`
-(`matches_repExact_iff` below). -/
+and `repExact E (k+1) = .eachOf E (repExact E k)`.
+This is a derived `TExpr`, not a new constructor.
+Its only use is to write the existential of `.rep` over witness
+lists as an existential over `ℕ` (`matches_repExact_iff` below). -/
 def repExact (E : TExpr) : ℕ → TExpr
   | 0 => .empty
   | k + 1 => .eachOf E (repExact E k)
 
-/-- `Matches _ N (repExact E k)` if and only if `N` splits into a list of
-`k` pieces, and each piece matches `E`. This is the witness-list
-existential of `.rep E k (some k)`, with the length fixed to `k`. -/
+/-- `Matches _ N (repExact E k)` if and only if `N` splits
+into a list of `k` pieces, and each piece matches `E`.
+This is the witness-list existential of `.rep E k (some k)`, with the length fixed to `k`. -/
 theorem matches_repExact_iff (G : Graph) (t : Typing) (E : TExpr) :
     ∀ (k : ℕ) (N : Finset Triple), Matches G t N (repExact E k) ↔
       ∃ Ns : List (Finset Triple), Ns.length = k ∧ DisjointUnionList N Ns ∧
@@ -109,8 +110,9 @@ theorem matches_repExact_iff (G : Graph) (t : Typing) (E : TExpr) :
             (matches_repExact_iff G t E k _).mpr
               ⟨Ns', hlen, ⟨hpw.2, rfl⟩, fun Ni hNi => hmatch Ni (List.mem_cons_of_mem _ hNi)⟩⟩
 
-/-- The witness-list existential of `.rep`, written as an existential over
-the length of the witness only. The proof uses `matches_repExact_iff`. -/
+/-- The witness-list existential of `.rep`, written as
+an existential over the length of the witness only.
+The proof uses `matches_repExact_iff`. -/
 theorem matches_rep_iff_exists_repExact (G : Graph) (t : Typing) (N : Finset Triple)
     (E : TExpr) (min : ℕ) (max : Option ℕ) :
     Matches G t N (.rep E min max) ↔
@@ -154,10 +156,10 @@ theorem nonempty_filter_length_le_card {Ns : List (Finset Triple)} {N : Finset T
         rw [hunion, List.foldr_cons, Finset.not_nonempty_iff_eq_empty.mp ha, Finset.empty_union]
       exact heq ▸ ih hpw.2 rfl
 
-/-- Take a witness of `repExact E k` for `N`, with `k ≥ min`. You can make
-it shorter, to a length of `N.card + min` or less. Because of this, you
-can decide `.rep _ min none` (no upper limit) as
-`.rep _ min (some (N.card + min))`. -/
+/-- Take a witness of `repExact E k` for `N`, with `k ≥ min`.
+You can make it shorter, to a length of `N.card + min` or less.
+Because of this, you can decide `.rep _ min none` (no
+upper limit) as `.rep _ min (some (N.card + min))`. -/
 theorem matches_rep_bound (G : Graph) (t : Typing) (N : Finset Triple) (E : TExpr)
     (min k : ℕ) (hmin : min ≤ k) (hm : Matches G t N (repExact E k)) :
     ∃ k' ≤ N.card + min, k' ≤ k ∧ min ≤ k' ∧ Matches G t N (repExact E k') := by

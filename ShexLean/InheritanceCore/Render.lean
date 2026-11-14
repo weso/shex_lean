@@ -2,9 +2,10 @@ import ShexLean.InheritanceCore.Syntax
 import ShexLean.Shex2017Schemas.Render
 
 /-!
-Display text for triple expressions and shapes. The `Render.lean` files of
-`ShexLean/Shex2025Inheritance/` and `ShexLean/Shex2026InheritanceDisjunction/`
-use it for their `ShapeExpr` and `Schema` values.
+Display text for triple expressions and shapes.
+The `Render.lean` files of `ShexLean/Shex2025Inheritance/`
+and `ShexLean/Shex2026InheritanceDisjunction/` use it for
+their `ShapeExpr` and `Schema` values.
 -/
 
 namespace ShexLean.InheritanceCore

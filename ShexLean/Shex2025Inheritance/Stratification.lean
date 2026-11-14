@@ -2,8 +2,9 @@ import ShexLean.Shex2025Inheritance.Syntax
 import Mathlib.Logic.Relation
 
 /-!
-Definitions 5 and 6 (§4.2) of the 2025 paper "Shape Expressions with Inheritance":
-the dependency graph `D_S`, and well-defined schemas ("stratified negation").
+Definitions 5 and 6 (§4.2) of the 2025 paper "Shape
+Expressions with Inheritance": the dependency graph
+`D_S`, and well-defined schemas ("stratified negation").
 
 > For every shape expression or triple expression `s`, let `sub-expr(s)`
 > be the set of its sub-expressions, viewed as syntactic objects.
@@ -32,29 +33,27 @@ the dependency graph `D_S`, and well-defined schemas ("stratified negation").
 >   `dep-shape-neg` or `dep-extra-neg`. We say in this case that `S` is
 >   with stratified negation.
 
-Three of the four relations of Definition 5 look only inside the
-definition of one label:
+Three of the four relations of Definition 5 look only inside the definition of one label:
 
 * `dep` and `dep-shape-neg` collect references.
 * `dep-extra-neg` collects the properties of triple constraints.
 
-They do not need a reachability computation over the full schema, as the
-edges of `H_S` do. Thus, one recursive walk over `s = S.shapeDef z`
-computes the target sets of the three relations together (`DepInfo`
-below). The walk records if the current position is below a `not`. This
-is the same method as `depsAux` in
-`ShexLean/Shex2017Schemas/Stratification.lean`.
+They do not need a reachability computation over the full schema, as the edges of `H_S` do.
+Thus, one recursive walk over `s = S.shapeDef z` computes the
+target sets of the three relations together (`DepInfo` below).
+The walk records if the current position is below a `not`.
+This is the same method as `depsAux` in `ShexLean/Shex2017Schemas/Stratification.lean`.
 
-`[closed][extra P]⟨e⟩` matches a plain `.ofShape h`, and also the `h`
-inside an `.extends X h`. (The two use the same `Shape` production of
-Definition 1.) In `extends X h [and u]`, `u` is also a sub-expression of
-`def(z)`. Thus, the walk goes through `or`, `and` and `not` in the same
-way, and finds each `[closed][extra P]⟨e⟩`: in the `h` of an `extends`, in
-a restriction `u`, or in a plain shape.
+`[closed][extra P]⟨e⟩` matches a plain `.ofShape h`, and also the `h` inside an `.extends X h`.
+(The two use the same `Shape` production of Definition 1.)
+In `extends X h [and u]`, `u` is also a sub-expression of `def(z)`.
+Thus, the walk goes through `or`, `and` and `not` in the
+same way, and finds each `[closed][extra P]⟨e⟩`: in the `h`
+of an `extends`, in a restriction `u`, or in a plain shape.
 
-The walk does not make `dep-extends_S`. The edges of `H_S`
-(`Schema.extEdge`, `Syntax.lean`) already record the targets of
-`extends X h`. `dep-extends_S(z,z')` is that relation, made symmetric.
+The walk does not make `dep-extends_S`.
+The edges of `H_S` (`Schema.extEdge`, `Syntax.lean`) already record the targets of `extends X h`.
+`dep-extends_S(z,z')` is that relation, made symmetric.
 -/
 
 namespace ShexLean.Inheritance
@@ -64,31 +63,34 @@ open ShexLean.InheritanceCore hiding Schema
 /-! ### Definition 5: the dependency graph `D_S` -/
 
 /-- The walk `sub-expr(def(z))` / `neg-sub-expr(def(z))` of Definition 5.
-The extends targets of `.extends` add nothing here. They are for
-`dep-extends_S`, through `Schema.extEdge`.
+The extends targets of `.extends` add nothing here.
+They are for `dep-extends_S`, through `Schema.extEdge`.
 
-**This is an intentional difference from Definition 5.** The paper defines
-`neg-sub-expr(s)` by the true parity of the `not` nesting: each `not`
-toggles it. Here, `neg` *latches*: when it is `true`, a nested `not` keeps
-it `true`. (`.not s => s.depsAux true` ignores the incoming `neg`. It does
-not negate it.)
+**This is an intentional difference from Definition 5.**
+The paper defines `neg-sub-expr(s)` by the true
+parity of the `not` nesting: each `not` toggles it.
+Here, `neg` *latches*: when it is `true`, a nested `not` keeps it `true`.
+(`.not s => s.depsAux true` ignores the incoming `neg`.
+It does not negate it.)
 
-This notion of "negative dependency" is more conservative. It can only
-classify more dependencies as negative, never fewer. Thus:
+This notion of "negative dependency" is more conservative.
+It can only classify more dependencies as negative, never fewer.
+Thus:
 
-* Each schema that is well-defined with the parity reading of the paper is
-  also well-defined with this reading.
+* Each schema that is well-defined with the parity reading
+  of the paper is also well-defined with this reading.
 * No proved result changes its meaning.
-* The two readings agree on the examples of the two papers. These examples
-  never put a `not` below a `not`.
+* The two readings agree on the examples of the two papers.
+  These examples never put a `not` below a `not`.
 
-The `stratMono` lemma of `Proposition1.lean` needs this. (It has the same
-role as `not_negDeps` in 2017.) Its `not` case needs the `negRefs` of the
-outer call to cover all that is reachable inside a `not`, at each nesting
-depth of `not` in that content. Latching gives this directly. At
-`neg = true`, `negRefs = refs` always, by structural induction, because
-latching never sets `neg` back to `false`. The parity reading does not
-have this property. -/
+The `stratMono` lemma of `Proposition1.lean` needs this.
+(It has the same role as `not_negDeps` in 2017.)
+Its `not` case needs the `negRefs` of the outer call to cover all that is
+reachable inside a `not`, at each nesting depth of `not` in that content.
+Latching gives this directly.
+At `neg = true`, `negRefs = refs` always, by structural
+induction, because latching never sets `neg` back to `false`.
+The parity reading does not have this property. -/
 def ShapeExpr.depsAux (neg : Bool) : ShapeExpr → DepInfo
   | .constraint _ => ∅
   | .ofShape h => h.depInfo neg
@@ -97,8 +99,8 @@ def ShapeExpr.depsAux (neg : Bool) : ShapeExpr → DepInfo
   | .and s1 s2 => s1.depsAux neg ∪ s2.depsAux neg
   | .not s => s.depsAux true
 
-/-- `negRefs ⊆ refs` for each shape expression, at each `neg`. This is
-the structural fact for "`dep` subsumes `dep-shape-neg`". -/
+/-- `negRefs ⊆ refs` for each shape expression, at each `neg`.
+This is the structural fact for "`dep` subsumes `dep-shape-neg`". -/
 theorem ShapeExpr.negRefs_subset_refs (s : ShapeExpr) (neg : Bool) :
     (s.depsAux neg).negRefs ⊆ (s.depsAux neg).refs := by
   induction s generalizing neg with
@@ -113,15 +115,14 @@ theorem ShapeExpr.negRefs_subset_refs (s : ShapeExpr) (neg : Bool) :
       exact Finset.union_subset_union (ih1 neg) (ih2 neg)
   | not s ih => simpa only [ShapeExpr.depsAux] using ih true
 
-/-- At `neg = true`, `negRefs` is not only `⊆ refs`
-(`negRefs_subset_refs`). It is equal to `refs`, for each `s`, also when
-`s` has more nested `not`s, because latching never sets `neg` back to
-`false`.
+/-- At `neg = true`, `negRefs` is not only `⊆ refs` (`negRefs_subset_refs`).
+It is equal to `refs`, for each `s`, also when `s` has more
+nested `not`s, because latching never sets `neg` back to `false`.
 
-The `.not` case of `stratMono` (`Proposition1.lean`) needs this. The
-`negRefs` of the outer call (at `neg = false`, thus
-`(.not s).depsAux false = s.depsAux true`) must bound all the references
-of `s`, not only the references that are not negated again. -/
+The `.not` case of `stratMono` (`Proposition1.lean`) needs this.
+The `negRefs` of the outer call (at `neg = false`, thus
+`(.not s).depsAux false = s.depsAux true`) must bound all the
+references of `s`, not only the references that are not negated again. -/
 theorem ShapeExpr.negRefs_true_eq_refs (s : ShapeExpr) :
     (s.depsAux true).negRefs = (s.depsAux true).refs := by
   induction s with
@@ -134,8 +135,8 @@ theorem ShapeExpr.negRefs_true_eq_refs (s : ShapeExpr) :
       ih1, ih2]
   | not s ih => simpa only [ShapeExpr.depsAux] using ih
 
-/-- `extraNegRefs ⊆ refs` for each shape expression, at each `neg`. This
-is the structural fact for "`dep` subsumes `dep-extra-neg`". -/
+/-- `extraNegRefs ⊆ refs` for each shape expression, at each `neg`.
+This is the structural fact for "`dep` subsumes `dep-extra-neg`". -/
 theorem ShapeExpr.extraNegRefs_subset_refs (s : ShapeExpr) (neg : Bool) :
     (s.depsAux neg).extraNegRefs ⊆ (s.depsAux neg).refs := by
   induction s generalizing neg with
@@ -154,10 +155,10 @@ theorem ShapeExpr.extraNegRefs_subset_refs (s : ShapeExpr) (neg : Bool) :
       exact Finset.union_subset_union (ih1 neg) (ih2 neg)
   | not s ih => simpa only [ShapeExpr.depsAux] using ih true
 
-/-- The schema-level definitions of `ShexLean/InheritanceCore/Schema.lean`
-(`H_S`, `D_S`, `dep`, `dep-shape-neg`, `dep-extra-neg`, `dep-extends`,
-Definition 6 and Definition 7) use a shape expression through these
-functions. -/
+/-- The schema-level definitions of
+`ShexLean/InheritanceCore/Schema.lean` (`H_S`, `D_S`, `dep`,
+`dep-shape-neg`, `dep-extra-neg`, `dep-extends`, Definition 6 and
+Definition 7) use a shape expression through these functions. -/
 instance : ShapeSyntax ShapeExpr where
   extendsTargets := ShapeExpr.extendsTargets
   deps s := s.depsAux false

@@ -2,26 +2,27 @@ import Mathlib.Data.Finset.Card
 import Mathlib.Dynamics.FixedPoints.Basic
 
 /-!
-Order theory that does not depend on a paper. If you iterate a monotone
-map from `Finset α` to `Finset α`, you get a fixed point after a finite
-number of steps.
+Order theory that does not depend on a paper.
+If you iterate a monotone map from `Finset α` to `Finset α`,
+you get a fixed point after a finite number of steps.
 
 These files use this result:
 
 * The `refine` validation algorithms of the two papers
   (`ShexLean/Shex2017Schemas/Algorithm1.lean` and
-  `ShexLean/Shex2025Inheritance/Algorithm1.lean`). The result shows that
-  the refinement loop of each stratum terminates.
-* `ShexLean/Shex2025Inheritance/Decidable.lean`. The result shows that the
-  closure of the ancestor set (`ancStep`, an *increasing* map) terminates.
+  `ShexLean/Shex2025Inheritance/Algorithm1.lean`).
+  The result shows that the refinement loop of each stratum terminates.
+* `ShexLean/Shex2025Inheritance/Decidable.lean`.
+  The result shows that the closure of the ancestor
+  set (`ancStep`, an *increasing* map) terminates.
 -/
 
 namespace ShexLean
 
 /-- Iterate a *decreasing* map `f` (`f t ⊆ t` for all `t`) on `Finset α`.
-The iteration becomes stable in `x.card` steps or fewer. Each step that is
-not a fixed point makes the cardinality smaller, and the cardinality cannot
-go below `0`. -/
+The iteration becomes stable in `x.card` steps or fewer.
+Each step that is not a fixed point makes the cardinality
+smaller, and the cardinality cannot go below `0`. -/
 theorem Finset.decreasing_iterate_fixed {α : Type*} [DecidableEq α] (f : Finset α → Finset α)
     (hf : ∀ t, f t ⊆ t) (x : Finset α) : f (f^[x.card] x) = f^[x.card] x := by
   induction hcard : x.card using Nat.strong_induction_on generalizing x with
@@ -46,13 +47,14 @@ theorem Finset.decreasing_iterate_fixed {α : Type*} [DecidableEq α] (f : Finse
       rw [hstep, hpad (card - 1) (by omega)]
       exact hih
 
-/-- This is the dual of `Finset.decreasing_iterate_fixed`. Iterate an
-*increasing* map `f` (`t ⊆ f t` for all `t`) that has a finite upper bound
-`U` (`f t ⊆ U` for all `t ⊆ U`). Start from any `x ⊆ U`. The iteration
-becomes stable in `U.card` steps or fewer.
+/-- This is the dual of `Finset.decreasing_iterate_fixed`.
+Iterate an *increasing* map `f` (`t ⊆ f t` for all `t`) that
+has a finite upper bound `U` (`f t ⊆ U` for all `t ⊆ U`).
+Start from any `x ⊆ U`.
+The iteration becomes stable in `U.card` steps or fewer.
 
-The proof has the same structure as the decreasing case. It uses strong
-induction on the part of `U \ x` that is not yet filled, not on `x`. -/
+The proof has the same structure as the decreasing case.
+It uses strong induction on the part of `U \ x` that is not yet filled, not on `x`. -/
 theorem Finset.increasing_iterate_fixed {α : Type*} [DecidableEq α] (f : Finset α → Finset α)
     (U : Finset α) (hf : ∀ t ⊆ U, t ⊆ f t) (hfU : ∀ t ⊆ U, f t ⊆ U) :
     ∀ (x : Finset α), x ⊆ U → f (f^[(U \ x).card] x) = f^[(U \ x).card] x := by

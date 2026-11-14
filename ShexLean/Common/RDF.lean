@@ -2,9 +2,9 @@ import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Finset.Image
 
 /-!
-Basic RDF structures. They follow the RDF Graph Model in §1 of
-"Semantics and Validation of Shapes Schemas for RDF" (Boneva, Labra Gayo,
-Prud'hommeaux, 2017).
+Basic RDF structures.
+They follow the RDF Graph Model in §1 of "Semantics and Validation of
+Shapes Schemas for RDF" (Boneva, Labra Gayo, Prud'hommeaux, 2017).
 
 > As usual, we assume three disjoint sets: IRI a set of IRIs, Lit a set of
 > literals, and Blank a set of blank nodes. An RDF graph is a set of triples

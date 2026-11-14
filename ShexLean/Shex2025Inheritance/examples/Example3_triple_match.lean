@@ -11,17 +11,18 @@ Example 3 from the 2025 paper "Shape Expressions with Inheritance" (§4.1,
 Table 1): the triple expression `e = p @T_even ; (p @T_<5* | p @T_str)`,
 and four example sets of triples that match it or do not match it.
 
-This file also contains the schema `S_ex5` (the schema of Example 5, §4.2)
-and the node constraints `T_even`, `T_<5`, `T_>5` and `T_str`, because
-the claims of Examples 3-5 all use this schema. `Example4_closed_extra.lean`
-and `Example5_extends.lean` both import this file to use them again,
-together with the triple sets `M24`, `M246`, `M2a` and `M24a`.
+This file also contains the schema `S_ex5` (the schema of Example
+5, §4.2) and the node constraints `T_even`, `T_<5`, `T_>5` and
+`T_str`, because the claims of Examples 3-5 all use this schema.
+`Example4_closed_extra.lean` and `Example5_extends.lean`
+both import this file to use them again, together with
+the triple sets `M24`, `M246`, `M2a` and `M24a`.
 
-The two files also need the general helper lemmas that lift to `ofShape`
-(`ofShape_of_Me_eq_self`, `singleton_tc_ofShape` and
-`Me_eq_self_of_props_subset`). These lemmas are in
-`ShexLean/Shex2025Inheritance/Semantics.lean`, because they are not
-specific to one example.
+The two files also need the general helper lemmas that
+lift to `ofShape` (`ofShape_of_Me_eq_self`,
+`singleton_tc_ofShape` and `Me_eq_self_of_props_subset`).
+These lemmas are in `ShexLean/Shex2025Inheritance/Semantics.lean`,
+because they are not specific to one example.
 -/
 
 namespace ShexLean.Inheritance
@@ -51,8 +52,7 @@ def cStr : NodeConstraint
   | _ => False
 
 /-- The schema of Example 5, `S = (Y, X, def, ∅)`, with
-`Y = {T_even, T_<5, T_>5}`, `X = {x0,...,x6}`, and `def` as in the
-paper. -/
+`Y = {T_even, T_<5, T_>5}`, `X = {x0,...,x6}`, and `def` as in the paper. -/
 def S_ex5 : Schema where
   Y := {"T_even", "T_lt5", "T_gt5"}
   X := {"x0", "x1", "x2", "x3", "x4", "x5", "x6"}
@@ -91,8 +91,8 @@ def τ_ex3 : Typing :=
     (RDFNode.lit (.int 6), "T_even"), (RDFNode.lit (.int 6), "T_gt5"),
     (RDFNode.lit (.str "a"), "T_str") }
 
-/-- `t p o` is the triple `(n_ex3, p, o)`. All the triples of Examples 3-4
-have this form. -/
+/-- `t p o` is the triple `(n_ex3, p, o)`.
+All the triples of Examples 3-4 have this form. -/
 def tp (p : IRI) (o : RDFNode) : Triple := ⟨n_ex3, p, o⟩
 
 def M24 : Finset Triple := {tp "p" (.lit (.int 2)), tp "p" (.lit (.int 4))}
@@ -102,19 +102,17 @@ def M2a : Finset Triple := {tp "p" (.lit (.int 2)), tp "p" (.lit (.str "a"))}
 def M24a : Finset Triple :=
   {tp "p" (.lit (.int 2)), tp "p" (.lit (.int 4)), tp "p" (.lit (.str "a"))}
 
-/-- The triple expression of Example 3,
-`e = p @T_even ; (p @T_<5* | p @T_str)`. -/
+/-- The triple expression of Example 3, `e = p @T_even ; (p @T_<5* | p @T_str)`. -/
 def e_ex3 : TripleExpr :=
   .seq (.tc "p" "T_even") (.choice (.star (.tc "p" "T_lt5")) (.tc "p" "T_str"))
 
 /-- A fuel bound that is sufficient for all the proofs in Examples 3-5.
-`e_ex3` has depth 4, and the deepest `extends` chain below,
-`x4 → x6 → x3 → x0`, has 4 levels. -/
+`e_ex3` has depth 4, and the deepest `extends` chain below, `x4 → x6 → x3 → x0`, has 4 levels. -/
 def bigFuel : ℕ := 10
 
-/-- `M24, τ ⊨ e` (Example 3). Split it into `{(n,p,2)}` (which satisfies
-`p @T_even`) and `{(n,p,4)}` (which satisfies `(p @T_<5)*` with one
-part). -/
+/-- `M24, τ ⊨ e` (Example 3).
+Split it into `{(n,p,2)}` (which satisfies `p @T_even`) and
+`{(n,p,4)}` (which satisfies `(p @T_<5)*` with one part). -/
 theorem M24_satisfies_e : SatisfiesE τ_ex3 M24 e_ex3 := by
   refine ⟨{tp "p" (.lit (.int 2))}, {tp "p" (.lit (.int 4))}, ⟨by decide, by decide⟩, ?_, ?_⟩
   · exact ⟨n_ex3, .lit (.int 2), rfl, by decide⟩
@@ -124,9 +122,9 @@ theorem M24_satisfies_e : SatisfiesE τ_ex3 M24 e_ex3 := by
     subst hNi
     exact ⟨n_ex3, .lit (.int 4), rfl, by decide⟩
 
-/-- `M246, τ ⊨ e` (Example 3). Split it into `{(n,p,6)}` (which satisfies
-`p @T_even`) and `{(n,p,2),(n,p,4)}` (which satisfies `(p @T_<5)*` with
-two parts). -/
+/-- `M246, τ ⊨ e` (Example 3).
+Split it into `{(n,p,6)}` (which satisfies `p @T_even`) and
+`{(n,p,2),(n,p,4)}` (which satisfies `(p @T_<5)*` with two parts). -/
 theorem M246_satisfies_e : SatisfiesE τ_ex3 M246 e_ex3 := by
   refine ⟨{tp "p" (.lit (.int 6))}, {tp "p" (.lit (.int 2)), tp "p" (.lit (.int 4))},
     ⟨by decide, by decide⟩, ?_, ?_⟩
@@ -138,15 +136,16 @@ theorem M246_satisfies_e : SatisfiesE τ_ex3 M246 e_ex3 := by
     · exact ⟨n_ex3, .lit (.int 2), rfl, by decide⟩
     · exact ⟨n_ex3, .lit (.int 4), rfl, by decide⟩
 
-/-- `M2a, τ ⊨ e` (Example 3). Split it into `{(n,p,2)}` (which satisfies
-`p @T_even`) and `{(n,p,"a")}` (which satisfies `p @T_str`). -/
+/-- `M2a, τ ⊨ e` (Example 3).
+Split it into `{(n,p,2)}` (which satisfies `p @T_even`)
+and `{(n,p,"a")}` (which satisfies `p @T_str`). -/
 theorem M2a_satisfies_e : SatisfiesE τ_ex3 M2a e_ex3 := by
   refine ⟨{tp "p" (.lit (.int 2))}, {tp "p" (.lit (.str "a"))}, ⟨by decide, by decide⟩, ?_, ?_⟩
   · exact ⟨n_ex3, .lit (.int 2), rfl, by decide⟩
   · exact Or.inr ⟨n_ex3, .lit (.str "a"), rfl, by decide⟩
 
-/-- `x` is in a piece of a `List.foldr (· ∪ ·) ∅` union. This is the
-converse of `mem_subset_foldr_union` in `RepBound.lean`. -/
+/-- `x` is in a piece of a `List.foldr (· ∪ ·) ∅` union.
+This is the converse of `mem_subset_foldr_union` in `RepBound.lean`. -/
 private theorem mem_of_mem_foldr_union {α : Type*} [DecidableEq α] (l : List (Finset α))
     {x : α} (hx : x ∈ l.foldr (· ∪ ·) ∅) : ∃ N ∈ l, x ∈ N := by
   induction l with
@@ -158,8 +157,9 @@ private theorem mem_of_mem_foldr_union {α : Type*} [DecidableEq α] (l : List (
       · obtain ⟨N', hN', hxN'⟩ := ih hx
         exact ⟨N', List.mem_cons_of_mem _ hN', hxN'⟩
 
-/-- `M24a, τ ¬⊨ e` (the fourth fact of Example 3). No split of `M24a`
-satisfies `e`. (`M24`, `M246` and `M2a` have such a split.) -/
+/-- `M24a, τ ¬⊨ e` (the fourth fact of Example 3).
+No split of `M24a` satisfies `e`.
+(`M24`, `M246` and `M2a` have such a split.) -/
 theorem M24a_not_satisfies_e : ¬ SatisfiesE τ_ex3 M24a e_ex3 := by
   rintro ⟨N1, N2, ⟨hdisj, hunion⟩, ⟨n1, o1, hN1eq, hty1⟩, hN2⟩
   have ha_mem : tp "p" (.lit (.str "a")) ∈ M24a := by decide
@@ -192,9 +192,9 @@ theorem M24a_not_satisfies_e : ¬ SatisfiesE τ_ex3 M24a e_ex3 := by
     omega
 
 /-! The prerequisites for the decidability of `S_ex5`
-(`satisfiesFuel_decidable` and `satisfiesMFuel_decidable` in
-`ShexLean.Shex2025Inheritance.Decidable`). Each `SatisfiesFuel` or
-`SatisfiesMFuel` claim that Examples 4 and 5 show needs them. -/
+(`satisfiesFuel_decidable` and `satisfiesMFuel_decidable`
+in `ShexLean.Shex2025Inheritance.Decidable`).
+Each `SatisfiesFuel` or `SatisfiesMFuel` claim that Examples 4 and 5 show needs them. -/
 
 theorem S_ex5_XClosed : S_ex5.XClosed := by unfold Schema.XClosed; decide
 
@@ -210,18 +210,14 @@ open ShexLean.Inheritance (e_ex3 M24 M246 M2a M24a S_ex5 τ_ex3 bigFuel)
 open ShexLean.InheritanceCore (satisfiesE_decidable)
 open ShexLean (Graph.render Typing.render renderDecide)
 
-/-- The triple expression of Example 3, matched against `M24`, `M246`,
-`M2a` and `M24a`.
+/-- The triple expression of Example 3, matched against `M24`, `M246`, `M2a` and `M24a`.
 
-* `graphText` and `typingText` render the real `Finset Triple` and
-  `Typing` values.
-* Each claim `M,τ ⊨ e` is a `renderDecide` computation with
-  `satisfiesE_decidable`.
+* `graphText` and `typingText` render the real `Finset Triple` and `Typing` values.
+* Each claim `M,τ ⊨ e` is a `renderDecide` computation with `satisfiesE_decidable`.
 
-This is decidable with no condition, because Table 1 never uses
-`NodeConstraint` or `extends`. Thus, no `XClosed`, `RestrOk` or `FOk`
-witnesses are necessary here. (The `SatisfiesFuel` claims in the other
-2025 examples need them.) -/
+This is decidable with no condition, because Table 1 never uses `NodeConstraint` or `extends`.
+Thus, no `XClosed`, `RestrOk` or `FOk` witnesses are necessary here.
+(The `SatisfiesFuel` claims in the other 2025 examples need them.) -/
 def inheritance2025TripleMatch : Example where
   name := "inheritance2025-example3-triple-match"
   summary := "Triple expression p@T_even;(p@T_<5*|p@T_str) matched against four sets."

@@ -4,26 +4,26 @@ import ShexLean.Shex2017Schemas.Render
 import Example
 
 /-!
-Example 6 from Boneva, Labra Gayo, Prud'hommeaux (2017) (§4.2). Example 6
-gives a new graph `G₃`, together with `S₃` from Example 5
-(`Examples.StratificationExample.S₃`). It is the motivation for the
-`prove` algorithm (Algorithm 2). The question is: does `ex:n1` have the
-shape `<L1>`?
+Example 6 from Boneva, Labra Gayo, Prud'hommeaux (2017) (§4.2).
+Example 6 gives a new graph `G₃`, together with `S₃`
+from Example 5 (`Examples.StratificationExample.S₃`).
+It is the motivation for the `prove` algorithm (Algorithm 2).
+The question is: does `ex:n1` have the shape `<L1>`?
 
-`Satisfies` and `Matches` are `Prop`s over infinite types (`RDFNode`, and
-`IRI := String`). `ShexLean.Shex2017Schemas.Decidable` gives
-kernel-reducible `Decidable` instances for the two relations. These
-instances bound each existential to the finite graph and typing.
+`Satisfies` and `Matches` are `Prop`s over infinite types (`RDFNode`, and `IRI := String`).
+`ShexLean.Shex2017Schemas.Decidable` gives kernel-reducible
+`Decidable` instances for the two relations.
+These instances bound each existential to the finite graph and typing.
 
-This file proves the main claim of Example 6 in the usual way, at the
-level of the declarative semantics (`⊢` and `⊨`, Fig. 2). The claim is
-that `t = {(ex:n1,<L1>), (ex:n2,<L2>), (ex:n3,<L3>)}` is a correct typing
-of `G₃` by `S₃` (`typing_correct`). The `Example` at the end of the file
-also computes this claim with `renderDecide`.
+This file proves the main claim of Example 6 in the usual way,
+at the level of the declarative semantics (`⊢` and `⊨`, Fig. 2).
+The claim is that `t = {(ex:n1,<L1>), (ex:n2,<L2>), (ex:n3,<L3>)}`
+is a correct typing of `G₃` by `S₃` (`typing_correct`).
+The `Example` at the end of the file also computes this claim with `renderDecide`.
 
-Example 7 (`Example7_trace.lean`) gives the execution trace of
-`prove(ex:n1,<L1>,[])` on the same `G₃` and `S₃`. It uses all the
-definitions of this file.
+Example 7 (`Example7_trace.lean`) gives the execution
+trace of `prove(ex:n1,<L1>,[])` on the same `G₃` and `S₃`.
+It uses all the definitions of this file.
 -/
 
 namespace Examples.ProveAlgorithmExample
@@ -49,20 +49,22 @@ def t4 : Triple := ⟨n3, c, n2⟩
 /-- `G₃` from Example 6. -/
 def G₃ : Graph := {t1, t2, t3, t4}
 
--- The same shape-label aliases as in `Examples.StratificationExample`. They have
--- the same string values. Thus, `S₃.shapeDef`, which uses the `L1`, `L2`, `L3`
--- and `Str` of that file, unfolds in the same way with these aliases.
+-- The same shape-label aliases as in `Examples.StratificationExample`.
+-- They have the same string values.
+-- Thus, `S₃.shapeDef`, which uses the `L1`, `L2`, `L3` and `Str`
+-- of that file, unfolds in the same way with these aliases.
 def L1 : Label := "L1"
 def L2 : Label := "L2"
 def L3 : Label := "L3"
 def Str : Label := "Str"
 
--- Use `rfl` here, not `simp`. The `if` chain of `S₃.shapeDef` compares with
--- the constants `L1`, `L2`, `L3` and `Str` of `Examples.StratificationExample`.
--- These constants are private, so this file cannot use their names. `rfl`
--- unfolds private `abbrev` definitions with full definitional equality, and
--- does not look at accessibility. `simp` needs the name of each unfolded
--- constant in its argument list.
+-- Use `rfl` here, not `simp`.
+-- The `if` chain of `S₃.shapeDef` compares with the constants
+-- `L1`, `L2`, `L3` and `Str` of `Examples.StratificationExample`.
+-- These constants are private, so this file cannot use their names.
+-- `rfl` unfolds private `abbrev` definitions with full
+-- definitional equality, and does not look at accessibility.
+-- `simp` needs the name of each unfolded constant in its argument list.
 theorem shapeDef_L1 :
     S₃.shapeDef L1 =
       .not (.neigDescr (.eachOf (.tPattern {a} L2) (.tPattern {b} Str))) := rfl
@@ -92,9 +94,9 @@ theorem satisfies_L3_n3 : Satisfies G₃ t n3 (S₃.shapeDef L3) := by
   exact ⟨n3, c, n2, rfl, by decide, by decide⟩
 
 /-- `ex:n1 ⊢ <L1>` (the main claim of Example 6).
-`<L1> = NOT(ex:a @<L2> ; ex:b @<Str>)`. The `eachOf` fails, because `n1`
-has only one `ex:b` neighbour, `4`, and `t` never gives the type `<Str>`
-to `4`. -/
+`<L1> = NOT(ex:a @<L2> ; ex:b @<Str>)`.
+The `eachOf` fails, because `n1` has only one `ex:b`
+neighbour, `4`, and `t` never gives the type `<Str>` to `4`. -/
 theorem satisfies_L1_n1 : Satisfies G₃ t n1 (S₃.shapeDef L1) := by
   rw [shapeDef_L1]
   show ¬ Satisfies G₃ t n1 _
@@ -139,14 +141,14 @@ open Examples.StratificationExample (S₃)
 open ShexLean (Schema.render Graph.render Typing.render renderDecide corrTyping_decidable
   satisfies_decidable)
 
-/-- Example 6: the graph `G₃`, which is the motivation for Algorithm 2. It
-shows that `ex:n1` has the shape `<L1>` with `S₃`.
+/-- Example 6: the graph `G₃`, which is the motivation for Algorithm 2.
+It shows that `ex:n1` has the shape `<L1>` with `S₃`.
 
-* `schemaText`, `graphText` and the correctness result in `typingText` are
-  generated from the real values `S₃`, `G₃` and `t`.
+* `schemaText`, `graphText` and the correctness result in
+  `typingText` are generated from the real values `S₃`, `G₃` and `t`.
 * The main claim "`ex:n1` has shape `<L1>`" is a `renderDecide`
-  computation of `Satisfies G₃ t n1 (S₃.shapeDef L1)`. It is not
-  text. -/
+  computation of `Satisfies G₃ t n1 (S₃.shapeDef L1)`.
+  It is not text. -/
 def proveAlgorithmMotivation : Example where
   name := "schemas2017-example6-prove-motivation"
   summary := "Motivating graph G₃ for Algorithm 2: ex:n1 has shape <L1> with S₃."

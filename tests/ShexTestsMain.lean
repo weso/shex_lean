@@ -5,15 +5,15 @@ The runner of the test suite (`lake test`, or `lake exe shex_tests`).
 
 Usage: `lake exe shex_tests [--verbose] [--group GROUP] [NAME_PART]`.
 
-* With `--group structural` or `--group inheritance`, the runner runs only
-  the tests of that group.
+* With `--group structural` or `--group inheritance`,
+  the runner runs only the tests of that group.
 * With `NAME_PART`, the runner runs only the tests whose name contains it.
 * With `--verbose`, it prints the result of each test.
 
 The runner fails (exit code 1) if a test gives an unexpected result:
 
-* A test that is not in `ShexTests.knownFailures` gives a result that is
-  different from the expected result.
+* A test that is not in `ShexTests.knownFailures` gives
+  a result that is different from the expected result.
 * A test that is in `ShexTests.knownFailures` gives the expected result.
 -/
 

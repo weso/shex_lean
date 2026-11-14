@@ -2,36 +2,36 @@ import ShexLean.InheritanceCore.Schema
 import Mathlib.Data.Finset.Powerset
 
 /-!
-The semantics-level part of "Shape Expressions with Inheritance" (2025)
-that does not depend on the rules of Table 3: correct typings
+The semantics-level part of "Shape Expressions with Inheritance"
+(2025) that does not depend on the rules of Table 3: correct typings
 (Definition 4), the maximal typing (Definition 8) and Proposition 1.
 
-The class `InheritanceSemantics` gives the satisfaction relation of a
-development, and the two facts about it that these proofs use:
+The class `InheritanceSemantics` gives the satisfaction relation of
+a development, and the two facts about it that these proofs use:
 
-* `satisfies_transfer`: `Satisfies` depends only on the typing and the
-  schema in the labels that the shape expression can reach.
-* `satisfies_stratMono`: `Satisfies` is monotone in the typing, if the
-  typing does not change on the negative dependencies.
+* `satisfies_transfer`: `Satisfies` depends only on the typing and
+  the schema in the labels that the shape expression can reach.
+* `satisfies_stratMono`: `Satisfies` is monotone in the typing,
+  if the typing does not change on the negative dependencies.
 
 `ShexLean/Shex2025Inheritance/Proposition1.lean` and
-`ShexLean/Shex2026InheritanceDisjunction/Proposition1.lean` prove these
-two facts and give the instances. All the results of this file, of
-`ShexLean/InheritanceCore/Lemma2.lean` and of
-`ShexLean/InheritanceCore/Algorithm1.lean` then apply to the two
+`ShexLean/Shex2026InheritanceDisjunction/Proposition1.lean`
+prove these two facts and give the instances.
+All the results of this file, of `ShexLean/InheritanceCore/Lemma2.lean`
+and of `ShexLean/InheritanceCore/Algorithm1.lean` then apply to the two
 developments.
 -/
 
 namespace ShexLean.InheritanceCore
 
 /-- The satisfaction relation `n, τ ⊨_S s` of a development, two
-well-formedness conditions on shape expressions, and the two facts that
-the proofs of Proposition 1, Lemma 2 and Algorithm 1 use. -/
+well-formedness conditions on shape expressions, and the two facts
+that the proofs of Proposition 1, Lemma 2 and Algorithm 1 use. -/
 class InheritanceSemantics (E : Type) [ShapeSyntax E] where
   /-- `n, τ ⊨_S s`. -/
   Satisfies : Schema E → Graph → Typing → RDFNode → E → Prop
-  /-- The invariant "(*)" of the appendix proof of Proposition 1 (refer to
-  `Shape.WellFormedExtra`), for each shape in a shape expression. -/
+  /-- The invariant "(*)" of the appendix proof of Proposition 1 (refer
+  to `Shape.WellFormedExtra`), for each shape in a shape expression. -/
   WellFormedExtra : E → Prop
   /-- No `extends` below a `not`. -/
   NotIsExtendsFree : E → Prop
@@ -60,8 +60,8 @@ def Schema.WellFormedExtra (S : Schema E) : Prop :=
 def Schema.NotIsExtendsFree (S : Schema E) : Prop :=
   ∀ ℓ, InheritanceSemantics.NotIsExtendsFree (S.shapeDef ℓ)
 
-/-- `Satisfies` depends on `τ` only through its restriction to `Z`, if
-`s` reaches only labels of `Z` and `Z` is `D_S`-closed. -/
+/-- `Satisfies` depends on `τ` only through its restriction to
+`Z`, if `s` reaches only labels of `Z` and `Z` is `D_S`-closed. -/
 theorem Satisfies.agree {S : Schema E} (hAcyclic : S.ExtAcyclic)
     {G : Graph} {τ τ' : Typing} {Z : Finset Label} (hZ : S.DClosedOn Z)
     (hagree : AgreeOn τ τ' Z) {s : E} (hdeps : depsIn s Z)
@@ -74,22 +74,21 @@ def Schema.CorrectTyping (S : Schema E) (G : Graph) (τ : Typing) : Prop :=
     (z ∉ S.A → Satisfies S G τ n (S.shapeDef z)) ∧
     (z ∈ S.A → ∃ x ∈ S.desc z \ S.A, Satisfies S G τ n (S.shapeDef x))
 
-/-- The empty typing is trivially correct. It has no `(n,z)` pairs to
-check. -/
+/-- The empty typing is trivially correct.
+It has no `(n,z)` pairs to check. -/
 theorem Schema.correctTyping_empty (S : Schema E) (G : Graph) : S.CorrectTyping G ∅ := by
   intro n z hz
   simp [Typing.has] at hz
 
 /-! ### Definition 8 and Proposition 1 -/
 
-/-- `maxTypingAgreeing S' G Lo fixed`: the union of all the correct typings
-of `G` by `S'` that agree with `fixed` on `Lo`. This is a general form of
-the "maximal correct typing" of `S'` (the case `Lo = ∅`). It adds the
-agreement constraint that Definition 8 needs to connect the strata. It
-agrees with `maxAgree` of 2017
+/-- `maxTypingAgreeing S' G Lo fixed`: the union of all the
+correct typings of `G` by `S'` that agree with `fixed` on `Lo`.
+This is a general form of the "maximal correct typing" of `S'` (the case `Lo = ∅`).
+It adds the agreement constraint that Definition 8 needs to connect the strata.
+It agrees with `maxAgree` of 2017
 (`ShexLean/Shex2017Schemas/Proposition1.lean`), with
-`Schema.CorrectTyping` and `restrictTyping` in place of the 2017
-versions. -/
+`Schema.CorrectTyping` and `restrictTyping` in place of the 2017 versions. -/
 noncomputable def maxTypingAgreeing (S' : Schema E) (G : Graph) (Lo : Finset Label)
     (fixed : Typing) : Typing :=
   haveI := Classical.decPred
@@ -136,10 +135,11 @@ theorem maxTypingAgreeing_restrictTo {S' : Schema E} {G : Graph} {Lo : Finset La
   · rintro ⟨hmem, hL⟩
     exact ⟨subset_maxTypingAgreeing hfixed_sub hfixed_correct rfl hmem, hL⟩
 
-/-- `maxTypingAgreeing` is also a correct typing, if `Lo` contains the
-negative dependencies of each label of `S'`. The abstract-label case (the
-second bullet of `Schema.CorrectTyping`) goes from `τ` to `τ'` in the same
-way as the plain case. It applies `stratMono` to `S'.shapeDef x` (the
+/-- `maxTypingAgreeing` is also a correct typing, if `Lo`
+contains the negative dependencies of each label of `S'`.
+The abstract-label case (the second bullet of `Schema.CorrectTyping`)
+goes from `τ` to `τ'` in the same way as the plain case.
+It applies `stratMono` to `S'.shapeDef x` (the
 descendant that is the witness), not to `S'.shapeDef L`. -/
 theorem maxTypingAgreeing_correct {S' : Schema E} (hAcyclic : S'.ExtAcyclic)
     (hWFExtra : S'.WellFormedExtra)
@@ -175,19 +175,21 @@ theorem maxTypingAgreeing_correct {S' : Schema E} (hAcyclic : S'.ExtAcyclic)
 
 /-! ### Schema invariance of `Satisfies` across `stratRestrict`
 
-This is the last part that Proposition 1 needs. `Satisfies` uses the
-schema (in rule 18). Thus, `Satisfies (S.stratRestrict strat i) G τ n s`
-and `Satisfies (S.stratRestrict strat j) G τ n s` are different
-propositions. In 2017, `stratTypingSeq_correct` does not have this
-problem, because `Satisfies` never uses the schema. Here,
-`satisfies_transfer` solves it. -/
+This is the last part that Proposition 1 needs.
+`Satisfies` uses the schema (in rule 18).
+Thus, `Satisfies (S.stratRestrict strat i) G τ n s` and
+`Satisfies (S.stratRestrict strat j) G τ n s` are different propositions.
+In 2017, `stratTypingSeq_correct` does not have this
+problem, because `Satisfies` never uses the schema.
+Here, `satisfies_transfer` solves it. -/
 
-/-- **The key schema-invariance fact.** For a label `x` in a stratum
-`≤ i`, `Satisfies` with `S.stratRestrict strat i` agrees with `Satisfies`
-with each higher restriction `S.stratRestrict strat j` (`i ≤ j`). The
-evaluation of `def(x)` never goes outside the strata `≤ i`
-(`Schema.shapeDef_depsIn` and `Schema.stratum_DClosedOn`). In that region,
-the `.anc` of the two schemas is the same (`Schema.stratRestrict_anc_eq`). -/
+/-- **The key schema-invariance fact.**
+For a label `x` in a stratum `≤ i`, `Satisfies` with
+`S.stratRestrict strat i` agrees with `Satisfies` with each
+higher restriction `S.stratRestrict strat j` (`i ≤ j`).
+The evaluation of `def(x)` never goes outside the strata `≤ i`
+(`Schema.shapeDef_depsIn` and `Schema.stratum_DClosedOn`).
+In that region, the `.anc` of the two schemas is the same (`Schema.stratRestrict_anc_eq`). -/
 theorem Satisfies_stratRestrict_agree {S : Schema E}
     (hAcyclic : S.ExtAcyclic) (hDClosed : S.DClosed) (strat : Stratification S)
     {i j : ℕ} (hij : i ≤ j) {x : Label} (hxY : x ∈ S.Y ∪ S.X) (hxi : strat.strat x ≤ i)
@@ -203,15 +205,15 @@ theorem Satisfies_stratRestrict_agree {S : Schema E}
   rw [Schema.stratRestrict_anc_eq hDClosed strat hyY hyi,
     Schema.stratRestrict_anc_eq hDClosed strat hyY (hyi.trans hij)]
 
-/-- A correct typing of `S.stratRestrict strat i` is also a correct typing
-of `S.stratRestrict strat j`, for `i ≤ j`. The inductive step of
-`stratTypingSeq_correct` needs this step: "go up one stratum level and keep
-correctness".
+/-- A correct typing of `S.stratRestrict strat i` is also a
+correct typing of `S.stratRestrict strat j`, for `i ≤ j`.
+The inductive step of `stratTypingSeq_correct` needs this
+step: "go up one stratum level and keep correctness".
 
-Each part (`.A` membership, and the `.desc \ .A` witnesses) is monotone in
-the restriction level, because `stratRestrict` only makes `Y`, `X` and `A`
-larger when `i` becomes larger. The important step is to move the
-`Satisfies` witnesses with `Satisfies_stratRestrict_agree`. -/
+Each part (`.A` membership, and the `.desc \ .A` witnesses)
+is monotone in the restriction level, because `stratRestrict`
+only makes `Y`, `X` and `A` larger when `i` becomes larger.
+The important step is to move the `Satisfies` witnesses with `Satisfies_stratRestrict_agree`. -/
 theorem Schema.correctTyping_stratRestrict_mono {S : Schema E}
     (hAcyclic : S.ExtAcyclic) (hDClosed : S.DClosed) (strat : Stratification S)
     {i j : ℕ} (hij : i ≤ j) {G : Graph} {t : Typing}
@@ -244,21 +246,21 @@ theorem Schema.correctTyping_stratRestrict_mono {S : Schema E}
 
 /-- The sequence `τ_i` of Definition 8, as one recursion on `ℕ`:
 
-* `τ_0 := ∅`. This is vacuously correct for `S^σ_0`, because each label
-  has `σ(z) ≥ 1`. Thus, stratum 0 is empty.
-* `τ_{i+1}` is the union of all the correct typings of `G` by `S^σ_{i+1}`
-  that agree with `τ_i` on `Y^σ_i ∪ X^σ_i`.
+* `τ_0 := ∅`.
+  This is vacuously correct for `S^σ_0`, because each label has `σ(z) ≥ 1`.
+  Thus, stratum 0 is empty.
+* `τ_{i+1}` is the union of all the correct typings of `G`
+  by `S^σ_{i+1}` that agree with `τ_i` on `Y^σ_i ∪ X^σ_i`.
 
-This agrees with the recursion of the paper. The base case `τ_1` of
-Definition 8 ("the union of all correct typings of `G` by `S^σ_1`") is the
-special case `Lo = ∅` of the general step. -/
+This agrees with the recursion of the paper.
+The base case `τ_1` of Definition 8 ("the union of all correct typings
+of `G` by `S^σ_1`") is the special case `Lo = ∅` of the general step. -/
 noncomputable def stratTypingSeq (S : Schema E) (strat : Label → ℕ) (G : Graph) : ℕ → Typing
   | 0 => ∅
   | i + 1 => maxTypingAgreeing (S.stratRestrict strat (i + 1)) G (S.stratum strat i)
       (stratTypingSeq S strat G i)
 
-/-- Definition 8: the maximal typing of `G` by `S` with `σ`,
-`τ_max(S,σ,G)`. -/
+/-- Definition 8: the maximal typing of `G` by `S` with `σ`, `τ_max(S,σ,G)`. -/
 noncomputable def Typing8 (G : Graph) (S : Schema E) (strat : Stratification S) : Typing :=
   stratTypingSeq S strat.strat G strat.k
 
@@ -267,8 +269,8 @@ noncomputable def Typing8 (G : Graph) (S : Schema E) (strat : Stratification S) 
 * It is a subset of the universe of typings of `S^σ_i`.
 * It is a correct typing of `G` by `S^σ_i`.
 
-The base case (`i = 0`) is vacuous. (`stratum strat 0 = ∅`, and
-`Y^σ_0 ∪ X^σ_0 = ∅`, because each label has `σ ≥ 1`, `mem_range`.)
+The base case (`i = 0`) is vacuous.
+(`stratum strat 0 = ∅`, and `Y^σ_0 ∪ X^σ_0 = ∅`, because each label has `σ ≥ 1`, `mem_range`.)
 
 The inductive step combines two lemmas:
 
@@ -276,8 +278,8 @@ The inductive step combines two lemmas:
 * `Schema.correctTyping_stratRestrict_mono`: it moves the correctness of
   the previous typing at stratum `i` up to the schema of stratum `i+1`.
 
-This solves the problem that a direct port in the 2017 style does not
-solve. Refer to the docstring of `Satisfies_stratRestrict_agree`. -/
+This solves the problem that a direct port in the 2017 style does not solve.
+Refer to the docstring of `Satisfies_stratRestrict_agree`. -/
 theorem stratTypingSeq_correct {S : Schema E} (hAcyclic : S.ExtAcyclic)
     (hWFExtra : S.WellFormedExtra) (hNEF : S.NotIsExtendsFree) (hDClosed : S.DClosed)
     (strat : Stratification S) (G : Graph) (i : ℕ) :
@@ -321,7 +323,8 @@ theorem stratTypingSeq_correct {S : Schema E} (hAcyclic : S.ExtAcyclic)
           (stratTypingSeq S strat.strat G i))
       exact maxTypingAgreeing_correct hAcyclic1 hWFExtra hNEF hDClosed1 hsub_i' hcorrect_i' hLo
 
-/-- **Proposition 1.** For every schema `S`, stratification `σ` of `S`, and
+/-- **Proposition 1.**
+For every schema `S`, stratification `σ` of `S`, and
 graph `G`, the typing `τ_max(S,σ,G)` is a correct typing. -/
 theorem proposition1 {S : Schema E} (hAcyclic : S.ExtAcyclic)
     (hWFExtra : S.WellFormedExtra) (hNEF : S.NotIsExtendsFree) (hDClosed : S.DClosed)

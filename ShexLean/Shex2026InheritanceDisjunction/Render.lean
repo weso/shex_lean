@@ -3,28 +3,28 @@ import ShexLean.InheritanceCore.Render
 import Mathlib.Data.Finset.Sort
 
 /-!
-The equivalent of `ShexLean.Shex2017Schemas.Render` for this formalism. It
-does two things:
+The equivalent of `ShexLean.Shex2017Schemas.Render` for this formalism.
+It does two things:
 
-* It changes the *real* `Graph`, `Schema` and `Typing` values of a worked
-  example into display text.
-* It replaces `true`, `false` and text claims that a person typed by hand
-  with values that the `Decidable` instances of this formalism compute
-  (`satisfiesFuel_decidable`, `satisfiesMFuel_decidable` and
-  `satisfiesE_decidable`, in
+* It changes the *real* `Graph`, `Schema` and `Typing`
+  values of a worked example into display text.
+* It replaces `true`, `false` and text claims that a person
+  typed by hand with values that the `Decidable` instances
+  of this formalism compute (`satisfiesFuel_decidable`,
+  `satisfiesMFuel_decidable` and `satisfiesE_decidable`, in
   `ShexLean/Shex2026InheritanceDisjunction/Decidable.lean`).
 
 It uses directly these functions of the 2017 formalization:
 `ShexLean.renderSorted`, `RDFNode.render`, `Subject.render`,
-`Triple.render`, `Graph.render` and `renderDecide`. They operate on the
-shared types of `Common/RDF.lean`, which do not change here.
+`Triple.render`, `Graph.render` and `renderDecide`.
+They operate on the shared types of `Common/RDF.lean`, which do not change here.
 
-**`NodeConstraint := RDFNode → Prop` is opaque** (Def 1). (In 2017, the
-concrete `ValueDescr` is not opaque.) Thus, this file cannot render
-`.constraint c` from `c`. In each worked example, the `.constraint` leaves
-are `Y` labels, and only the line `<L> → …` of `Schema.render` refers to
-them. Thus, a general placeholder is sufficient for a `.constraint` node
-on its own line.
+**`NodeConstraint := RDFNode → Prop` is opaque** (Def 1).
+(In 2017, the concrete `ValueDescr` is not opaque.)
+Thus, this file cannot render `.constraint c` from `c`.
+In each worked example, the `.constraint` leaves are `Y` labels,
+and only the line `<L> → …` of `Schema.render` refers to them.
+Thus, a general placeholder is sufficient for a `.constraint` node on its own line.
 -/
 
 namespace ShexLean.InheritanceDisjunction
@@ -43,13 +43,14 @@ def ShapeExpr.render : ShapeExpr → String
   | .not s => s!"NOT({s.render})"
 
 /-- `Schema.render`: one line `<L> → def(L)` for each label in `Y ∪ X`.
-(`shapeDef` is total, but only these labels are part of the schema. This
-agrees with `Schema.render` in `ShexLean.Shex2017Schemas.Render`.)
+(`shapeDef` is total, but only these labels are part of the schema.
+This agrees with `Schema.render` in `ShexLean.Shex2017Schemas.Render`.)
 
-The labels are sorted directly with `Finset.sort`. `renderSorted` sorts
-*rendered strings*, for types that have no order. Here, `Label := String`
-already has an order. Also, the function needs each label `L`, not only
-its rendered text, to find `S.shapeDef L` and `L ∈ S.A`. -/
+The labels are sorted directly with `Finset.sort`.
+`renderSorted` sorts *rendered strings*, for types that have no order.
+Here, `Label := String` already has an order.
+Also, the function needs each label `L`, not only its
+rendered text, to find `S.shapeDef L` and `L ∈ S.A`. -/
 def Schema.render (S : Schema) : String :=
   "\n".intercalate
     (((S.Y ∪ S.X).sort (· ≤ ·)).map

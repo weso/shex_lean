@@ -2,36 +2,38 @@ import ShexLean.Shex2025Inheritance.examples.Example6_dependency_graph
 import Example
 
 /-!
-Example 7 from the 2025 paper "Shape Expressions with Inheritance" (§4.2,
-Def. 6): the well-definedness results for `S1`, `S2` and `S3` of
-Example 6 (`Example6_dependency_graph.lean`). The checks use Definition 6
-(`Schema.WellDefined`, in
+Example 7 from the 2025 paper "Shape Expressions with Inheritance"
+(§4.2, Def. 6): the well-definedness results for `S1`, `S2` and
+`S3` of Example 6 (`Example6_dependency_graph.lean`).
+The checks use Definition 6 (`Schema.WellDefined`, in
 `ShexLean/Shex2025Inheritance/Stratification.lean`).
 
-* `S1` is well-defined. Its only cycles, `y1↔y2` and `y1,y3`, have no
-  negative dependency.
-* `S2` is not well-defined. The cycle `y4,y5` has the negative dependency
-  `dep-shape-neg(y5,y4)`.
-* `S3` is not well-defined. The cycle `y7,x2,x1` has the negative
-  dependency `dep-shape-neg(y7,x2)`. This cycle needs `dep-extends`
-  (made symmetric) to go from `x2` back to `x1`.
+* `S1` is well-defined.
+  Its only cycles, `y1↔y2` and `y1,y3`, have no negative dependency.
+* `S2` is not well-defined.
+  The cycle `y4,y5` has the negative dependency `dep-shape-neg(y5,y4)`.
+* `S3` is not well-defined.
+  The cycle `y7,x2,x1` has the negative dependency `dep-shape-neg(y7,x2)`.
+  This cycle needs `dep-extends` (made symmetric) to go from `x2` back to `x1`.
 
-Without the `dep-extends` relation, the cycle in `S3` does not exist. This
-shows that you cannot mix extension and negation in all possible ways.
+Without the `dep-extends` relation, the cycle in `S3` does not exist.
+This shows that you cannot mix extension and negation in all possible ways.
 -/
 
 namespace ShexLean.Inheritance
 
 open ShexLean.InheritanceCore hiding Schema
 
-/-- `S1` is well-defined (Example 7). `H_{S1}` is trivially acyclic
-(`X1 = ∅`), and `S1` has no negative dependency for any pair of labels:
+/-- `S1` is well-defined (Example 7).
+`H_{S1}` is trivially acyclic (`X1 = ∅`), and `S1`
+has no negative dependency for any pair of labels:
 
-* The `extra {r}` of `y3` never matches the predicate `p` of its triple
-  constraint `p @y1`. Thus, `dep-extra-neg` never applies.
-* `S1` has no `not`. Thus, `dep-shape-neg` also never applies. (This is
-  also true for each label outside `{y1,y2,y3}`, whose `shapeDef` is
-  `.constraint (fun _ => False)`, which has no references.) -/
+* The `extra {r}` of `y3` never matches the predicate `p` of its triple constraint `p @y1`.
+  Thus, `dep-extra-neg` never applies.
+* `S1` has no `not`.
+  Thus, `dep-shape-neg` also never applies.
+  (This is also true for each label outside `{y1,y2,y3}`, whose
+  `shapeDef` is `.constraint (fun _ => False)`, which has no references.) -/
 theorem S1_wellDefined : S1.WellDefined := by
   refine ⟨?_, ?_⟩
   · have hX : S1.X = (∅ : Finset Label) := rfl
@@ -57,10 +59,9 @@ theorem S1_wellDefined : S1.WellDefined := by
           · simp [hz1, hz2, hz3, ShapeExpr.depsAux]
     exact hDNeg.elim (hnoNeg a b).1 (hnoNeg a b).2
 
-/-- `S2` is not well-defined (Example 7). The cycle `y4, y5` has the
-negative dependency `dep-shape-neg(y5,y4)` (`y5 = not ⟨q@y4⟩`). `y4` goes
-back to `y5` directly through `dep(y4,y5)` (the disjunct `⟨p@y5⟩` of
-`y4`). -/
+/-- `S2` is not well-defined (Example 7).
+The cycle `y4, y5` has the negative dependency `dep-shape-neg(y5,y4)` (`y5 = not ⟨q@y4⟩`).
+`y4` goes back to `y5` directly through `dep(y4,y5)` (the disjunct `⟨p@y5⟩` of `y4`). -/
 theorem S2_not_wellDefined : ¬ S2.WellDefined := by
   rintro ⟨-, hNC⟩
   apply hNC
@@ -73,11 +74,11 @@ theorem S2_not_wellDefined : ¬ S2.WellDefined := by
   · show "y5" ∈ ((S2.shapeDef "y4").depsAux false).refs
     rw [hy4shape]; decide
 
-/-- `S3` is not well-defined (Example 7). The cycle `y7, x2, x1` has the
-negative dependency `dep-shape-neg(y7,x2)` (`y7 = not ⟨q@x2⟩`). `x2` goes
-back to `y7` through `dep-extends(x2,x1)` (`x2 extends x1`, made
-symmetric) and then `dep(x1,y7)` (the `⟨p@y7⟩` of `x1`). The paper says
-that the cycle does not exist without the `dep-extends` relation. -/
+/-- `S3` is not well-defined (Example 7).
+The cycle `y7, x2, x1` has the negative dependency `dep-shape-neg(y7,x2)` (`y7 = not ⟨q@x2⟩`).
+`x2` goes back to `y7` through `dep-extends(x2,x1)` (`x2 extends x1`,
+made symmetric) and then `dep(x1,y7)` (the `⟨p@y7⟩` of `x1`).
+The paper says that the cycle does not exist without the `dep-extends` relation. -/
 theorem S3_not_wellDefined : ¬ S3.WellDefined := by
   rintro ⟨-, hNC⟩
   apply hNC
@@ -103,17 +104,18 @@ open ShexLean.Inheritance (S1 S2 S3 renderDepG renderDepShapeNeg renderDepExtend
 
 /-- The well-definedness results of Example 7 for `S1`, `S2` and `S3`.
 
-`Schema.WellDefined` is `ExtAcyclic ∧ ¬NegCycle`. Its negative part is an
-unbounded existential over `ReflTransGen` reachability. It has no
-`Decidable` instance in this formalization. This is the same as
-`StratifiedNegation` of 2017
+`Schema.WellDefined` is `ExtAcyclic ∧ ¬NegCycle`.
+Its negative part is an unbounded existential over `ReflTransGen` reachability.
+It has no `Decidable` instance in this formalization.
+This is the same as `StratifiedNegation` of 2017
 (`ShexLean.Shex2017Schemas.examples.Example5_stratification`).
 
-Thus, the three main results still give the names of the theorems that
-are their witnesses (`S1_wellDefined`, `S2_not_wellDefined` and
-`S3_not_wellDefined`). But each sub-fact that a proof uses (`dep`,
-`dep-shape-neg` and `dep-extends`) is a `renderDecide` computation, with
-`renderDepG`, `renderDepShapeNeg` and `renderDepExtends` of Example 6. -/
+Thus, the three main results still give the names of the
+theorems that are their witnesses (`S1_wellDefined`,
+`S2_not_wellDefined` and `S3_not_wellDefined`).
+But each sub-fact that a proof uses (`dep`, `dep-shape-neg` and
+`dep-extends`) is a `renderDecide` computation, with `renderDepG`,
+`renderDepShapeNeg` and `renderDepExtends` of Example 6. -/
 def inheritance2025WellDefined : Example where
   name := "inheritance2025-example7-well-defined"
   summary := "Well-definedness results (Def. 6) for S1, S2 and S3 of Example 6."

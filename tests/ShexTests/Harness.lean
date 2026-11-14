@@ -2,30 +2,28 @@ import ShexLean.Shex2025Inheritance.Decidable
 import Mathlib.Data.Finset.Sort
 
 /-!
-The test harness: a validator that a program can run, for the 2025
-formalism (`ShexLean/Shex2025Inheritance/`).
+The test harness: a validator that a program can run, for
+the 2025 formalism (`ShexLean/Shex2025Inheritance/`).
 
-It uses only the definitions and the decision procedures of the
-formalization:
+It uses only the definitions and the decision procedures of the formalization:
 
-* `satisfiesFuel_decidable` decides `SatisfiesFuel`. At the fuel
-  `S.X.card + 1`, `SatisfiesFuel` is `Satisfies`
-  (`satisfies_iff_satisfiesFuel_card`).
+* `satisfiesFuel_decidable` decides `SatisfiesFuel`.
+  At the fuel `S.X.card + 1`, `SatisfiesFuel` is
+  `Satisfies` (`satisfies_iff_satisfiesFuel_card`).
 * `ancReach` computes `anc` (`ancReach_eq_anc`).
 
-The validator computes the maximal typing with the stratified refinement of
-Algorithm 1 (§5 of the paper):
+The validator computes the maximal typing with the
+stratified refinement of Algorithm 1 (§5 of the paper):
 
 1. It computes a stratification from the edges of `D_S`.
-2. For each stratum, it starts from all the pairs `(n, L)` of the stratum,
-   and removes each pair that is not locally correct (Definition 4), until
-   the typing is stable.
+2. For each stratum, it starts from all the pairs `(n, L)`
+   of the stratum, and removes each pair that is not locally
+   correct (Definition 4), until the typing is stable.
 
-The focus node conforms to the shape `L` if and only if `(focus, L)` is in
-the result.
+The focus node conforms to the shape `L` if and only if `(focus, L)` is in the result.
 
-This file is not part of the formalization. No proof shows that its
-algorithm gives the same result as `ShexLean.InheritanceCore.Algorithm1`.
+This file is not part of the formalization.
+No proof shows that its algorithm gives the same result as `ShexLean.InheritanceCore.Algorithm1`.
 It follows the same steps.
 -/
 
@@ -37,11 +35,12 @@ open ShexLean.InheritanceCore hiding Schema
 
 /-! ### Node constraints of ShExJ
 
-The generator (`tests/tools/gen_shextest.py`) writes each node constraint
-of a test with these Boolean functions. The data of the tests has only
-the literals of `ShexLean/Common/RDF.lean` (`xsd:string` and canonical
-`xsd:integer`). The generator skips the other tests. Thus, a constraint on
-another datatype or on a language tag never matches. -/
+The generator (`tests/tools/gen_shextest.py`) writes each
+node constraint of a test with these Boolean functions.
+The data of the tests has only the literals of
+`ShexLean/Common/RDF.lean` (`xsd:string` and canonical `xsd:integer`).
+The generator skips the other tests.
+Thus, a constraint on another datatype or on a language tag never matches. -/
 
 /-- The lexical form of a literal. -/
 def lexical : RDFNode → Option String
@@ -58,8 +57,8 @@ inductive VI where
   | none
   | iriStem (s : String)
   | litStem (s : String)
-  /-- A stem range: an optional stem (`none` is the wildcard) and the
-  exclusions. An exclusion is a stem (`true`) or one value (`false`). -/
+  /-- A stem range: an optional stem (`none` is the wildcard) and the exclusions.
+  An exclusion is a stem (`true`) or one value (`false`). -/
   | iriRange (stem : Option String) (excl : List (Bool × String))
   | litRange (stem : Option String) (excl : List (Bool × String))
 
@@ -91,9 +90,9 @@ def isString : RDFNode → Bool | .lit (.str _) => true | _ => false
 def isInteger : RDFNode → Bool | .lit (.int _) => true | _ => false
 def values (vs : List VI) : RDFNode → Bool := fun n => vs.any (·.matches n)
 
-/-- The string that the string facets check: the IRI, the label of a blank
-node, or the lexical form of a literal. (The ShEx test suite checks the
-label of a blank node.) -/
+/-- The string that the string facets check: the IRI, the
+label of a blank node, or the lexical form of a literal.
+(The ShEx test suite checks the label of a blank node.) -/
 def strForm : RDFNode → Option String
   | .iri i => some i
   | .bnode b => some b
@@ -115,10 +114,10 @@ end NC
 
 /-! ### Shape expressions with node constraints that a program can compute
 
-The node constraints of the formalism are general predicates
-(`RDFNode → Prop`). The decision procedures need a `DecidablePred` for each
-of them. The generated tests use `CShape`, in which each node constraint is
-a Boolean function. `CShape.toExpr` gives the shape expression of the
+The node constraints of the formalism are general predicates (`RDFNode → Prop`).
+The decision procedures need a `DecidablePred` for each of them.
+The generated tests use `CShape`, in which each node constraint is a Boolean function.
+`CShape.toExpr` gives the shape expression of the
 formalism, and `CShape.fok` gives the decidability witness. -/
 
 /-- A shape expression with Boolean node constraints. -/
@@ -139,8 +138,8 @@ def CShape.toExpr : CShape → ShapeExpr
   | .and a b => .and a.toExpr b.toExpr
   | .not a => .not a.toExpr
 
-/-- The witness that `satisfiesFuel_decidable` needs. The result is `none`
-if an `extends` goes out of `X`. -/
+/-- The witness that `satisfiesFuel_decidable` needs.
+The result is `none` if an `extends` goes out of `X`. -/
 def CShape.fok (S : Schema) : (c : CShape) → Option (c.toExpr.FOk S)
   | .ofShape _ => some PUnit.unit
   | .ext xs _ => if h : xs.toFinset ⊆ S.X then some ⟨h⟩ else none
@@ -157,8 +156,7 @@ def CShape.fok (S : Schema) : (c : CShape) → Option (c.toExpr.FOk S)
 
 /-! ### Test cases -/
 
-/-- A schema of a test: the labels `Y`, `X` and `A`, and the definition of
-each label. -/
+/-- A schema of a test: the labels `Y`, `X` and `A`, and the definition of each label. -/
 structure TestSchema where
   Y : List Label
   X : List Label
@@ -221,9 +219,9 @@ instance (S : Schema) : Decidable S.RestrOk := by
 
 /-! ### The validator -/
 
-/-- The edges of `D_S` out of `z`: `dep` and `dep-extends`
-(`ShexLean/InheritanceCore/Schema.lean`). The second component tells if
-the edge is negative (`dep-shape-neg` or `dep-extra-neg`). -/
+/-- The edges of `D_S` out of `z`: `dep` and
+`dep-extends` (`ShexLean/InheritanceCore/Schema.lean`).
+The second component tells if the edge is negative (`dep-shape-neg` or `dep-extra-neg`). -/
 def dEdges (S : Schema) (labels : List Label) (z : Label) : List (Label × Bool) :=
   let d := (S.shapeDef z).depsAux false
   let neg := d.negRefs ∪ d.extraNegRefs
@@ -231,10 +229,12 @@ def dEdges (S : Schema) (labels : List Label) (z : Label) : List (Label × Bool)
     (labels.filter fun w => z ∈ (S.shapeDef w).extendsTargets).toFinset
   (targets.sort (· ≤ ·)).map fun z' => (z', decide (z' ∈ neg))
 
-/-- A stratification (Definition 7). It starts with stratum 1 for each
-label. It raises the stratum of `z` until `σ(z') ≤ σ(z)` for each edge, and
-`σ(z') < σ(z)` for each negative edge. The result is `none` if this does
-not stop. Then `D_S` has a negative cycle. -/
+/-- A stratification (Definition 7).
+It starts with stratum 1 for each label.
+It raises the stratum of `z` until `σ(z') ≤ σ(z)` for
+each edge, and `σ(z') < σ(z)` for each negative edge.
+The result is `none` if this does not stop.
+Then `D_S` has a negative cycle. -/
 def stratify (S : Schema) (labels : List Label) : Option (Label → ℕ) := Id.run do
   let edges := labels.map fun z => (z, dEdges S labels z)
   let mut σ : List (Label × ℕ) := labels.map (·, 1)

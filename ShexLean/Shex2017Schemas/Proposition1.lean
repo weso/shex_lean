@@ -6,24 +6,24 @@ import Mathlib.Data.Finset.Powerset
 import Mathlib.Data.Finset.Lattice.Fold
 
 /-!
-Building blocks for Proposition 1 of §3.3. Proposition 1 gives the
-soundness of `Typing(G,S,str)` for stratified schemas. Lemma 1
-(`ShexLean/Shex2017Schemas/MaximalTyping.lean`) covers only the case with
-no negation. This file adds the blocks for the general case.
+Building blocks for Proposition 1 of §3.3.
+Proposition 1 gives the soundness of `Typing(G,S,str)` for stratified schemas.
+Lemma 1 (`ShexLean/Shex2017Schemas/MaximalTyping.lean`) covers only the case with no negation.
+This file adds the blocks for the general case.
 
-The first block is an agreement lemma. `⊢` and `⊨` depend on `t` only
-through the restriction of `t` to the labels that the shape expression or
-triple expression refers to. This is true for each expression, also for
-expressions with `NOT`. The stratified monotonicity lemma below uses this
-lemma.
+The first block is an agreement lemma.
+`⊢` and `⊨` depend on `t` only through the restriction of `t` to the
+labels that the shape expression or triple expression refers to.
+This is true for each expression, also for expressions with `NOT`.
+The stratified monotonicity lemma below uses this lemma.
 -/
 
 namespace ShexLean
 
 mutual
 
-/-- If `t` and `t'` agree (as an `Iff`) on each label that occurs in `S`
-(`S.posDeps ∪ S.negDeps`), then `⊢` also agrees on `S`. -/
+/-- If `t` and `t'` agree (as an `Iff`) on each label that occurs
+in `S` (`S.posDeps ∪ S.negDeps`), then `⊢` also agrees on `S`. -/
 theorem Satisfies.agree {G : Graph} {t t' : Typing} :
     ∀ (S : ShExpr),
       (∀ n L, L ∈ S.posDeps ∪ S.negDeps → ((n, L) ∈ t ↔ (n, L) ∈ t')) →
@@ -90,21 +90,20 @@ theorem Matches.agree {G : Graph} {t t' : Typing} :
 end
 
 /-!
-Stratified monotonicity. For the positive part of `S`, `t ⊆ t'` is
-sufficient. But below a `NOT`, `t` and `t'` must agree exactly on a set
-of labels `Lo`. The condition `S.negDeps ⊆ Lo` gives this (with
-`Satisfies.agree` above).
+Stratified monotonicity.
+For the positive part of `S`, `t ⊆ t'` is sufficient.
+But below a `NOT`, `t` and `t'` must agree exactly on a set of labels `Lo`.
+The condition `S.negDeps ⊆ Lo` gives this (with `Satisfies.agree` above).
 
-* With `Lo = ∅`, you get plain monotonicity for an `S` with no negation
-  (`ShexLean.Satisfies.mono` in `MaximalTyping.lean`).
+* With `Lo = ∅`, you get plain monotonicity for an `S` with no
+  negation (`ShexLean.Satisfies.mono` in `MaximalTyping.lean`).
 * Proposition 1 uses the general form, where `Lo` is a lower stratum.
 -/
 
 mutual
 
-/-- Let `t ⊆ t'`, and let `t` and `t'` agree exactly on `Lo`. If the
-negative dependencies of `S` are all in `Lo`, then `⊢` for `S` goes from
-`t` to `t'`. -/
+/-- Let `t ⊆ t'`, and let `t` and `t'` agree exactly on `Lo`.
+If the negative dependencies of `S` are all in `Lo`, then `⊢` for `S` goes from `t` to `t'`. -/
 theorem Satisfies.stratMono {G : Graph} {t t' : Typing} {Lo : Finset Label}
     (hsub : t ⊆ t')
     (hagree : ∀ n L, L ∈ Lo → ((n, L) ∈ t ↔ (n, L) ∈ t')) :
@@ -155,28 +154,28 @@ theorem Matches.stratMono {G : Graph} {t t' : Typing} {Lo : Finset Label}
 end
 
 /-!
-Definition 4 ("stratification-maximal correct typing") and Proposition 1
-of §3.3.
+Definition 4 ("stratification-maximal correct typing") and Proposition 1 of §3.3.
 
-In the paper, `def : L → ShExpr`. Here, `Schema.shapeDef : Label → ShExpr`
-is total, because a Lean function must be total. Thus, a schema can refer,
-in a `def(L)`, to a label that is not in `S.labels`. In the paper, the
-schemas are implicitly closed under label references. `Schema.Closed`
-makes this assumption explicit. Proposition 1 needs it, because each
-label that a schema refers to must have a stratum (for `neg_strict`).
+In the paper, `def : L → ShExpr`.
+Here, `Schema.shapeDef : Label → ShExpr` is total, because a Lean function must be total.
+Thus, a schema can refer, in a `def(L)`, to a label that is not in `S.labels`.
+In the paper, the schemas are implicitly closed under label references.
+`Schema.Closed` makes this assumption explicit.
+Proposition 1 needs it, because each label that a schema
+refers to must have a stratum (for `neg_strict`).
 -/
 
-/-- Well-formedness: if the definition of a declared label refers to a
-label (positively or negatively), that label is also declared. This is
-automatically true in the grammar of the paper. It is not automatically
-true for our total `shapeDef`. It is necessary, so that `neg_strict` and
-`pos_le` apply to each label that the definitions of a stratified schema
-can reach. -/
+/-- Well-formedness: if the definition of a declared label refers
+to a label (positively or negatively), that label is also declared.
+This is automatically true in the grammar of the paper.
+It is not automatically true for our total `shapeDef`.
+It is necessary, so that `neg_strict` and `pos_le` apply to each
+label that the definitions of a stratified schema can reach. -/
 def Schema.Closed (S : Schema) : Prop :=
   ∀ L ∈ S.labels, (S.shapeDef L).posDeps ∪ (S.shapeDef L).negDeps ⊆ S.labels
 
-/-- `typing_{|Lo}`: the restriction of `t` to the node-type associations
-that have their label in `Lo`. -/
+/-- `typing_{|Lo}`: the restriction of `t` to the
+node-type associations that have their label in `Lo`. -/
 def Typing.restrictTo (t : Typing) (Lo : Finset Label) : Typing :=
   t.filter (fun p => p.2 ∈ Lo)
 
@@ -184,8 +183,8 @@ theorem Typing.mem_restrictTo {t : Typing} {Lo : Finset Label} {n : RDFNode}
     {L : Label} : (n, L) ∈ t.restrictTo Lo ↔ (n, L) ∈ t ∧ L ∈ Lo := by
   simp [Typing.restrictTo]
 
-/-- If two typings have the same restriction to `Lo`, they agree (as an
-`Iff`) on each label in `Lo`. -/
+/-- If two typings have the same restriction to `Lo`,
+they agree (as an `Iff`) on each label in `Lo`. -/
 theorem Typing.restrictTo_agree {t t' : Typing} {Lo : Finset Label}
     (h : t.restrictTo Lo = t'.restrictTo Lo) :
     ∀ n L, L ∈ Lo → ((n, L) ∈ t ↔ (n, L) ∈ t') := by
@@ -210,22 +209,21 @@ theorem Schema.stratum_mono {S : Schema} {str : Label → ℕ} {i j : ℕ} (h : 
   simp only [Schema.stratum, Finset.mem_filter] at hL ⊢
   exact ⟨hL.1, hL.2.trans h⟩
 
-/-- `S_i = (L_i, def_i)` with `def_i(L) = def(L)`: the restriction of `S`
-to the shape labels with a stratum `≤ i`. The definitions do not
-change. -/
+/-- `S_i = (L_i, def_i)` with `def_i(L) = def(L)`: the
+restriction of `S` to the shape labels with a stratum `≤ i`.
+The definitions do not change. -/
 def Schema.stratRestrict (S : Schema) (str : Label → ℕ) (i : ℕ) : Schema where
   labels := S.stratum str i
   shapeDef := S.shapeDef
 
-/-- `maxAgree S' G Lo fixed`: the union of all the correct typings of `G`
-by `S'` that agree with `fixed` on `Lo`. (Thus, their restriction to `Lo`
-is `fixed.restrictTo Lo`.)
+/-- `maxAgree S' G Lo fixed`: the union of all the correct
+typings of `G` by `S'` that agree with `fixed` on `Lo`.
+(Thus, their restriction to `Lo` is `fixed.restrictTo Lo`.)
 
 This definition is a general form of `Schema.maximalTyping`
-(`ShexLean/Shex2017Schemas/MaximalTyping.lean`), which is the case
-`Lo = ∅`. It adds the agreement constraint that Definition 4 needs to
-connect the strata. It uses classical choice to decide `CorrTyping`, as
-`Schema.maximalTyping` does. -/
+(`ShexLean/Shex2017Schemas/MaximalTyping.lean`), which is the case `Lo = ∅`.
+It adds the agreement constraint that Definition 4 needs to connect the strata.
+It uses classical choice to decide `CorrTyping`, as `Schema.maximalTyping` does. -/
 noncomputable def maxAgree (S' : Schema) (G : Graph) (Lo : Finset Label)
     (fixed : Typing) : Typing :=
   haveI := Classical.decPred (fun t => S'.CorrTyping G t ∧ t.restrictTo Lo = fixed.restrictTo Lo)
@@ -248,8 +246,8 @@ theorem maxAgree_subset (S' : Schema) (G : Graph) (Lo : Finset Label)
   simp only [Finset.mem_filter, Finset.mem_powerset] at ht
   exact ht.1
 
-/-- `maxAgree` agrees with `fixed` on `Lo`. Each candidate agrees by
-construction, and `fixed` is always a candidate. -/
+/-- `maxAgree` agrees with `fixed` on `Lo`.
+Each candidate agrees by construction, and `fixed` is always a candidate. -/
 theorem maxAgree_restrictTo {S' : Schema} {G : Graph} {Lo : Finset Label}
     {fixed : Typing} (hfixed_sub : fixed ⊆ S'.univTyping G)
     (hfixed_correct : S'.CorrTyping G fixed) :
@@ -270,9 +268,9 @@ theorem maxAgree_restrictTo {S' : Schema} {G : Graph} {Lo : Finset Label}
     refine ⟨?_, hL⟩
     exact subset_maxAgree hfixed_sub hfixed_correct rfl hmem
 
-/-- `maxAgree` is also a correct typing of `G` by `S'`, if all the negative
-dependencies of `S'` are in `Lo`. A stratification makes sure that this is
-true for `S_{i+1}` relative to `L_i`. -/
+/-- `maxAgree` is also a correct typing of `G` by `S'`,
+if all the negative dependencies of `S'` are in `Lo`.
+A stratification makes sure that this is true for `S_{i+1}` relative to `L_i`. -/
 theorem maxAgree_correct {S' : Schema} {G : Graph} {Lo : Finset Label}
     {fixed : Typing} (hfixed_sub : fixed ⊆ S'.univTyping G)
     (hfixed_correct : S'.CorrTyping G fixed)
@@ -294,19 +292,20 @@ theorem maxAgree_correct {S' : Schema} {G : Graph} {Lo : Finset Label}
 
 /-- The sequence `typing_i` of Definition 4, as one recursion on `ℕ`:
 
-* `typing_0 := ∅`. (`L_0 = ∅`, because each label has `str ≥ 1`.)
-* `typing_{i+1}` is the union of all the correct typings of `G` by
-  `S_{i+1}` that agree with `typing_i` on `L_i`.
+* `typing_0 := ∅`.
+  (`L_0 = ∅`, because each label has `str ≥ 1`.)
+* `typing_{i+1}` is the union of all the correct typings
+  of `G` by `S_{i+1}` that agree with `typing_i` on `L_i`.
 
-`typing_1` is the special case `Lo = L_0 = ∅`. (In the paper, this is the
-maximal typing of Lemma 1, with no negation.) -/
+`typing_1` is the special case `Lo = L_0 = ∅`.
+(In the paper, this is the maximal typing of Lemma 1, with no negation.) -/
 noncomputable def typ (S : Schema) (str : Label → ℕ) (G : Graph) : ℕ → Typing
   | 0 => ∅
   | i + 1 => maxAgree (S.stratRestrict str (i + 1)) G (S.stratum str i)
       (typ S str G i)
 
-/-- Definition 4: the stratification-maximal correct typing of `G` by `S`,
-with the stratification `str`. -/
+/-- Definition 4: the stratification-maximal correct
+typing of `G` by `S`, with the stratification `str`. -/
 noncomputable def MTyping (G : Graph) (S : Schema) (str : Strat S) : Typing :=
   typ S str.str G str.k
 
@@ -315,13 +314,13 @@ noncomputable def MTyping (G : Graph) (S : Schema) (str : Strat S) : Typing :=
 * It is a subset of the universe of typings of `S_i`.
 * It is a correct typing of `G` by `S_i`.
 
-The proof is by induction on `i`. It follows the proof of Proposition 1 in
-the paper:
+The proof is by induction on `i`.
+It follows the proof of Proposition 1 in the paper:
 
 * The base case (`i = 0`, `L_0 = ∅`) is vacuous.
-* The inductive step is `maxAgree_correct` with `Lo = L_i`. It uses
-  `Schema.Closed` and `neg_strict` of the stratification to show that the
-  negative dependencies of `S_{i+1}` stay in `L_i`. -/
+* The inductive step is `maxAgree_correct` with `Lo = L_i`.
+  It uses `Schema.Closed` and `neg_strict` of the stratification to
+  show that the negative dependencies of `S_{i+1}` stay in `L_i`. -/
 theorem typ_correct (S : Schema) (str : Strat S) (hClosed : S.Closed)
     (G : Graph) : ∀ i : ℕ,
       typ S str.str G i ⊆ (S.stratRestrict str.str i).univTyping G ∧
@@ -357,9 +356,10 @@ theorem typ_correct (S : Schema) (str : Strat S) (hClosed : S.Closed)
           (typ S str.str G i))
       exact maxAgree_correct hsub_i' hcorrect_i' hLo
 
-/-- Proposition 1. Let `S` be a well-formed schema (`Schema.Closed`) with a
-stratification `str`, and let `G` be a graph. Then `Typing(G, S, str)`
-(Definition 4) is a correct typing of `G` by `S`. -/
+/-- Proposition 1.
+Let `S` be a well-formed schema (`Schema.Closed`)
+with a stratification `str`, and let `G` be a graph.
+Then `Typing(G, S, str)` (Definition 4) is a correct typing of `G` by `S`. -/
 theorem proposition1 (S : Schema) (str : Strat S) (hClosed : S.Closed) (G : Graph) :
     S.CorrTyping G (MTyping G S str) :=
   (typ_correct S str hClosed G str.k).2

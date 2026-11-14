@@ -19,23 +19,22 @@ abbrev Assoc := RDFNode × Label
 /-- A typing is a finite set of node-type associations. -/
 abbrev Typing := Finset Assoc
 
-/-- `(n, L) ∈ typing`: the typing `typing` gives the shape `L` to the node
-`n`. This definition is an `abbrev` (reducible). Thus, `decide` can see
-the `Finset` membership below it, which is decidable. -/
+/-- `(n, L) ∈ typing`: the typing `typing` gives the shape `L` to the node `n`.
+This definition is an `abbrev` (reducible).
+Thus, `decide` can see the `Finset` membership below it, which is decidable. -/
 abbrev Typing.has (typing : Typing) (n : RDFNode) (L : Label) : Prop :=
   (n, L) ∈ typing
 
-/-- `τ_{|Z}`: the restriction of `τ` to the node-type associations that
-have their label in `Z`. It is a plain function, not a definition with dot
-notation, because dot notation on `τ : Typing` resolves to `Finset`. -/
+/-- `τ_{|Z}`: the restriction of `τ` to the node-type associations that have their label in `Z`.
+It is a plain function, not a definition with dot notation,
+because dot notation on `τ : Typing` resolves to `Finset`. -/
 def restrictTyping (τ : Typing) (Z : Finset Label) : Typing := τ.filter (fun p => p.2 ∈ Z)
 
 theorem mem_restrictTyping {τ : Typing} {Z : Finset Label} {n : RDFNode} {z : Label} :
     (n, z) ∈ restrictTyping τ Z ↔ (n, z) ∈ τ ∧ z ∈ Z := by simp [restrictTyping]
 
-/-- `τ` and `τ'` agree on `Z`: they give the same labels of `Z` to each
-node. The agreement and monotonicity lemmas of the papers use this
-hypothesis. -/
+/-- `τ` and `τ'` agree on `Z`: they give the same labels of `Z` to each node.
+The agreement and monotonicity lemmas of the papers use this hypothesis. -/
 def AgreeOn (τ τ' : Typing) (Z : Finset Label) : Prop :=
   ∀ n z, z ∈ Z → ((n, z) ∈ τ ↔ (n, z) ∈ τ')
 

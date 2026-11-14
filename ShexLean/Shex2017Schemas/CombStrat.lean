@@ -1,25 +1,26 @@
 import ShexLean.Shex2017Schemas.Lemma2
 
 /-!
-A "lexicographic combination" of two stratifications (`combStrat`), and the
-invariance of refinement along it (`MTyping_combStrat`).
+A "lexicographic combination" of two stratifications (`combStrat`),
+and the invariance of refinement along it (`MTyping_combStrat`).
 
-The proof of Lemma 2 (`ShexLean/Shex2017Schemas/Lemma2.lean`) does not need
-this result. We keep it because it is a useful fact. In general, the
-checkpoints of `combStrat` cannot align exactly with a second
-stratification of your choice. Two labels that do not depend on each other
-can have a different order in two valid stratifications. For this reason,
-the proof of Lemma 2 uses a different method.
+The proof of Lemma 2 (`ShexLean/Shex2017Schemas/Lemma2.lean`) does not need this result.
+We keep it because it is a useful fact.
+In general, the checkpoints of `combStrat` cannot align
+exactly with a second stratification of your choice.
+Two labels that do not depend on each other can have
+a different order in two valid stratifications.
+For this reason, the proof of Lemma 2 uses a different method.
 -/
 
 namespace ShexLean
 
 /-!
-The combined ("lexicographically refined") stratification. `str1` is the
-primary key, and `str2` breaks ties. Its checkpoints at multiples of
-`str2.k + 1` are the checkpoints of `str1`. Thus, we can relate
-`MTyping str1` to the `MTyping` of a stratification made from `str1` and
-`str2`.
+The combined ("lexicographically refined") stratification.
+`str1` is the primary key, and `str2` breaks ties.
+Its checkpoints at multiples of `str2.k + 1` are the checkpoints of `str1`.
+Thus, we can relate `MTyping str1` to the `MTyping`
+of a stratification made from `str1` and `str2`.
 -/
 
 private theorem lex_strict_mono {a1 a2 b1 b2 k2 : ℕ} (ha1 : 1 ≤ a1) (ha2 : 1 ≤ a2)
@@ -131,13 +132,13 @@ theorem stratum_combStrat_align {S : Schema} (hClosed : S.Closed)
     have hexpand : (a' + 1) * (str2.k + 1) = a' * (str2.k + 1) + (str2.k + 1) := by ring
     omega
 
-/-- Invariance of refinement. `MTyping` with `str1` is equal to `MTyping`
-with `combStrat hClosed str1 str2`. (`combStrat` refines `str1` exactly,
-at multiples of `str2.k + 1`.)
+/-- Invariance of refinement.
+`MTyping` with `str1` is equal to `MTyping` with `combStrat hClosed str1 str2`.
+(`combStrat` refines `str1` exactly, at multiples of `str2.k + 1`.)
 
-The proof is by induction on the strata of `str1`. It has an inner
-induction (with `maxAgree_fusion` many times) over the `str2.k + 1` finer
-steps of `combStrat` in each layer of `str1`. -/
+The proof is by induction on the strata of `str1`.
+It has an inner induction (with `maxAgree_fusion` many times) over
+the `str2.k + 1` finer steps of `combStrat` in each layer of `str1`. -/
 theorem typ_combStrat_align {S : Schema} (hClosed : S.Closed)
     (str1 str2 : Strat S) (G : Graph) :
     ∀ i ≤ str1.k,
@@ -246,8 +247,8 @@ theorem typ_combStrat_align {S : Schema} (hClosed : S.Closed)
               rw [halign (i + 1)]
         _ = typ S str1.str G (i + 1) := rfl
 
-/-- `combStrat hClosed str1 str2` gives `MTyping G S str1`. This is the
-instance `i = str1.k` of `typ_combStrat_align`, written with `MTyping`. -/
+/-- `combStrat hClosed str1 str2` gives `MTyping G S str1`.
+This is the instance `i = str1.k` of `typ_combStrat_align`, written with `MTyping`. -/
 theorem MTyping_combStrat (S : Schema) (hClosed : S.Closed)
     (str1 str2 : Strat S) (G : Graph) :
     MTyping G S (combStrat hClosed str1 str2) = MTyping G S str1 := by

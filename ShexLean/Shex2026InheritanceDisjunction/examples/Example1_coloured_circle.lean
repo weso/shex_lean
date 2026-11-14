@@ -15,42 +15,42 @@ Choices" in Boneva, Labra Gayo, Prud'hommeaux, Thornton, Waagmeester
 > inherited from `ColouredFigure`, the other inherited from `Circle`.
 > Allowing it would be undesirable.
 
-`S_disj` below is exactly this variant of the motivating schema of §2. We
-removed `Attribute`, `Colour` and `Radius`, because they are not related
-to the coordinate question of this file.
+`S_disj` below is exactly this variant of the motivating schema of §2.
+We removed `Attribute`, `Colour` and `Radius`, because they
+are not related to the coordinate question of this file.
 
 * The body of `Figure` is now the disjunction of two shapes
-  `[⟨coord @CartesianCoord⟩, ⟨coord @PolarCoord⟩]` (the `hs` field of
-  `ShapeExpr.extends`, in `Syntax.lean`).
+  `[⟨coord @CartesianCoord⟩, ⟨coord @PolarCoord⟩]` (the
+  `hs` field of `ShapeExpr.extends`, in `Syntax.lean`).
 * `Circle` and `ColouredFigure` both `extends {"Figure"}`.
 * `ColouredCircle` inherits from the two (multiple inheritance).
 
 This is exactly the structure that tests the problem of the paper.
 
-There are three claims. Each claim is a direct `SatisfiesFuel` or
-`SatisfiesMFuel` derivation, proved by hand:
+There are three claims.
+Each claim is a direct `SatisfiesFuel` or `SatisfiesMFuel` derivation, proved by hand:
 
 - `f1_satisfies_ColouredCircle`: a node with *consistent* Cartesian
   coordinates is a `ColouredCircle` (`pick "Figure" := 0`).
 - `f2_satisfies_ColouredCircle`: a node with *consistent* polar
-  coordinates is *also* a `ColouredCircle` (`pick "Figure" := 1`). The
-  paper says that this legitimate use is the reason to want the
-  relaxation.
-- `f3_not_satisfies_ColouredCircle`: a node whose `coord` object has
-  *neither* type is *not* a `ColouredCircle`, for *each* choice of
-  `pick`, `Mx` and `M'`.
+  coordinates is *also* a `ColouredCircle` (`pick "Figure" := 1`).
+  The paper says that this legitimate use is the reason to want the relaxation.
+- `f3_not_satisfies_ColouredCircle`: a node whose `coord`
+  object has *neither* type is *not* a `ColouredCircle`,
+  for *each* choice of `pick`, `Mx` and `M'`.
 
-For `f3`, refer to the rule-18 mechanism in the module docstring of
-`Semantics.lean`. `Circle` and `ColouredFigure` get a shared part through
-`Figure`. The mechanism forces this part to be the *same* single
-`Mx "Figure"` and `pick "Figure"`, through each of the two parents. Thus,
-"Cartesian through one path, and polar through the other path" is not
-possible, also in principle. We made `f3` so that neither disjunct alone
-is available. Thus, this proof is the nearest that this file gets to a
+For `f3`, refer to the rule-18 mechanism in the module docstring of `Semantics.lean`.
+`Circle` and `ColouredFigure` get a shared part through `Figure`.
+The mechanism forces this part to be the *same* single
+`Mx "Figure"` and `pick "Figure"`, through each of the two parents.
+Thus, "Cartesian through one path, and polar through
+the other path" is not possible, also in principle.
+We made `f3` so that neither disjunct alone is available.
+Thus, this proof is the nearest that this file gets to a
 *demonstration* of the fix, not only a statement of it.
 
-At the end, the file also computes the three claims with `renderDecide`,
-with the `Decidable` instances of this folder.
+At the end, the file also computes the three claims with
+`renderDecide`, with the `Decidable` instances of this folder.
 -/
 
 namespace ShexLean.InheritanceDisjunction
@@ -60,16 +60,17 @@ open ShexLean.InheritanceCore hiding Schema
 /-- A fuel bound that is sufficient for all the proofs in this file. -/
 def bigFuelDisj : ℕ := 10
 
-/-- `T_float`, approximated as "any integer literal". This is the same
-convention as in `ShexLean.Shex2025Inheritance.examples.Example1_figures`,
+/-- `T_float`, approximated as "any integer literal".
+This is the same convention as in
+`ShexLean.Shex2025Inheritance.examples.Example1_figures`,
 for the same reason: `Literal` has no float constructor. -/
 def cFloatDisj : NodeConstraint
   | .lit (.int _) => True
   | _ => False
 
-/-- `S_disj`: the schema of §2, with `Attribute`, `Colour` and `Radius`
-removed, and the body of `Figure` replaced with the hypothetical shape of
-§6, which has two disjuncts. -/
+/-- `S_disj`: the schema of §2, with `Attribute`, `Colour`
+and `Radius` removed, and the body of `Figure` replaced
+with the hypothetical shape of §6, which has two disjuncts. -/
 def S_disj : Schema where
   Y := {"T_float"}
   X := {"Figure", "Circle", "ColouredFigure", "ColouredCircle"}
@@ -94,8 +95,7 @@ def S_disj : Schema where
 def cCart : Subject := .iri "cCart"
 /-- A coordinate node with real (consistent) polar data. -/
 def cPolar : Subject := .iri "cPolar"
-/-- A coordinate node with neither: only an `x`, and no `y`, `r` or
-`theta`. -/
+/-- A coordinate node with neither: only an `x`, and no `y`, `r` or `theta`. -/
 def cBad : Subject := .iri "cBad"
 
 /-- A `ColouredCircle` candidate with consistent Cartesian coordinates. -/
@@ -116,8 +116,8 @@ def G_disj : Graph :=
 * The literal values of `x`, `y`, `r` and `theta` have the type `T_float`.
 * `cCart` has the type `CartesianCoord`.
 * `cPolar` has the type `PolarCoord`.
-* `cBad` has *neither* type. `f3_not_satisfies_ColouredCircle` depends on
-  this one fact. -/
+* `cBad` has *neither* type.
+  `f3_not_satisfies_ColouredCircle` depends on this one fact. -/
 def τ_disj : Typing :=
   { (RDFNode.lit (.int 2), "T_float"), (RDFNode.lit (.int 4), "T_float"),
     (RDFNode.lit (.int 5), "T_float"), (RDFNode.lit (.int 1), "T_float"),
@@ -186,8 +186,8 @@ theorem hancSetCircleColouredFigure :
       from rfl, Finset.biUnion_insert, Finset.singleton_biUnion, hancCircle, hancColouredFigure]
   decide
 
-/-- The empty set trivially satisfies the trivial shape `[ε]`, which is not
-closed and has no `extra` (rule 17 of Table 3). -/
+/-- The empty set trivially satisfies the trivial shape `[ε]`,
+which is not closed and has no `extra` (rule 17 of Table 3). -/
 theorem empty_satisfies_emptyShape {τ : Typing} :
     SatisfiesShape τ (∅ : Finset Triple) ⟨false, none, .empty⟩ := by
   have hMeEmpty : Me τ (∅ : Finset Triple) TripleExpr.empty = ∅ := by unfold Me; simp
@@ -198,11 +198,11 @@ theorem empty_satisfies_emptyShape {τ : Typing} :
     unfold Mnotin
     simp [props, TripleExpr.props, TripleExpr.tcs]
 
-/-- `f1` (with `coord` to `cCart`, a node with consistent Cartesian data)
-is a `ColouredCircle`. The proof selects `pick "Figure" := 0`
-(`CartesianCoord`, the first disjunct of the body of `Figure`).
-`Mx "Circle"` and `Mx "ColouredFigure"` are both `∅` (their own `hs` is
-`[⟨ε⟩]`). `Mx "Figure"` takes the one `coord` triple. -/
+/-- `f1` (with `coord` to `cCart`, a node with consistent Cartesian data) is a `ColouredCircle`.
+The proof selects `pick "Figure" := 0` (`CartesianCoord`,
+the first disjunct of the body of `Figure`).
+`Mx "Circle"` and `Mx "ColouredFigure"` are both `∅` (their own `hs` is `[⟨ε⟩]`).
+`Mx "Figure"` takes the one `coord` triple. -/
 theorem f1_satisfies_ColouredCircle :
     SatisfiesFuel bigFuelDisj S_disj G_disj τ_disj f1 (S_disj.shapeDef "ColouredCircle") := by
   have hshape : S_disj.shapeDef "ColouredCircle" =
@@ -243,12 +243,13 @@ theorem f1_satisfies_ColouredCircle :
     · rw [hFshape] at hu; simp [ShapeExpr.restrOf] at hu
     · rw [hCFshape] at hu; simp [ShapeExpr.restrOf] at hu
 
-/-- `f2` (with `coord` to `cPolar`, a node with consistent polar data) is
-*also* a `ColouredCircle`. The proof selects `pick "Figure" := 1`
-(`PolarCoord`). The discussion of §6 in the paper says that this
-legitimate use, with one consistent choice, is what was wanted. The proof
-has the same structure as `f1_satisfies_ColouredCircle`. Only the `pick`
-and the typing fact are different. -/
+/-- `f2` (with `coord` to `cPolar`, a node with
+consistent polar data) is *also* a `ColouredCircle`.
+The proof selects `pick "Figure" := 1` (`PolarCoord`).
+The discussion of §6 in the paper says that this legitimate
+use, with one consistent choice, is what was wanted.
+The proof has the same structure as `f1_satisfies_ColouredCircle`.
+Only the `pick` and the typing fact are different. -/
 theorem f2_satisfies_ColouredCircle :
     SatisfiesFuel bigFuelDisj S_disj G_disj τ_disj f2 (S_disj.shapeDef "ColouredCircle") := by
   have hshape : S_disj.shapeDef "ColouredCircle" =
@@ -289,21 +290,23 @@ theorem f2_satisfies_ColouredCircle :
     · rw [hFshape] at hu; simp [ShapeExpr.restrOf] at hu
     · rw [hCFshape] at hu; simp [ShapeExpr.restrOf] at hu
 
-/-- `f3` (with `coord` to `cBad`, which has neither `CartesianCoord` nor
-`PolarCoord` in `τ_disj`) is **not** a `ColouredCircle`. This is true for
-*each* choice of `M'`, `Mx` and `pick`, not only for the choices above.
+/-- `f3` (with `coord` to `cBad`, which has neither `CartesianCoord`
+nor `PolarCoord` in `τ_disj`) is **not** a `ColouredCircle`.
+This is true for *each* choice of `M'`, `Mx` and `pick`, not only for the choices above.
 
-* `Mx "Circle"` and `Mx "ColouredFigure"` must be `∅`. (Rule 1 of Table 1:
-  `.empty` requires the set to *be* `∅`. It is not "no constraint", as the
-  case of `.ofShape` that is not closed in rule 17.)
-* Thus, the one `coord` triple must go into `Mx "Figure"`. Then it needs
-  `τ_disj.has cBad "CartesianCoord"` (if `pick "Figure"` is even) or
-  `τ_disj.has cBad "PolarCoord"` (if it is odd). The two are false.
+* `Mx "Circle"` and `Mx "ColouredFigure"` must be `∅`.
+  (Rule 1 of Table 1: `.empty` requires the set to *be* `∅`.
+  It is not "no constraint", as the case of `.ofShape` that is not closed in rule 17.)
+* Thus, the one `coord` triple must go into `Mx "Figure"`.
+  Then it needs `τ_disj.has cBad "CartesianCoord"` (if `pick "Figure"`
+  is even) or `τ_disj.has cBad "PolarCoord"` (if it is odd).
+  The two are false.
 
-This is the nearest that this file gets to a *demonstration* of the fix of
-§6, not only a statement of it. `f3` cannot get through with "half" a
-Cartesian coordinate and "half" a polar coordinate from its two different
-parents, because the two parents must use the same `Mx "Figure"` slot. -/
+This is the nearest that this file gets to a *demonstration*
+of the fix of §6, not only a statement of it.
+`f3` cannot get through with "half" a Cartesian coordinate
+and "half" a polar coordinate from its two different parents,
+because the two parents must use the same `Mx "Figure"` slot. -/
 theorem f3_not_satisfies_ColouredCircle :
     ¬ SatisfiesFuel bigFuelDisj S_disj G_disj τ_disj f3 (S_disj.shapeDef "ColouredCircle") := by
   have hshape : S_disj.shapeDef "ColouredCircle" =
@@ -343,9 +346,11 @@ theorem f3_not_satisfies_ColouredCircle :
     exact absurd hty (by decide)
 
 /-! The prerequisites for the decidability of `S_disj` (`Decidable.lean`),
-and the three claims above computed again with `renderDecide`. This is
-the same method as `ShexLean.Shex2025Inheritance.examples.Example1_figures`
-for the original formalism. The expected results are:
+and the three claims above computed again with `renderDecide`.
+This is the same method as
+`ShexLean.Shex2025Inheritance.examples.Example1_figures`
+for the original formalism.
+The expected results are:
 
 * `f1 ⊨ ColouredCircle` and `f2 ⊨ ColouredCircle` compute `true`.
 * `f3 ⊨ ColouredCircle` computes `false`. -/
@@ -363,8 +368,8 @@ def circleFOk : (S_disj.shapeDef "Circle").FOk S_disj := PLift.up (by decide)
 def colouredFigureFOk : (S_disj.shapeDef "ColouredFigure").FOk S_disj := PLift.up (by decide)
 def colouredCircleFOk : (S_disj.shapeDef "ColouredCircle").FOk S_disj := PLift.up (by decide)
 
-/-- The result of `renderDecide` for
-`n ⊨ S_disj.shapeDef L`. There is one line for each main claim below. -/
+/-- The result of `renderDecide` for `n ⊨ S_disj.shapeDef L`.
+There is one line for each main claim below. -/
 def satDisj (n : RDFNode) (L : Label) (hOk : (S_disj.shapeDef L).FOk S_disj) : String :=
   renderDecide (satisfiesFuel_decidable S_disj G_disj τ_disj S_disj_XClosed S_disj_RestrOk
     bigFuelDisj n (S_disj.shapeDef L) hOk)
@@ -376,17 +381,17 @@ namespace Examples
 open ShexLean.InheritanceDisjunction (S_disj G_disj τ_disj satDisj colouredCircleFOk f1 f2 f3)
 open ShexLean (Graph.render renderDecide)
 
-/-- The `ColouredCircle` counterexample of §6 "Design Choices". The body of
-`Figure` is relaxed to an `extends` with two disjuncts. This tests the
-ambiguity that the paper does not resolve.
+/-- The `ColouredCircle` counterexample of §6 "Design Choices".
+The body of `Figure` is relaxed to an `extends` with two disjuncts.
+This tests the ambiguity that the paper does not resolve.
 
-* `f1 ⊨ ColouredCircle` and `f2 ⊨ ColouredCircle` (consistent Cartesian
-  or polar coordinates) compute `true` with `renderDecide`. Thus, the
-  relaxation still accepts the legitimate use.
-* `f3 ⊨ ColouredCircle` (neither) computes `false`. Thus, the fix with the
-  `pick` witness (`Semantics.lean`) blocks the case "half Cartesian, half
-  polar" that the paper warns about. This is a checked computation, not
-  only an omission. -/
+* `f1 ⊨ ColouredCircle` and `f2 ⊨ ColouredCircle` (consistent
+  Cartesian or polar coordinates) compute `true` with `renderDecide`.
+  Thus, the relaxation still accepts the legitimate use.
+* `f3 ⊨ ColouredCircle` (neither) computes `false`.
+  Thus, the fix with the `pick` witness (`Semantics.lean`) blocks
+  the case "half Cartesian, half polar" that the paper warns about.
+  This is a checked computation, not only an omission. -/
 def inheritanceDisjunctionColouredCircle : Example where
   name := "inheritance2026-disjunction-coloured-circle"
   summary := "§6 relaxation, ColouredCircle with Cartesian or polar coordinates: " ++
