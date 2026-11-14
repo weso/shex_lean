@@ -28,16 +28,12 @@ namespace ShexLean
 
 mutual
 
-/-- The shape labels that `S` refers to through a `TriplePattern`. The
-result has two parts:
+/-- The shape labels that `S` refers to through a `TriplePattern`. The result has two parts:
 
-* `.1`, the positive dependencies: the labels with no `NOT` on the path
-  from `S` to the `TriplePattern`.
-* `.2`, the negative dependencies: the labels with one or more `NOT` on
-  that path.
+* `.1`, the positive dependencies: the labels with no `NOT` on the path from `S` to the `TriplePattern`.
+* `.2`, the negative dependencies: the labels with one or more `NOT` on that path.
 
-`underNot` tells if the recursion already went below a `NOT` before it
-got to `S`. -/
+`underNot` tells if the recursion already went below a `NOT` before it got to `S`. -/
 @[reducible] def ShExpr.depsAux (underNot : Bool) : ShExpr → Finset Label × Finset Label
   | .valueDescr _ => (∅, ∅)
   | .neigDescr E  => TExpr.depsAux underNot E
@@ -69,20 +65,16 @@ got to `S`. -/
 
 end
 
-/-- The shape labels that `S` refers to through a `TriplePattern`, with no
-`NOT` on the path from `S`. -/
+/-- The shape labels that `S` refers to through a `TriplePattern`, with no `NOT` on the path from `S`. -/
 abbrev ShExpr.posDeps (S : ShExpr) : Finset Label := (ShExpr.depsAux false S).1
 
-/-- The shape labels that `S` refers to through a `TriplePattern`, with one
-or more `NOT` on the path from `S`. -/
+/-- The shape labels that `S` refers to through a `TriplePattern`, with one or more `NOT` on the path from `S`. -/
 abbrev ShExpr.negDeps (S : ShExpr) : Finset Label := (ShExpr.depsAux false S).2
 
-/-- The shape labels that `E` refers to through a `TriplePattern`, with no
-`NOT` on the path from `E`. -/
+/-- The shape labels that `E` refers to through a `TriplePattern`, with no `NOT` on the path from `E`. -/
 abbrev TExpr.posDeps (E : TExpr) : Finset Label := (TExpr.depsAux false E).1
 
-/-- The shape labels that `E` refers to through a `TriplePattern`, with one
-or more `NOT` on the path from `E`. -/
+/-- The shape labels that `E` refers to through a `TriplePattern`, with one or more `NOT` on the path from `E`. -/
 abbrev TExpr.negDeps (E : TExpr) : Finset Label := (TExpr.depsAux false E).2
 
 /-- `dep⁺(L1, L2)`: `L2` occurs in `def(L1)`, but never below a `NOT`. -/
@@ -110,8 +102,7 @@ structure Strat (S : Schema) where
   `L1 ∈ S.labels`, as for `neg_strict`. -/
   pos_le : ∀ L1 ∈ S.labels, ∀ L2, DepPos S L1 L2 → str L2 ≤ str L1
 
-/-- `S` is a schema with stratified negation if it has a stratification
-(Definition 3). -/
+/-- `S` is a schema with stratified negation if it has a stratification (Definition 3). -/
 def Schema.StratNeg (S : Schema) : Prop := Nonempty (Strat S)
 
 /-!

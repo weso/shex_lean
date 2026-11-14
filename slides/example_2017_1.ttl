@@ -1,0 +1,13 @@
+prefix foaf: <http://xmlns.com/foaf/0.1/> 
+prefix ex: <http://example.org/>
+prefix is: <http://example.org/issues#>
+
+ex:issue1 is:reportedBy ex:fatima ; is:reproducedBy ex:ren , ex:noa ;
+          is:relatedTo ex:issue2 .
+ex:issue2 is:reportedBy ex:emin ; is:reproducedBy ex:ren ;
+          is:relatedTo ex:issue1 .
+ex:fatima ex:clientNbr 1 ; foaf:name "Fatima Smith" .
+ex:ren    ex:expertise ex:semweb ; ex:experience ex:senior .
+ex:noa    ex:experience ex:junior .
+ex:emin   ex:clientAffil "ABC" ; foaf:name "Emin V. Petrov" ;
+          foaf:mbox <mailto:evp@example.org> .

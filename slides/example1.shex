@@ -1,0 +1,23 @@
+prefix foaf: <http://xmlns.com/foaf/0.1/> 
+prefix ex: <http://example.org/>
+prefix is: <http://example.org/issues#>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+
+<UserShape> {
+    foaf:name xsd:string ;
+    foaf:mbox IRI ?
+}
+<ProgShape> {
+    ex:expertise IRI * ;
+    ex:experience [ ex:senior ex:junior ] ;
+}
+<ClientShape> {
+    ex:clientNbr xsd:integer |
+    ex:clientAffil .
+}
+<IssueShape> {
+    is:reportedBy @<ClientAndUser> ;
+    is:reproducedBy @<ProgShape> {1,5} ;
+    is:relatedTo @<IssueShape> * ;
+}
+<ClientAndUser> @<ClientShape> AND @<UserShape>

@@ -1,0 +1,18 @@
+prefix :       <http://example.org/>
+prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
+
+:Attribute {
+  :name    xsd:string ;
+  :value   xsd:string OR xsd:decimal ;
+  :related @:Attribute * ;
+}
+
+:Colour @:Attribute AND {
+  :scope xsd:string ;
+  :name ["colour"] 
+}
+
+:Radius @:Attribute AND {
+  :name ["radius"] ;
+  :value xsd:decimal
+}

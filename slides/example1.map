@@ -1,0 +1,6 @@
+ex:issue1@<IssueShape>,
+ex:issue2@<IssueShape>,
+ex:fatima@<ClientAndUser>,
+ex:emin@<ClientAndUser>,
+ex:ren@<ProgShape>,
+ex:noa@<ProgShape>

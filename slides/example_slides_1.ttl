@@ -1,0 +1,20 @@
+prefix :       <http://example.org/>
+prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
+
+:a1 :scope "fill"      ;
+    :name  "colour"    ;
+    :value "#FF0000" ;
+    :related :a2       .
+
+:a2 :name  "radius"  ;
+    :value 10.1      .
+
+:a3 :name  "radius"  ;
+    :value 7.2       .
+
+:a4 :name  "radius"  ;
+    :value :unknown  .
+
+:a5 :name  "radius"  ;
+    :value 5.0       ;
+    :related :a4     .
