@@ -362,7 +362,7 @@ open ShexLean.Inheritance (S_ex5 τ_ex3 bigFuel M24 M246 M2a M24a
   S_ex5_XClosed S_ex5_RestrOk satisfiesMFuel_decidable)
 open ShexLean (Triple Label Graph.render Typing.render renderDecide)
 
-/-- The result of `renderDecide`, computed with `native_decide`, for
+/-- The result of `renderDecide` for
 `M ⊨ def(L)`. -/
 def satMEx5 (M : Finset Triple) (L : Label)
     (hOk : (S_ex5.shapeDef L).MOk S_ex5) : String :=
@@ -372,7 +372,7 @@ def satMEx5 (M : Finset Triple) (L : Label)
 /-- The `extends` chain of Example 5.
 
 * `schemaText` is generated from the real `S_ex5`.
-* Each claim `M ⊨ def(L)` in `typingText` is a `native_decide` computation
+* Each claim `M ⊨ def(L)` in `typingText` is a `renderDecide` computation
   with `satisfiesMFuel_decidable`. This includes `M24, τ ⊨ def(x1)`
   (proved above with the rule-18 partition of `x1` against its ancestor
   `x0`), and the two negative claims proved above with the cardinality

@@ -49,7 +49,7 @@ possible, also in principle. We made `f3` so that neither disjunct alone
 is available. Thus, this proof is the nearest that this file gets to a
 *demonstration* of the fix, not only a statement of it.
 
-At the end, the file also computes the three claims with `native_decide`,
+At the end, the file also computes the three claims with `renderDecide`,
 with the `Decidable` instances of this folder.
 -/
 
@@ -343,7 +343,7 @@ theorem f3_not_satisfies_ColouredCircle :
     exact absurd hty (by decide)
 
 /-! The prerequisites for the decidability of `S_disj` (`Decidable.lean`),
-and the three claims above computed again with `native_decide`. This is
+and the three claims above computed again with `renderDecide`. This is
 the same method as `ShexLean.Shex2025Inheritance.examples.Example1_figures`
 for the original formalism. The expected results are:
 
@@ -363,7 +363,7 @@ def circleFOk : (S_disj.shapeDef "Circle").FOk S_disj := PLift.up (by decide)
 def colouredFigureFOk : (S_disj.shapeDef "ColouredFigure").FOk S_disj := PLift.up (by decide)
 def colouredCircleFOk : (S_disj.shapeDef "ColouredCircle").FOk S_disj := PLift.up (by decide)
 
-/-- The result of `renderDecide`, computed with `native_decide`, for
+/-- The result of `renderDecide` for
 `n ⊨ S_disj.shapeDef L`. There is one line for each main claim below. -/
 def satDisj (n : RDFNode) (L : Label) (hOk : (S_disj.shapeDef L).FOk S_disj) : String :=
   renderDecide (satisfiesFuel_decidable S_disj G_disj τ_disj S_disj_XClosed S_disj_RestrOk
@@ -381,7 +381,7 @@ open ShexLean (Graph.render renderDecide)
 ambiguity that the paper does not resolve.
 
 * `f1 ⊨ ColouredCircle` and `f2 ⊨ ColouredCircle` (consistent Cartesian
-  or polar coordinates) compute `true` with `native_decide`. Thus, the
+  or polar coordinates) compute `true` with `renderDecide`. Thus, the
   relaxation still accepts the legitimate use.
 * `f3 ⊨ ColouredCircle` (neither) computes `false`. Thus, the fix with the
   `pick` witness (`Semantics.lean`) blocks the case "half Cartesian, half

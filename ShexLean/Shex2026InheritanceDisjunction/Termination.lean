@@ -209,13 +209,13 @@ theorem Schema.rankOk_fuelBound {S : Schema} (hAcyclic : S.ExtAcyclic) {r : ℕ}
 
 /-! ### The stabilization argument -/
 
-/-- One layer of Table 3 depends on `restr` only through its values on the
+/-- One layer of Table 3 depends on `evalRestr` only through its values on the
 restrictions that the rank witness covers. The proof is a plain
 structural induction. -/
-theorem SatisfiesMAt_congr_restr {S : Schema} {τ : Typing}
-    {restr1 restr2 : Finset Triple → ShapeExpr → Prop} {P : ShapeExpr → Prop}
-    (hr : ∀ u, P u → ∀ M, restr1 M u ↔ restr2 M u) :
-    ∀ s, S.RankOkAt P s → ∀ M, SatisfiesMAt S τ restr1 M s ↔ SatisfiesMAt S τ restr2 M s := by
+theorem SatisfiesMAt_congr_evalRestr {S : Schema} {τ : Typing}
+    {evalRestr1 evalRestr2 : Finset Triple → ShapeExpr → Prop} {P : ShapeExpr → Prop}
+    (hr : ∀ u, P u → ∀ M, evalRestr1 M u ↔ evalRestr2 M u) :
+    ∀ s, S.RankOkAt P s → ∀ M, SatisfiesMAt S τ evalRestr1 M s ↔ SatisfiesMAt S τ evalRestr2 M s := by
   intro s
   induction s with
   | constraint _ | ofShape _ => intros; rfl
@@ -231,7 +231,7 @@ theorem SatisfiesMAt_congr_restr {S : Schema} {τ : Typing}
 
 /-- `SatisfiesMFuel` is stable above a sufficient rank: if `RankOk S r s`,
 each fuel `r' ≥ r` gives the same result. The proof is an induction on
-`r`. Each step is `SatisfiesMAt_congr_restr`. -/
+`r`. Each step is `SatisfiesMAt_congr_evalRestr`. -/
 theorem stableM {S : Schema} {τ : Typing} :
     ∀ r s, Schema.RankOk S r s → ∀ r', r ≤ r' → ∀ M,
       SatisfiesMFuel r S τ M s ↔ SatisfiesMFuel r' S τ M s := by
@@ -241,11 +241,11 @@ theorem stableM {S : Schema} {τ : Typing} :
       intro s hs r' _ M
       cases r' with
       | zero => rfl
-      | succ r' => exact SatisfiesMAt_congr_restr (fun _ h => h.elim) s hs M
+      | succ r' => exact SatisfiesMAt_congr_evalRestr (fun _ h => h.elim) s hs M
   | succ r ih =>
       intro s hs r' hr' M
       obtain ⟨r', rfl⟩ : ∃ k, r' = k + 1 := ⟨r' - 1, by omega⟩
-      exact SatisfiesMAt_congr_restr (fun u hu M => ih u hu r' (by omega) M) s hs M
+      exact SatisfiesMAt_congr_evalRestr (fun u hu M => ih u hu r' (by omega) M) s hs M
 
 /-- Table 2 is structural. Thus, if two Table-3 evaluators agree on the
 leaves (`.ofShape` and `.extends`) that satisfy a predicate `Q`, and `Q`

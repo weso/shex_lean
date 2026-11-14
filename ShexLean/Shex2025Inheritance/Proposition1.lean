@@ -196,17 +196,17 @@ theorem restrOf_depsIn {S : Schema} {Z : Finset Label} (hZ : S.DClosedOn Z) {x :
 
 /-- On a `NoExtends` shape, Table 3 depends on `τ` only through its
 restriction to the references of the shape. It does not depend on the
-schema or on `restr` at all, because rule 18 is not used. No closure
+schema or on `evalRestr` at all, because rule 18 is not used. No closure
 hypothesis on `Z` is necessary.
 
 The `not` case of `stratMono` needs this lemma. (By
 `ShapeExpr.NotIsExtendsFree`, the content of a `not` node is always
 `NoExtends`.) -/
 theorem SatisfiesMAt_agree_noExtends {S1 S2 : Schema} {τ1 τ2 : Typing}
-    {restr1 restr2 : Finset Triple → ShapeExpr → Prop} {Z : Finset Label}
+    {evalRestr1 evalRestr2 : Finset Triple → ShapeExpr → Prop} {Z : Finset Label}
     (hagree : AgreeOn τ1 τ2 Z) :
     ∀ s, s.NoExtends → (s.depsAux false).refs ⊆ Z →
-      ∀ M, SatisfiesMAt S1 τ1 restr1 M s ↔ SatisfiesMAt S2 τ2 restr2 M s := by
+      ∀ M, SatisfiesMAt S1 τ1 evalRestr1 M s ↔ SatisfiesMAt S2 τ2 evalRestr2 M s := by
   intro s
   induction s with
   | constraint _ => intros; rfl
@@ -233,19 +233,19 @@ not change if these conditions are true:
 
 * `τ1` and `τ2` agree on a `D_S`-closed `Z`.
 * `S1` and `S2` have the same definitions, and agree on `anc` in `Z`.
-* `restr1` and `restr2` agree on each restriction `u` that the rank
+* `evalRestr1` and `evalRestr2` agree on each restriction `u` that the rank
   witness `P` covers, if `u` reaches only labels in `Z`.
 * The shape reaches only labels in `Z` (`depsIn`).
 
 The only case that uses the schema is `.extends`. Each other case is a
 plain structural step. -/
 theorem SatisfiesMAt_transfer {S1 S2 : Schema} {τ1 τ2 : Typing}
-    {restr1 restr2 : Finset Triple → ShapeExpr → Prop} {P : ShapeExpr → Prop}
+    {evalRestr1 evalRestr2 : Finset Triple → ShapeExpr → Prop} {P : ShapeExpr → Prop}
     {Z : Finset Label} (hZ : S1.DClosedOn Z) (hagree : AgreeOn τ1 τ2 Z)
     (hdef : S1.shapeDef = S2.shapeDef) (hanc : ∀ x ∈ Z, S1.anc x = S2.anc x)
-    (hr : ∀ u, P u → u.depsIn Z → ∀ M, restr1 M u ↔ restr2 M u) :
+    (hr : ∀ u, P u → u.depsIn Z → ∀ M, evalRestr1 M u ↔ evalRestr2 M u) :
     ∀ s, S1.RankOkAt P s → s.depsIn Z →
-      ∀ M, SatisfiesMAt S1 τ1 restr1 M s ↔ SatisfiesMAt S2 τ2 restr2 M s := by
+      ∀ M, SatisfiesMAt S1 τ1 evalRestr1 M s ↔ SatisfiesMAt S2 τ2 evalRestr2 M s := by
   intro s
   induction s with
   | constraint _ => intros; rfl
@@ -406,7 +406,7 @@ satisfaction, if these conditions are true:
 * The shape reaches only labels of a `D_S`-closed `Z`, and the negative
   references of each definition in `Z` are in `Lo`.
 * `WellFormedExtra` and `NotIsExtendsFree` are true for the shape.
-* `restr1` implies `restr2` on each restriction that the rank witness `P`
+* `evalRestr1` implies `evalRestr2` on each restriction that the rank witness `P`
   covers.
 
 The positive positions use `SatisfiesShape_mono` and `monoE`. The content
@@ -414,14 +414,14 @@ of a `not` is `NoExtends`, and uses `SatisfiesMAt_agree_noExtends` (exact
 agreement on `Lo`). -/
 theorem SatisfiesMAt_stratMono {S : Schema} (hWFExtra : S.WellFormedExtra)
     (hNEF : S.NotIsExtendsFree) {τ τ' : Typing} {Z Lo : Finset Label}
-    {restr1 restr2 : Finset Triple → ShapeExpr → Prop} {P : ShapeExpr → Prop}
+    {evalRestr1 evalRestr2 : Finset Triple → ShapeExpr → Prop} {P : ShapeExpr → Prop}
     (hZ : S.DClosedOn Z) (hsub : τ ⊆ τ') (hagree : AgreeOn τ τ' Lo)
     (hLo : ∀ z ∈ Z, ((S.shapeDef z).depsAux false).negRefs ⊆ Lo)
     (hr : ∀ u, P u → u.depsIn Z → u.WellFormedExtra → u.NotIsExtendsFree →
-      (u.depsAux false).negRefs ⊆ Lo → ∀ M, restr1 M u → restr2 M u) :
+      (u.depsAux false).negRefs ⊆ Lo → ∀ M, evalRestr1 M u → evalRestr2 M u) :
     ∀ s, S.RankOkAt P s → s.depsIn Z → s.WellFormedExtra → s.NotIsExtendsFree →
       (s.depsAux false).negRefs ⊆ Lo →
-      ∀ M, SatisfiesMAt S τ restr1 M s → SatisfiesMAt S τ' restr2 M s := by
+      ∀ M, SatisfiesMAt S τ evalRestr1 M s → SatisfiesMAt S τ' evalRestr2 M s := by
   intro s
   induction s with
   | constraint _ => intro _ _ _ _ _ M h; exact h

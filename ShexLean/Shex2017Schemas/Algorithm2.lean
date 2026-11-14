@@ -314,8 +314,12 @@ with these changes:
 
 * `Hyp` is a `Finset`. Only membership is important. The paper uses the
   stack with LIFO push and pop of a set. Thus, no data is lost.
-* `⊢` is decided with classical logic. In general, `Satisfies` is not
-  computable. (`refineStep` in `Algorithm1.lean` has the same property.)
+* `⊢` is decided with classical logic (`Classical.propDecidable`).
+  `Satisfies` is decidable with no classical axioms (`satisfies_decidable`
+  in `ShexLean/Shex2017Schemas/Decidable.lean`). But the proofs about
+  `proveAux` must use the same `Decidable` instance as the definition. The
+  classical instance makes this simple. (`refineStep` in
+  `ShexLean/Shex2017Schemas/Algorithm1.lean` has the same property.)
 
 `U` is a fixed finite superset of each `(n, L)` pair that the recursion
 can reach. The termination measure is the part of `U` that is not yet in

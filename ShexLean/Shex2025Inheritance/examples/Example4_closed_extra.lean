@@ -209,7 +209,7 @@ open ShexLean.Inheritance (e_ex4 M24 M246 M2a M24a S_ex5 τ_ex3 bigFuel n_ex3 tp
   S_ex5_XClosed S_ex5_RestrOk satisfiesMFuel_decidable)
 open ShexLean (Triple Graph.render renderDecide)
 
-/-- The result of `renderDecide`, computed with `native_decide`, for
+/-- The result of `renderDecide` for
 `M ⊨ shape` with `S_ex5` and `τ_ex3`. Each `.ofShape` argument below
 trivially satisfies `MOk` (`.ofShape _ => True`). Thus, only the
 schema-level witnesses `S_ex5_XClosed` and `S_ex5_RestrOk` are
@@ -227,7 +227,7 @@ def M24a_q : Finset Triple := M24a ∪ {tp "q" (.lit (.int 2))}
 and `M24a` of Example 3.
 
 * `graphText` is rendered from the real `Finset Triple` values.
-* Each claim `M ⊨ shape` in `typingText` is a `native_decide` computation
+* Each claim `M ⊨ shape` in `typingText` is a `renderDecide` computation
   with `satisfiesMFuel_decidable`. -/
 def inheritance2025ClosedExtra : Example where
   name := "inheritance2025-example4-closed-extra"

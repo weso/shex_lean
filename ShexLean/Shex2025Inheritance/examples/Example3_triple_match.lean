@@ -215,7 +215,7 @@ open ShexLean (Graph.render Typing.render renderDecide)
 
 * `graphText` and `typingText` render the real `Finset Triple` and
   `Typing` values.
-* Each claim `M,τ ⊨ e` is a `native_decide` computation with
+* Each claim `M,τ ⊨ e` is a `renderDecide` computation with
   `satisfiesE_decidable`.
 
 This is decidable with no condition, because Table 1 never uses

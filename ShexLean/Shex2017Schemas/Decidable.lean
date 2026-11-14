@@ -34,7 +34,7 @@ results together give `satisfies_decidable` and `matches_decidable` at the
 end of the file.
 
 `ShexLean/Shex2017Schemas/Render.lean` uses these instances directly, with
-`renderDecide` and `native_decide`. `ShexLean/Shex2025Inheritance/Render.lean`
+`renderDecide`. `ShexLean/Shex2025Inheritance/Render.lean`
 uses them through it. With these instances, the `true` and `false` claims
 of each worked example are computed. They are not facts that a person
 proved by hand and then wrote as strings. Refer to the "Decidability"

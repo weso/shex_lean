@@ -126,6 +126,11 @@ def corrTyping_decidable (S : Schema) (G : Graph) (t : Typing) :
 instance. This is the computed replacement for a claim that a person typed
 by hand in a `typingText`.
 
+The command-line tool computes this value with the compiled code of
+`@decide P inst` when it runs. This is not a proof: the kernel does not
+check the value, and no theorem uses it. The theorems of each example are
+the checked results. (This file does not use the tactic `native_decide`.)
+
 The function takes the instance explicitly. It does not use typeclass
 search, because that search needs `satisfies_decidable` and the other
 instances as global instances. `@decide` needs a closed instance term to

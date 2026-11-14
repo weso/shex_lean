@@ -20,7 +20,7 @@ about the result of the declarative semantics for each call.
 
 This file gives the three `false` results of the trace as theorems. The
 `Example` below computes all six results, also the `true` results, with
-`native_decide`. Nobody copied them from the paper by hand.
+`renderDecide`. Nobody copied them from the paper by hand.
 -/
 
 namespace Examples.ProveAlgorithmExample

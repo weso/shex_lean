@@ -241,7 +241,10 @@ There is no `sorry` in the directory.**
     with `Attribute`, `Colour` and `Radius` removed, because they are not
     related to the coordinate question).
 
-  There are three claims, verified with `native_decide`:
+  There are three claims. Each claim is a theorem
+  (`f1_satisfies_ColouredCircle`, `f2_satisfies_ColouredCircle` and
+  `f3_not_satisfies_ColouredCircle`). The command-line tool also computes
+  them with `renderDecide`:
   - A node with *consistent* Cartesian coordinates is a `ColouredCircle`.
   - A node with *consistent* polar coordinates is a `ColouredCircle`.
     (The paper says that this legitimate use is the reason to want the
@@ -320,9 +323,9 @@ Typing:
 ```
 
 The executable pretty-prints the schema, graph and typing text from the
-real Lean values. `correct = true` is a `native_decide` computation that
-runs when you run the CLI. It is independent of the theorem that
-`lake build` checks.
+real Lean values. `correct = true` is a `renderDecide` computation: the
+CLI runs the compiled code of the `Decidable` instance. It is independent
+of the theorem that `lake build` checks, and the kernel does not check it.
 
 Print the Lean source of a proof. Run this command from the project root,
 because it reads the `.lean` file directly:

@@ -112,7 +112,7 @@ unbounded existential over `ReflTransGen` reachability. It has no
 Thus, the three main results still give the names of the theorems that
 are their witnesses (`S1_wellDefined`, `S2_not_wellDefined` and
 `S3_not_wellDefined`). But each sub-fact that a proof uses (`dep`,
-`dep-shape-neg` and `dep-extends`) is a `native_decide` computation, with
+`dep-shape-neg` and `dep-extends`) is a `renderDecide` computation, with
 `renderDepG`, `renderDepShapeNeg` and `renderDepExtends` of Example 6. -/
 def inheritance2025WellDefined : Example where
   name := "inheritance2025-example7-well-defined"

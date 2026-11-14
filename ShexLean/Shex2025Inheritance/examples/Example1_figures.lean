@@ -709,7 +709,7 @@ theorem f1_satisfies_ColouredCircle :
 /-! The prerequisites for the decidability of `S_fig1`: `XClosed` and
 `RestrOk` (which `satisfiesFuel_decidable` needs), and an `FOk` witness
 for each top-level shape that a claim below checks. The display text below
-computes each claim with `native_decide`. It uses the schema, graph and
+computes each claim with `renderDecide`. It uses the schema, graph and
 typing of the proofs above. -/
 
 theorem S_fig1_XClosed : S_fig1.XClosed := by unfold Schema.XClosed; decide
@@ -725,7 +725,7 @@ def radiusFOk : (S_fig1.shapeDef "Radius").FOk S_fig1 := ⟨PLift.up (by decide)
 def circleFOk : (S_fig1.shapeDef "Circle").FOk S_fig1 := PLift.up (by decide)
 def colouredCircleFOk : (S_fig1.shapeDef "ColouredCircle").FOk S_fig1 := PLift.up (by decide)
 
-/-- The result of `renderDecide`, computed with `native_decide`, for
+/-- The result of `renderDecide` for
 `n ⊨ S_fig1.shapeDef L`. There is one line for each main claim below. -/
 def satFig1 (n : RDFNode) (L : Label) (hOk : (S_fig1.shapeDef L).FOk S_fig1) : String :=
   renderDecide (satisfiesFuel_decidable S_fig1 G_fig1 τ_fig1 S_fig1_XClosed S_fig1_RestrOk
@@ -743,7 +743,7 @@ open ShexLean (Graph.render renderDecide)
 
 * `schemaText` and `graphText` are generated from the real values `S_fig1`
   and `G_fig1` (floats are approximated as integer literals).
-* Each claim in `typingText` is a `native_decide` computation of
+* Each claim in `typingText` is a `renderDecide` computation of
   `SatisfiesFuel` on the same `S_fig1`, `G_fig1` and `τ_fig1`. -/
 def inheritance2025Figures : Example where
   name := "inheritance2025-example1-figures"

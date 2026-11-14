@@ -103,7 +103,7 @@ theorem depExtends_S3_x2_x1 : S3.depExtends "x2" "x1" := by
   show S3.extEdge "x2" "x1" ∨ S3.extEdge "x1" "x2"
   left; show "x1" ∈ (S3.shapeDef "x2").extendsTargets; decide
 
-/-- The result of `renderDecide`, computed with `native_decide`, for
+/-- The result of `renderDecide` for
 `S.dep z z'`. `Schema.dep` unfolds to a plain `Finset` or `List`
 membership check (`ShapeExpr.depsAux`, structural on the syntax tree, with
 no `Classical` and no fuel). Thus, `unfold` and then `infer_instance` are
@@ -129,7 +129,7 @@ open ShexLean.Inheritance (S1 S2 S3 renderDepG renderDepShapeNeg renderDepExtraN
   renderDepExtends)
 
 /-- The three schemas `S1`, `S2` and `S3` of Example 6, and their
-dependency facts. Each `dep*` claim in `typingText` is a `native_decide`
+dependency facts. Each `dep*` claim in `typingText` is a `renderDecide`
 computation on the real `S1`, `S2` and `S3`. -/
 def inheritance2025DependencyGraph : Example where
   name := "inheritance2025-example6-dependency-graph"

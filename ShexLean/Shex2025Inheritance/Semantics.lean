@@ -33,8 +33,8 @@ If there is an extends cycle, the relation does not terminate.
 
 Thus, we use fuel only for the `restr(x)` call:
 
-* `SatisfiesMAt S τ restr` is one layer of Table 3. It is structural, and
-  it evaluates each `restr(x)` with the parameter `restr`.
+* `SatisfiesMAt S τ evalRestr` is one layer of Table 3. It is structural, and
+  it evaluates each `restr(x)` with the parameter `evalRestr`.
 * `SatisfiesMFuel fuel S τ` stacks `fuel + 1` layers. The lowest layer
   evaluates each `restr(x)` as `False`.
 
@@ -49,18 +49,18 @@ namespace ShexLean.Inheritance
 open ShexLean.InheritanceCore hiding Schema
 
 /-- `M,τ ⊨ s` (Table 3), one layer. It is structural on `s`. The parameter
-`restr` evaluates the restriction `restr(x)` of each ancestor in rule 18,
+`evalRestr` evaluates the restriction `restr(x)` of each ancestor in rule 18,
 the only call that is not on a subterm. -/
-def SatisfiesMAt (S : Schema) (τ : Typing) (restr : Finset Triple → ShapeExpr → Prop) :
+def SatisfiesMAt (S : Schema) (τ : Typing) (evalRestr : Finset Triple → ShapeExpr → Prop) :
     Finset Triple → ShapeExpr → Prop
   -- Rule 13 (`c`).
   | M, .constraint c => c (subjectOf M)
   -- Rule 17 (`[closed][extra P]⟨e⟩`).
   | M, .ofShape h => SatisfiesShape τ M h
   -- Rules 14/15/16 (`or`/`and`/`not`).
-  | M, .or s1 s2 => SatisfiesMAt S τ restr M s1 ∨ SatisfiesMAt S τ restr M s2
-  | M, .and s1 s2 => SatisfiesMAt S τ restr M s1 ∧ SatisfiesMAt S τ restr M s2
-  | M, .not s => ¬ SatisfiesMAt S τ restr M s
+  | M, .or s1 s2 => SatisfiesMAt S τ evalRestr M s1 ∨ SatisfiesMAt S τ evalRestr M s2
+  | M, .and s1 s2 => SatisfiesMAt S τ evalRestr M s1 ∧ SatisfiesMAt S τ evalRestr M s2
+  | M, .not s => ¬ SatisfiesMAt S τ evalRestr M s
   -- Rule 18 (`extends X h`). `M` splits into two types of parts. `M'` satisfies
   -- `h` as a shape (rule 17, with the `closed` and `extra` of `h`). There is one
   -- `Mx x` for each `x ∈ anc(X)`. It satisfies `ext-te(x)`. If there is a
@@ -70,7 +70,7 @@ def SatisfiesMAt (S : Schema) (τ : Typing) (restr : Finset Triple → ShapeExpr
         SatisfiesShape τ M' h ∧
         (∀ x ∈ S.ancSet xs, SatisfiesE τ (Mx x) (S.shapeDef x).extTe) ∧
         (∀ x ∈ S.ancSet xs, ∀ u, (S.shapeDef x).restrOf = some u →
-          restr ((S.anc x).biUnion Mx) u)
+          evalRestr ((S.anc x).biUnion Mx) u)
 
 /-- `M,τ ⊨ s` (Table 3), with `fuel + 1` layers of `SatisfiesMAt`. Refer to
 the module docstring. -/
@@ -99,9 +99,9 @@ def SatisfiesFuel (fuel : ℕ) (S : Schema) (G : Graph) (τ : Typing) (n : RDFNo
   SatisfiesAt G (SatisfiesMFuel fuel S τ) n s
 
 /-- Each `SatisfiesMFuel fuel S τ` is one layer of `SatisfiesMAt`. Thus, a
-lemma about `SatisfiesMAt` with any `restr` applies to it. -/
+lemma about `SatisfiesMAt` with any `evalRestr` applies to it. -/
 theorem SatisfiesMFuel_eq (fuel : ℕ) (S : Schema) (τ : Typing) :
-    ∃ restr, SatisfiesMFuel fuel S τ = SatisfiesMAt S τ restr := by
+    ∃ evalRestr, SatisfiesMFuel fuel S τ = SatisfiesMAt S τ evalRestr := by
   cases fuel <;> exact ⟨_, rfl⟩
 
 end ShexLean.Inheritance

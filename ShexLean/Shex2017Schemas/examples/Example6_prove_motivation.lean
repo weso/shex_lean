@@ -19,7 +19,7 @@ This file proves the main claim of Example 6 in the usual way, at the
 level of the declarative semantics (`⊢` and `⊨`, Fig. 2). The claim is
 that `t = {(ex:n1,<L1>), (ex:n2,<L2>), (ex:n3,<L3>)}` is a correct typing
 of `G₃` by `S₃` (`typing_correct`). The `Example` at the end of the file
-also computes this claim with `native_decide`.
+also computes this claim with `renderDecide`.
 
 Example 7 (`Example7_trace.lean`) gives the execution trace of
 `prove(ex:n1,<L1>,[])` on the same `G₃` and `S₃`. It uses all the
@@ -144,7 +144,7 @@ shows that `ex:n1` has the shape `<L1>` with `S₃`.
 
 * `schemaText`, `graphText` and the correctness result in `typingText` are
   generated from the real values `S₃`, `G₃` and `t`.
-* The main claim "`ex:n1` has shape `<L1>`" is a `native_decide`
+* The main claim "`ex:n1` has shape `<L1>`" is a `renderDecide`
   computation of `Satisfies G₃ t n1 (S₃.shapeDef L1)`. It is not
   text. -/
 def proveAlgorithmMotivation : Example where
